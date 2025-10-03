@@ -40,7 +40,7 @@ import type { RankingInfo } from '@tanstack/match-sorter-utils'
 
 import { Pagination } from '@mui/material'
 
-import ModalAddLugar from '@/views/Dashboard/actividades/add/ModalAddLugar'
+import ModalAddLugar from '@/views/Dashboard/Companies/add/ModalAddLugar'
 
 import CustomTextField from '@core/components/mui/TextField'
 import TablePaginationComponent from '@components/TablePaginationComponent'

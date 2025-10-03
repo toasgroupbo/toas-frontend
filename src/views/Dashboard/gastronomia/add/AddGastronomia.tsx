@@ -37,7 +37,7 @@ import { Switch } from '@mui/material'
 import { gastronomiaSchema, type GastronomiaFormData } from '@/schemas/gastronomiaSchema'
 
 import CustomTextField from '@core/components/mui/TextField'
-import ModalAddLugar from '@/views/Dashboard/actividades/add/ModalAddLugar'
+import ModalAddLugar from '@/views/Dashboard/Companies/add/ModalAddLugar'
 
 import { useGastronomia } from '@/hooks/useGastronomia'
 import { useEventoActividad } from '@/hooks/UseEventoActividad'

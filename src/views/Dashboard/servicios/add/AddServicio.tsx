@@ -35,7 +35,7 @@ import Box from '@mui/material/Box'
 import { servicioSchema, type ServicioFormData } from '@/schemas/serviciosSchema'
 
 import CustomTextField from '@core/components/mui/TextField'
-import ModalAddLugar from '@/views/Dashboard/actividades/add/ModalAddLugar'
+import ModalAddLugar from '@/views/Dashboard/Companies/add/ModalAddLugar'
 
 import { useServicio } from '@/hooks/useServicio'
 import { useEventoActividad } from '@/hooks/UseEventoActividad'

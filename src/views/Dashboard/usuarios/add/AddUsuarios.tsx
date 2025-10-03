@@ -33,7 +33,7 @@ import Switch from '@mui/material/Switch'
 import Divider from '@mui/material/Divider'
 
 import CustomTextField from '@core/components/mui/TextField'
-import ModalAddLugar from '@/views/Dashboard/actividades/add/ModalAddLugar'
+import ModalAddLugar from '@/views/Dashboard/Companies/add/ModalAddLugar'
 
 import { useUsuarios, useUsuarioForm } from '@/hooks/useUsuarios'
 import { useEventoActividad } from '@/hooks/UseEventoActividad'

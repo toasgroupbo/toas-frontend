@@ -1,10 +1,18 @@
+'use client'
+
 // Component Imports
+import { useParams } from 'next/navigation'
+
 import Grid from '@mui/material/Grid2'
+
 import { Typography } from '@mui/material'
 
-import ActividadesTable from '@/views/Dashboard/actividades/list/ActividadesTable'
+import AddActividad from '@/views/Dashboard/Companies/add/AddEmpresas'
 
-const AgendaActividades = () => {
+const EditActividades = () => {
+  const params = useParams()
+  const actividadId = params.id ? parseInt(params.id as string) : undefined
+
   return (
     <Grid container spacing={6}>
       <Grid size={{ xs: 12 }}>
@@ -12,14 +20,14 @@ const AgendaActividades = () => {
           Actividades
         </Typography>
         <Typography sx={{ paddingLeft: '20px' }}>
-          Lista de <code>actividades</code>.
+          Editar <code>actividad</code>.
         </Typography>
       </Grid>
       <Grid size={{ xs: 12 }}>
-        <ActividadesTable />
+        <AddActividad actividadId={actividadId} />
       </Grid>
     </Grid>
   )
 }
 
-export default AgendaActividades
+export default EditActividades

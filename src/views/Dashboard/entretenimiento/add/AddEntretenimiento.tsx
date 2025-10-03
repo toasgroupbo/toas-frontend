@@ -37,7 +37,7 @@ import { Switch } from '@mui/material'
 import { entretenimientoSchema, type EntretenimientoFormData } from '@/schemas/entretenimientoSchema'
 
 import CustomTextField from '@core/components/mui/TextField'
-import ModalAddLugar from '@/views/Dashboard/actividades/add/ModalAddLugar'
+import ModalAddLugar from '@/views/Dashboard/Companies/add/ModalAddLugar'
 
 import { useEntretenimiento } from '@/hooks/useEntretenimiento'
 import { useEventoActividad } from '@/hooks/UseEventoActividad'

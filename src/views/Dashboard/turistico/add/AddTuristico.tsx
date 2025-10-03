@@ -38,7 +38,7 @@ import { Switch } from '@mui/material'
 import { turisticoSchema, type TuristicoFormData } from '@/schemas/turisticoSchema'
 
 import CustomTextField from '@core/components/mui/TextField'
-import ModalAddLugar from '@/views/Dashboard/actividades/add/ModalAddLugar'
+import ModalAddLugar from '@/views/Dashboard/Companies/add/ModalAddLugar'
 
 import { useTuristico } from '@/hooks/useTuristico'
 import { useEventoActividad } from '@/hooks/UseEventoActividad'

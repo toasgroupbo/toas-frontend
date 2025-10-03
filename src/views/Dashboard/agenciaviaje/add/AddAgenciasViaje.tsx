@@ -37,7 +37,7 @@ import { Switch } from '@mui/material'
 import { servicioSchema, type ServicioFormData } from '@/schemas/agenciasSchema'
 
 import CustomTextField from '@core/components/mui/TextField'
-import ModalAddLugar from '@/views/Dashboard/actividades/add/ModalAddLugar'
+import ModalAddLugar from '@/views/Dashboard/Companies/add/ModalAddLugar'
 
 import { useServicio } from '@/hooks/useServicio'
 import { useEventoActividad } from '@/hooks/UseEventoActividad'

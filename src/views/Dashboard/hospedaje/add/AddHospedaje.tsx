@@ -38,7 +38,7 @@ import { Switch } from '@mui/material'
 import { hospedajeSchema, type HospedajeFormData } from '@/schemas/hospedajeSchemas'
 
 import CustomTextField from '@core/components/mui/TextField'
-import ModalAddLugar from '@/views/Dashboard/actividades/add/ModalAddLugar'
+import ModalAddLugar from '@/views/Dashboard/Companies/add/ModalAddLugar'
 
 import { useHospedaje } from '@/hooks/useHospedaje'
 import { useEventoActividad } from '@/hooks/UseEventoActividad'

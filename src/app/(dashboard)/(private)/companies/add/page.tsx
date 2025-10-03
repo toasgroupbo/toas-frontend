@@ -2,24 +2,24 @@
 import Grid from '@mui/material/Grid2'
 import { Typography } from '@mui/material'
 
-import AddActividad from '@/views/Dashboard/actividades/add/AddActividad'
+import AddEmpresas from '@/views/Dashboard/Companies/add/AddEmpresas'
 
-const AddActividades = () => {
+const AddEmpresasPage = () => {
   return (
     <Grid container spacing={6}>
       <Grid size={{ xs: 12 }}>
         <Typography variant='h4' sx={{ paddingLeft: '20px' }}>
-          Actividades
+          Empresas
         </Typography>
         <Typography sx={{ paddingLeft: '20px' }}>
-          Agregar <code>actividad</code>.
+          Agregar <code>Empresas</code>.
         </Typography>
       </Grid>
       <Grid size={{ xs: 12 }}>
-        <AddActividad />
+        <AddEmpresas />
       </Grid>
     </Grid>
   )
 }
 
-export default AddActividades
+export default AddEmpresasPage

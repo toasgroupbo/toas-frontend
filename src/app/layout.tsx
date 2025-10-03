@@ -18,8 +18,8 @@ import '@assets/iconify-icons/generated-icons.css'
 import type { Locale } from '@/configs/i18n'
 
 export const metadata = {
-  title: 'Sucre Bicentenario',
-  description: 'Sucre Bicentenario - GAMS '
+  title: 'Sistema de Autobuses',
+  description: 'Sistema de gestión para empresas de transporte de pasajeros'
 }
 
 const RootLayout = async (props: ChildrenType & { params: Promise<{ lang: Locale }> }) => {
