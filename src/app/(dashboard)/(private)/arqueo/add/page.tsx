@@ -2,24 +2,24 @@
 import Grid from '@mui/material/Grid2'
 import { Typography } from '@mui/material'
 
-import ServicioTable from '@/views/Dashboard/agenciaviaje/list/ServicioTable'
+import AddAgenciaViaje from '@/views/Dashboard/arqueocaja/add/AddAgenciasViaje'
 
-const PageAgenciaViaje = () => {
+const AddAgenciaViajePage = () => {
   return (
     <Grid container spacing={6}>
       <Grid size={{ xs: 12 }}>
         <Typography variant='h4' sx={{ paddingLeft: '20px' }}>
-          Agencias de Viaje
+          Agencias de viaje
         </Typography>
         <Typography sx={{ paddingLeft: '20px' }}>
-          Lista <code>de Agencias de Viaje</code>.
+          Crear <code> Agencias de Viaje</code>.
         </Typography>
       </Grid>
       <Grid size={{ xs: 12 }}>
-        <ServicioTable />
+        <AddAgenciaViaje />
       </Grid>
     </Grid>
   )
 }
 
-export default PageAgenciaViaje
+export default AddAgenciaViajePage

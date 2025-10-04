@@ -7,12 +7,14 @@ import Typography from '@mui/material/Typography'
 import Button from '@mui/material/Button'
 import Grid from '@mui/material/Grid2'
 import Skeleton from '@mui/material/Skeleton'
+import Chip from '@mui/material/Chip'
+import Divider from '@mui/material/Divider'
 
 // Context Import
 import { useAuth } from '@/contexts/AuthContext'
 import { usePerfilNegocioActual } from '@/hooks/usePerfilesNegocio'
 
-const CongratulationsUser = () => {
+const WelcomeFleetCard = () => {
   const { user } = useAuth()
   const { data: perfilNegocio, isLoading: cargandoPerfil } = usePerfilNegocioActual()
 
@@ -43,17 +45,27 @@ const CongratulationsUser = () => {
     return null
   }
 
+  // Función para obtener el saludo según la hora
+  const getGreeting = () => {
+    const hour = new Date().getHours()
+
+    if (hour < 12) return '¡Buenos días'
+    if (hour < 19) return '¡Buenas tardes'
+
+    return '¡Buenas noches'
+  }
+
   const displayName = getDisplayName()
   const mainInfo = getMainInfo()
+  const greeting = getGreeting()
 
   return (
     <Card>
       <Grid container>
-        <Grid size={{ xs: 8 }}>
+        <Grid size={{ xs: 12, sm: 8 }}>
           <CardContent>
-            <Typography variant='h5' className='mbe-2'>
-              ¡Hola {displayName}! 👋
-              <br></br> <br></br> <br></br>
+            <Typography variant='h5' className='mbe-4'>
+              {greeting} {displayName}! 👋
             </Typography>
 
             {/* Mostrar información del perfil de negocio */}
@@ -67,23 +79,32 @@ const CongratulationsUser = () => {
                 <Typography variant='h4' color='primary.main' className='mbe-1'>
                   {mainInfo.publicador}
                 </Typography>
-                <Typography variant='h6' color='text.secondary' className='mbe-2'>
+                <Typography variant='h6' color='text.secondary' className='mbe-3'>
                   📍 {mainInfo.lugar}
                 </Typography>
               </>
             ) : (
-              <Typography variant='h4' color='primary.main' className='mbe-1'>
-                {user?.usuario || 'Usuario'}
+              <Typography variant='h4' color='primary.main' className='mbe-3'>
+                {user?.usuario || 'Terminal de Buses'}
               </Typography>
             )}
+
+            <Divider className='mbe-3' />
+
+            {/* Información adicional en tiempo real */}
+            <div className='flex flex-wrap gap-3 mbe-3'>
+              <Chip label='5 Empresas Activas' color='primary' variant='tonal' size='small' />
+
+              <Chip label='110 Buses Operando' color='info' variant='tonal' size='small' />
+            </div>
           </CardContent>
         </Grid>
-        <Grid size={{ xs: 4 }}>
-          <div className='relative bs-full is-full'>
+        <Grid size={{ xs: 12, sm: 4 }}>
+          <div className='relative bs-full is-full flex items-center justify-center'>
             <img
               alt={`Bienvenido ${displayName}`}
-              src='/images/illustrations/characters/bienvenida.png'
-              className='max-bs-[150px] absolute block-end-0 inline-end-6 max-is-full'
+              src='/images/illustrations/characters/flota1.png'
+              className='max-bs-[180px] max-sm:max-bs-[120px] block-end-0 max-is-full'
             />
           </div>
         </Grid>
@@ -92,4 +113,4 @@ const CongratulationsUser = () => {
   )
 }
 
-export default CongratulationsUser
+export default WelcomeFleetCard

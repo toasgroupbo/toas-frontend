@@ -1,7 +1,7 @@
 import Grid from '@mui/material/Grid2'
 import { Typography } from '@mui/material'
 
-import AddAgenciaViaje from '@/views/Dashboard/agenciaviaje/add/AddAgenciasViaje'
+import AddAgenciaViaje from '@/views/Dashboard/arqueocaja/add/AddAgenciasViaje'
 
 interface EditAgenciaViajePageProps {
   params: Promise<{

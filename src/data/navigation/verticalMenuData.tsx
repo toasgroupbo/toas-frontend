@@ -36,7 +36,7 @@ const verticalMenuData = (): VerticalMenuDataType[] => [
       {
         label: 'Cajeros',
         icon: 'tabler-users',
-        href: '/cash-register/cashiers'
+        href: '/arqueo/list'
       },
       {
         label: 'Salidas',

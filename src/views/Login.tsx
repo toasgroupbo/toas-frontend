@@ -103,7 +103,7 @@ const LoginV1 = ({}: { mode: SystemMode }) => {
             <CardContent className='sm:!p-12'>
               <Link href={'/'} className='flex justify-center mbe-6'>
                 <Image
-                  src='/images/illustrations/auth/logoipsum.png'
+                  src='/images/illustrations/characters/flota3.png'
                   alt='Logo'
                   width={300}
                   height={300}
