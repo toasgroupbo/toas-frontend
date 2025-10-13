@@ -268,7 +268,6 @@ const FormularioBus: React.FC<Props> = ({ busId }) => {
       row.map((cell, cIdx) => {
         if (rIdx === rowIndex && cIdx === colIndex) {
           if (selectedTool === 'seat') {
-            // Crear asiento con el precio global configurado
             const seatCount = layout.flat().filter(c => c.type === 'seat').length + 1
 
             return {

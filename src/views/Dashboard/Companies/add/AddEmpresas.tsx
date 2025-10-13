@@ -22,10 +22,8 @@ import InputAdornment from '@mui/material/InputAdornment'
 
 import CustomTextField from '@core/components/mui/TextField'
 
-// Schema de validación
 const empresaSchema = z
   .object({
-    // Datos de la empresa
     logo: z.string().optional(),
     nombreComercial: z.string().min(3, 'El nombre comercial debe tener al menos 3 caracteres'),
     nombreBanco: z.string().min(1, 'Seleccione un banco'),
@@ -34,11 +32,9 @@ const empresaSchema = z
     comision: z.string().min(1, 'Ingrese la comisión'),
     horasCancelar: z.string().min(1, 'Ingrese las horas para cancelar'),
 
-    // Datos del representante
     nombreRepresentante: z.string().min(5, 'Ingrese nombre y apellido completos'),
     nroCelular: z.string().min(8, 'El número de celular debe tener al menos 8 dígitos'),
 
-    // Datos de la cuenta
     usuario: z.string().min(5, 'El usuario debe tener al menos 5 caracteres'),
     contrasena: z.string().min(6, 'La contraseña debe tener al menos 6 caracteres'),
     repetirContrasena: z.string()
@@ -86,11 +82,8 @@ const FormularioEmpresa: React.FC<Props> = ({ empresaId }) => {
     }
   })
 
-  // Simular carga de datos si es edición
   useEffect(() => {
     if (empresaId) {
-      // Aquí cargarías los datos de la empresa desde tu API
-      // Por ahora uso datos de ejemplo
       setValue('nombreComercial', 'TRANS SAIPINA')
       setValue('nombreBanco', 'BANCO UNION')
       setValue('nroCuenta', '1000000652145')
@@ -133,9 +126,6 @@ const FormularioEmpresa: React.FC<Props> = ({ empresaId }) => {
 
     try {
       console.log('Datos a guardar:', data)
-
-      // Aquí iría tu llamada a la API
-      // await crearEmpresa(data)
 
       setTimeout(() => {
         alert(empresaId ? 'Empresa actualizada correctamente' : 'Empresa creada correctamente')
