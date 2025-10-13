@@ -50,6 +50,15 @@ const verticalMenuData = (): VerticalMenuDataType[] => [
       }
     ]
   },
+  {
+    isSection: true,
+    label: 'MÓDULO TRANSPORTE'
+  },
+  {
+    label: 'Gestión de Buses',
+    icon: 'tabler-bus',
+    href: '/buses/list'
+  },
 
   // MÓDULO REPORTES
   {
