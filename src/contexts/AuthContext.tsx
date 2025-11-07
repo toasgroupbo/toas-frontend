@@ -4,17 +4,8 @@ import React, { createContext, useContext, useState, useEffect, useCallback, use
 
 import { useRouter } from 'next/navigation'
 
-import { OPCIONES_ROLES, type OpcionRol } from '@/types/api/usuarios'
 import type { ChildrenType } from '@core/types'
-
-interface User {
-  id: number
-  usuario: string
-  correo: string
-  estado: boolean
-  roles: string
-  perfil_negocio_id: number
-}
+import type { User, Permission } from '@/types/api/auth'
 
 interface AuthContextType {
   user: User | null
@@ -24,16 +15,19 @@ interface AuthContextType {
   isAuthenticated: boolean
   isLoading: boolean
   hasRole: (role: string) => boolean
-  getRolesDisponibles: () => OpcionRol[]
+  hasPermission: (resource: string, permission: string) => boolean
   userRole: string
+  isSuperAdmin: boolean
+  isCompanyAdmin: boolean
+  isCashier: boolean
+  isCustomRole: boolean
+  hasCompany: boolean
 }
 
 const TOKEN_KEY = 'auth_token'
 const USER_KEY = 'auth_user'
 const TOKEN_EXPIRY_KEY = 'auth_token_expiry'
 
-// ==================== CÓDIGO ORIGINAL ====================
-/*
 const isTokenExpired = (expiryTime: string): boolean => {
   return Date.now() > parseInt(expiryTime)
 }
@@ -42,31 +36,11 @@ const decodeTokenExpiry = (token: string): number => {
   try {
     const payload = JSON.parse(atob(token.split('.')[1]))
 
-    return payload.exp * 1000
+    
+return payload.exp * 1000
   } catch {
-    return Date.now()
+    return Date.now() + 24 * 60 * 60 * 1000
   }
-}
-*/
-
-// ==================== VERSIÓN ESTÁTICA TEMPORAL ====================
-
-const isTokenExpired = (expiryTime: string): boolean => {
-  return false
-}
-
-const decodeTokenExpiry = (token: string): number => {
-  return Date.now() + 24 * 60 * 60 * 1000
-
-  // Código original (comentado para cuando haya backend real):
-  /*
-  try {
-    const payload = JSON.parse(atob(token.split('.')[1]))
-    return payload.exp * 1000
-  } catch {
-    return Date.now()
-  }
-  */
 }
 
 const clearAuthData = () => {
@@ -105,8 +79,8 @@ export const AuthProvider = ({ children }: ChildrenType) => {
           if (isTokenExpired(savedExpiry)) {
             clearAuthData()
             setIsLoading(false)
-
-            return
+            
+return
           }
 
           setToken(savedToken)
@@ -151,20 +125,20 @@ export const AuthProvider = ({ children }: ChildrenType) => {
         localStorage.setItem(USER_KEY, JSON.stringify(userData))
         localStorage.setItem(TOKEN_EXPIRY_KEY, expiryTime.toString())
 
-        switch (userData.roles) {
-          case 'SUPERADMIN':
-            router.push('/dashboard')
+        const roleName = userData.rol.name
+
+        switch (roleName) {
+          case 'SUPER_ADMIN':
+            router.push('/home')
             break
-          case 'ADMIN_APLICACION':
-            router.push('/dashboard')
-          case 'ADMIN_EMPRESA':
-            router.push('/dashboard')
+          case 'COMPANY_ADMIN':
+            router.push('/empresa/home')
             break
-          case 'CAJERO':
-            router.push('/dashboard')
+          case 'CASHIER':
+            router.push('/ventas/caja')
             break
           default:
-            router.push('/dashboard')
+            router.push('/home')
         }
       } catch (error) {
         console.error('Error during login:', error)
@@ -181,48 +155,29 @@ export const AuthProvider = ({ children }: ChildrenType) => {
   }, [router])
 
   const hasRole = (role: string): boolean => {
-    return user?.roles === role || false
+    return user?.rol.name === role
   }
 
-  const userRole = user?.roles || ''
+  const hasPermission = (resource: string, permission: string): boolean => {
+    if (!user) return false
+    
+    if (user.rol.name === 'SUPER_ADMIN') return true
+    
+    const userPermissions = user.rol.permissions || []
+    
+    return userPermissions.some(perm => 
+      perm.resourse === resource && 
+      perm.permissions.includes(permission)
+    )
+  }
+
+  const userRole = user?.rol.name || ''
   const isAuthenticated = !!user && !!token
-
-  const getRolesDisponibles = (): OpcionRol[] => {
-    const userRole = user?.roles
-
-    if (!userRole) return []
-
-    switch (userRole) {
-      case 'SUPERADMIN':
-        return OPCIONES_ROLES
-      case 'ADMIN_APLICACION':
-        return OPCIONES_ROLES.filter(rol => ['ADMIN_EMPRESA', 'CAJERO'].includes(rol.value))
-      case 'ADMIN_EMPRESA':
-        return OPCIONES_ROLES.filter(rol => ['CAJERO'].includes(rol.value))
-      case 'CAJERO':
-        return []
-      default:
-        return []
-    }
-
-    // Código original :
-    /*
-    switch (userRole) {
-      case 'Super_Admin':
-        return OPCIONES_ROLES
-      case 'Admin':
-        return OPCIONES_ROLES.filter(rol => ['Operador', 'Admin_Negocio', 'Operador_Negocio'].includes(rol.value))
-      case 'Operador':
-        return OPCIONES_ROLES.filter(rol => ['Admin_Negocio', 'Operador_Negocio'].includes(rol.value))
-      case 'Admin_Negocio':
-        return OPCIONES_ROLES.filter(rol => ['Operador_Negocio'].includes(rol.value))
-      case 'Operador_Negocio':
-        return []
-      default:
-        return []
-    }
-    */
-  }
+  const isSuperAdmin = userRole === 'SUPER_ADMIN'
+  const isCompanyAdmin = userRole === 'COMPANY_ADMIN'
+  const isCashier = userRole === 'CASHIER'
+  const isCustomRole = user?.rol.isStatic === false
+  const hasCompany = !!user?.companyId
 
   const value = useMemo(
     () => ({
@@ -233,77 +188,16 @@ export const AuthProvider = ({ children }: ChildrenType) => {
       isAuthenticated,
       isLoading,
       hasRole,
+      hasPermission,
       userRole,
-      getRolesDisponibles
+      isSuperAdmin,
+      isCompanyAdmin,
+      isCashier,
+      isCustomRole,
+      hasCompany
     }),
-    [user, token, login, logout, isAuthenticated, isLoading, userRole]
+    [user, token, login, logout, isAuthenticated, isLoading, userRole, isSuperAdmin, isCompanyAdmin, isCashier, isCustomRole, hasCompany]
   )
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
-}
-
-// ==================== FETCH AUTENTICADO ====================
-export const useAuthenticatedFetch = () => {
-  const { token, logout } = useAuth()
-
-  return useCallback(
-    async (url: string, options: RequestInit = {}) => {
-      if (!token) {
-        throw new Error('No authentication token')
-      }
-
-      const savedExpiry = localStorage.getItem(TOKEN_EXPIRY_KEY)
-
-      if (savedExpiry && isTokenExpired(savedExpiry)) {
-        logout()
-        throw new Error('Token expired')
-      }
-
-      try {
-        // ==================== VERSIÓN ESTÁTICA ====================
-
-        console.warn(' useAuthenticatedFetch en MODO ESTÁTICO - no hace llamadas reales')
-
-        // Simular delay de red
-        await new Promise(resolve => setTimeout(resolve, 300))
-
-        // Retornar respuesta mock exitosa
-        return new Response(
-          JSON.stringify({
-            error: false,
-            statusCode: 200,
-            message: 'Operación exitosa (modo estático)',
-            data: {}
-          }),
-          {
-            status: 200,
-            headers: { 'Content-Type': 'application/json' }
-          }
-        )
-
-        // Código original (comentado para cuando haya backend):
-        /*
-        const response = await fetch(url, {
-          ...options,
-          headers: {
-            ...options.headers,
-            Authorization: `Bearer ${token}`,
-            'Content-Type': 'application/json'
-          }
-        })
-
-        if (response.status === 401) {
-          logout()
-          throw new Error('Authentication failed')
-        }
-
-        return response
-        */
-      } catch (error) {
-        console.error('Authenticated fetch failed:', error)
-        throw error
-      }
-    },
-    [token, logout]
-  )
 }

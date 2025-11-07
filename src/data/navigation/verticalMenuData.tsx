@@ -116,7 +116,7 @@ const verticalMenuData = (): VerticalMenuDataType[] => [
   {
     label: 'Roles y Permisos',
     icon: 'tabler-shield-lock',
-    href: '/roles'
+    href: '/roles/list'
   }
 ]
 

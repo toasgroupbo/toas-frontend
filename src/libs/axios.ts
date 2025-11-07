@@ -1,7 +1,7 @@
 import axios from 'axios'
 
 export const api = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_API_URL,
+  baseURL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000',
   headers: {
     'Content-Type': 'application/json'
   },
@@ -24,28 +24,14 @@ api.interceptors.request.use(
 )
 
 api.interceptors.response.use(
-  response => {
-    if (response.data && (response.data.error === true || response.data.statusCode >= 400)) {
-      const error = new Error(response.data.message || 'Error del servidor')
-
-      ;(error as any).response = {
-        status: response.data.statusCode,
-        data: response.data
-      }
-
-      return Promise.reject(error)
-    }
-
-    return response
-  },
+  response => response,
   error => {
-    if (error.response?.status === 401) {
+
+    if (error.response?.status === 401 && !window.location.pathname.includes('/login')) {
       localStorage.removeItem('auth_token')
       localStorage.removeItem('auth_user')
       window.location.href = '/login'
     }
-
-    console.error('API Error:', error)
 
     return Promise.reject(error)
   }

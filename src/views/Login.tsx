@@ -1,13 +1,8 @@
 'use client'
 
-// React Imports
-import { useState, useCallback } from 'react'
+import { useState } from 'react'
 
-// Next Imports
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
-
-// MUI Imports
 import Image from 'next/image'
 
 import { useForm, Controller } from 'react-hook-form'
@@ -23,23 +18,14 @@ import CircularProgress from '@mui/material/CircularProgress'
 import type { SystemMode } from '@core/types'
 import type { LoginRequest } from '@/types/api/auth'
 
-// Component Imports
 import CustomTextField from '@core/components/mui/TextField'
-
 import AuthIllustrationWrapper from './AuthIllustrationWrapper'
-
-// Hook Imports
 import { useLogin } from '@/hooks/useLogin'
 
-const LoginV1 = ({}: { mode: SystemMode }) => {
-  // States
+const LoginV1 = ({ mode }: { mode: SystemMode }) => {
   const [isPasswordShown, setIsPasswordShown] = useState(false)
-
-  // Hooks
-  const router = useRouter()
   const loginMutation = useLogin()
 
-  // Form setup
   const {
     control,
     handleSubmit,
@@ -47,8 +33,8 @@ const LoginV1 = ({}: { mode: SystemMode }) => {
     clearErrors
   } = useForm<LoginRequest>({
     defaultValues: {
-      correo: '',
-      contrasenia: ''
+      email: '',
+      password: ''
     }
   })
 
@@ -58,7 +44,7 @@ const LoginV1 = ({}: { mode: SystemMode }) => {
     if (error?.response?.data?.message) {
       const message = error.response.data.message.toLowerCase()
 
-      if (message.includes('email') || message.includes('correo')) {
+      if (message.includes('email') || message.includes('correo') || message.includes('not found')) {
         return 'El correo electrónico no existe o es incorrecto'
       }
 
@@ -87,17 +73,56 @@ const LoginV1 = ({}: { mode: SystemMode }) => {
   }
 
   return (
-    <>
-      <div
+    <div
+      style={{
+        display: 'flex',
+        justifyContent: 'center',
+        alignItems: 'center',
+        minHeight: '100vh',
+        width: '100%',
+        position: 'relative',
+        overflow: 'hidden'
+      }}
+    >
+      {/* Video de fondo */}
+      <video
+        autoPlay
+        loop
+        muted
+        playsInline
         style={{
-          display: 'flex',
-          justifyContent: 'center',
-          alignItems: 'center',
-          minHeight: '100vh',
-          width: '100%',
-          position: 'relative'
+          position: 'absolute',
+          top: '50%',
+          left: '50%',
+          minWidth: '100%',
+          minHeight: '100%',
+          width: 'auto',
+          height: 'auto',
+          transform: 'translate(-50%, -50%)',
+          zIndex: -1,
+          objectFit: 'cover'
         }}
       >
+        <source src="/videos/videof.mp4" type="video/mp4" />
+        {/* Agrega más formatos si es necesario para compatibilidad */}
+        <source src="/videos/background-login.webm" type="video/webm" />
+      </video>
+
+      {/* Overlay oscuro opcional para mejorar la legibilidad */}
+      <div
+        style={{
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          width: '100%',
+          height: '100%',
+       
+          zIndex: 0
+        }}
+      />
+
+      {/* Contenido del login */}
+      <div style={{ position: 'relative', zIndex: 1 }}>
         <AuthIllustrationWrapper>
           <Card className='flex flex-col sm:is-[450px]'>
             <CardContent className='sm:!p-12'>
@@ -110,27 +135,11 @@ const LoginV1 = ({}: { mode: SystemMode }) => {
                   className='h-40 w-auto'
                 />
               </Link>
+
               <div className='flex flex-col gap-1 mbe-6'>
-                <Typography variant='h4'>{`¡Bienvenido Administrador! 👋🏻`}</Typography>
+                <Typography variant='h4'>{`¡Bienvenido! 👋🏻`}</Typography>
                 <Typography>Por favor inicia sesión en tu cuenta</Typography>
               </div>
-              <Alert severity='info' sx={{ mb: 3 }}>
-                <Typography variant='body2' fontWeight={600} gutterBottom>
-                  🔐 Credenciales de prueba:
-                </Typography>
-                <Typography variant='caption' component='div' sx={{ mt: 1 }}>
-                  <strong>Super Admin:</strong> superadmin@demo.com / super123
-                </Typography>
-                <Typography variant='caption' component='div'>
-                  <strong>Admin App:</strong> adminapp@demo.com / adminapp123
-                </Typography>
-                <Typography variant='caption' component='div'>
-                  <strong>Admin Empresa:</strong> adminempresa@demo.com / empresa123
-                </Typography>
-                <Typography variant='caption' component='div'>
-                  <strong>Cajero:</strong> cajero@demo.com / cajero123
-                </Typography>
-              </Alert>
 
               {loginMutation.isError && (
                 <Alert severity='error' className='mb-4' sx={{ mb: 3 }}>
@@ -142,7 +151,7 @@ const LoginV1 = ({}: { mode: SystemMode }) => {
 
               <form noValidate autoComplete='off' onSubmit={handleSubmit(onSubmit)} className='flex flex-col gap-6'>
                 <Controller
-                  name='correo'
+                  name='email'
                   control={control}
                   rules={{
                     required: 'El email es requerido',
@@ -156,10 +165,10 @@ const LoginV1 = ({}: { mode: SystemMode }) => {
                       {...field}
                       autoFocus
                       fullWidth
-                      label='Email o Usuario'
-                      placeholder='Ingresa tu email o usuario'
-                      error={!!errors.correo}
-                      helperText={errors.correo?.message}
+                      label='Email'
+                      placeholder='Ingresa tu email'
+                      error={!!errors.email}
+                      helperText={errors.email?.message}
                       onChange={e => {
                         field.onChange(e)
 
@@ -172,7 +181,7 @@ const LoginV1 = ({}: { mode: SystemMode }) => {
                 />
 
                 <Controller
-                  name='contrasenia'
+                  name='password'
                   control={control}
                   rules={{
                     required: 'La contraseña es requerida',
@@ -188,8 +197,8 @@ const LoginV1 = ({}: { mode: SystemMode }) => {
                       label='Contraseña'
                       placeholder='············'
                       type={isPasswordShown ? 'text' : 'password'}
-                      error={!!errors.contrasenia}
-                      helperText={errors.contrasenia?.message}
+                      error={!!errors.password}
+                      helperText={errors.password?.message}
                       onChange={e => {
                         field.onChange(e)
 
@@ -230,7 +239,7 @@ const LoginV1 = ({}: { mode: SystemMode }) => {
           </Card>
         </AuthIllustrationWrapper>
       </div>
-    </>
+    </div>
   )
 }
 

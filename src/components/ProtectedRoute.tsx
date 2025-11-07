@@ -4,7 +4,6 @@ import { useEffect, useState } from 'react'
 
 import { useRouter, usePathname } from 'next/navigation'
 
-// MUI Imports
 import Box from '@mui/material/Box'
 import CircularProgress from '@mui/material/CircularProgress'
 import Typography from '@mui/material/Typography'
@@ -13,57 +12,94 @@ import Paper from '@mui/material/Paper'
 import Alert from '@mui/material/Alert'
 
 import { useAuth } from '@/contexts/AuthContext'
-
-// Tipo
 import type { ChildrenType } from '@core/types'
+import type { Permission } from '@/types/api/auth'
 
 interface ProtectedRouteProps extends ChildrenType {
   publicRoutes?: string[]
 }
 
-// ==================== CONFIGURACIÓN ORIGINAL (COMENTADA) ====================
-/*
-const ROLE_PERMISSIONS: Record<string, string[]> = {
-  Super_Admin: ['*'],
-  Admin: ['*'],
-  Operador: [
+const ROUTE_RESOURCE_MAP: Record<string, { resource: string; permission: string }> = {
+  '/empresa/buses': { resource: 'BUS', permission: 'READ' },
+  '/empresa/buses/nuevo': { resource: 'BUS', permission: 'CREATE' },
+  '/empresa/rutas': { resource: 'ROUTE', permission: 'READ' },
+  '/empresa/rutas/nuevo': { resource: 'ROUTE', permission: 'CREATE' },
+  '/empresa/viajes': { resource: 'TRAVEL', permission: 'READ' },
+  '/empresa/viajes/nuevo': { resource: 'TRAVEL', permission: 'CREATE' },
+  '/empresa/oficinas': { resource: 'OFFICE', permission: 'READ' },
+  '/empresa/oficinas/nuevo': { resource: 'OFFICE', permission: 'CREATE' },
+  '/empresa/propietarios': { resource: 'OWNER', permission: 'READ' },
+  '/empresa/propietarios/nuevo': { resource: 'OWNER', permission: 'CREATE' },
+  '/ventas/tickets': { resource: 'TICKET', permission: 'READ' },
+  '/ventas/tickets/nuevo': { resource: 'TICKET', permission: 'CREATE' },
+  '/ventas/caja': { resource: 'CASHIER', permission: 'READ' },
+  '/configuracion/roles': { resource: 'ROL', permission: 'READ' },
+  '/configuracion/roles/nuevo': { resource: 'ROL', permission: 'CREATE' },
+  '/configuracion/usuarios': { resource: 'USER', permission: 'READ' },
+  '/configuracion/usuarios/nuevo': { resource: 'USER', permission: 'CREATE' },
+  '/configuracion/empresas': { resource: 'COMPANY', permission: 'READ' },
+  '/configuracion/clientes': { resource: 'CUSTOMER', permission: 'READ' }
+}
+
+const STATIC_ROLE_PERMISSIONS: Record<string, string[]> = {
+  SUPER_ADMIN: ['*'],
+  COMPANY_ADMIN: [
     '/home',
-    '/actividades',
-    '/lugares',
-    '/turistico',
-    '/gastronomia',
-    '/entretenimiento',
-    '/hospedaje',
-    '/agenciaviaje',
-    '/servicios'
+    '/empresa',
+    '/empresa/dashboard',
+    '/empresa/buses',
+    '/empresa/conductores',
+    '/empresa/rutas',
+    '/empresa/viajes',
+    '/empresa/oficinas',
+    '/empresa/propietarios',
+    '/empresa/reportes',
+    '/empresa/configuracion'
   ],
-  Admin_Negocio: ['/actividades', '/usuarios'],
-  Operador_Negocio: ['/actividades']
-}
-*/
-
-const ROLE_PERMISSIONS: Record<string, string[]> = {
-  SUPERADMIN: ['*'],
-  ADMIN_APLICACION: ['*'],
-  ADMIN_EMPRESA: ['/home', '/companies', '/cash-register', '/reports', '/payments', '/terms', '/users'],
-  CAJERO: ['/home', '/cash-register']
+  CASHIER: [
+    '/home',
+    '/ventas',
+    '/ventas/caja',
+    '/ventas/tickets',
+    '/ventas/viajes'
+  ]
 }
 
-// Función para verificar si un rol tiene acceso a una ruta
-const hasRouteAccess = (userRole: string, pathname: string): boolean => {
-  const allowedRoutes = ROLE_PERMISSIONS[userRole]
+const hasPermissionForRoute = (
+  pathname: string, 
+  userRole: string, 
+  userPermissions: Permission[]
+): boolean => {
+  const allowedRoutes = STATIC_ROLE_PERMISSIONS[userRole]
+  
+  if (allowedRoutes) {
+    if (allowedRoutes.includes('*')) return true
+    
+return allowedRoutes.some(route => 
+      pathname === route || pathname.startsWith(route + '/')
+    )
+  }
 
-  if (!allowedRoutes) return false
+  const routeConfig = ROUTE_RESOURCE_MAP[pathname]
+  
+  if (!routeConfig) {
+    const dashboardAccess = ['/dashboard', '/home'].includes(pathname)
 
-  if (allowedRoutes.includes('*')) return true
+    
+return dashboardAccess
+  }
 
-  return allowedRoutes.some(route => pathname === route || pathname.startsWith(route + '/'))
+  const hasPermission = userPermissions.some(perm => 
+    perm.resourse === routeConfig.resource && 
+    perm.permissions.includes(routeConfig.permission)
+  )
+
+  return hasPermission
 }
 
 const ProtectedRoute = ({ children, publicRoutes = ['/login', '/'] }: ProtectedRouteProps) => {
-  const { isAuthenticated, isLoading } = useAuth()
+  const { isAuthenticated, isLoading, user, userRole, isSuperAdmin, isCompanyAdmin, hasCompany } = useAuth()
   const router = useRouter()
-  const { userRole } = useAuth()
   const pathname = usePathname()
   const [showError, setShowError] = useState(false)
   const [showRoleError, setShowRoleError] = useState(false)
@@ -71,8 +107,8 @@ const ProtectedRoute = ({ children, publicRoutes = ['/login', '/'] }: ProtectedR
   const isPublicRoute = publicRoutes.some(route => {
     if (pathname === route) return true
     if (route !== '/' && pathname.startsWith(route)) return true
-
-    return false
+    
+return false
   })
 
   useEffect(() => {
@@ -80,45 +116,41 @@ const ProtectedRoute = ({ children, publicRoutes = ['/login', '/'] }: ProtectedR
       if (!isAuthenticated && !isPublicRoute) {
         setShowError(true)
         setShowRoleError(false)
-
-        return
+        
+return
       }
 
-      // ==================== REDIRECCIÓN DESPUÉS DE LOGIN ====================
       if (isAuthenticated && pathname === '/login') {
-        switch (userRole) {
-          case 'SUPERADMIN':
-          case 'ADMIN_APLICACION':
-            router.push('/home')
-            break
-          case 'ADMIN_EMPRESA':
-            router.push('/home')
-            break
-          case 'CAJERO':
-            router.push('/home')
-            break
-          default:
-            router.push('/home')
+        if (isSuperAdmin) {
+          router.push('/home')
+        } else if (isCompanyAdmin && hasCompany) {
+          router.push('/empresa/home')
+        } else if (userRole === 'CASHIER') {
+          router.push('/ventas/caja')
+        } else {
+          router.push('/home')
         }
 
-        return
+        
+return
       }
 
       if (isAuthenticated && !isPublicRoute) {
-        if (!hasRouteAccess(userRole, pathname)) {
+        const userPermissions = user?.rol.permissions || []
+        
+        if (!hasPermissionForRoute(pathname, userRole, userPermissions)) {
           setShowRoleError(true)
           setShowError(false)
-
-          return
+          
+return
         }
       }
 
       setShowError(false)
       setShowRoleError(false)
     }
-  }, [isAuthenticated, isLoading, pathname, isPublicRoute, router, userRole])
+  }, [isAuthenticated, isLoading, pathname, isPublicRoute, router, user, userRole, isSuperAdmin, isCompanyAdmin, hasCompany])
 
-  // Loading inicial
   if (isLoading) {
     return (
       <Box display='flex' flexDirection='column' justifyContent='center' alignItems='center' minHeight='100vh' gap={2}>
@@ -182,7 +214,6 @@ const ProtectedRoute = ({ children, publicRoutes = ['/login', '/'] }: ProtectedR
     )
   }
 
-  // Componente de error de permisos insuficientes
   if (showRoleError && isAuthenticated) {
     return (
       <Box
@@ -202,8 +233,7 @@ const ProtectedRoute = ({ children, publicRoutes = ['/login', '/'] }: ProtectedR
             Permisos Insuficientes
           </Typography>
           <Typography variant='body1' color='text.secondary' sx={{ mb: 3 }}>
-            No tienes permisos suficientes para acceder a esta sección del sistema. Si consideras que se trata de un
-            error o necesitas habilitar el acceso, por favor contacta al administrador.
+            No tienes permisos suficientes para acceder a esta sección del sistema.
           </Typography>
           <Alert severity='info' sx={{ mb: 3, textAlign: 'left' }}>
             <Typography variant='body2'>
@@ -226,25 +256,20 @@ const ProtectedRoute = ({ children, publicRoutes = ['/login', '/'] }: ProtectedR
               color='secondary'
               startIcon={<i className='tabler-dashboard' />}
               onClick={() => {
-                switch (userRole) {
-                  case 'SUPERADMIN':
-                  case 'ADMIN_APLICACION':
-                  case 'ADMIN_EMPRESA':
-                    router.push('/home')
-                    break
-                  case 'CAJERO':
-                    router.push('/home')
-                    break
-                  default:
-                    router.push('/home')
+                if (isSuperAdmin) {
+                  router.push('/home')
+                } else if (isCompanyAdmin && hasCompany) {
+                  router.push('/empresa/home')
+                } else {
+                  router.push('/home')
                 }
               }}
             >
-              Ir al Panel Principal
+              Ir al Dashboard
             </Button>
           </Box>
           <Typography variant='caption' color='text.disabled' sx={{ mt: 3, display: 'block' }}>
-            Si necesitas acceso a esta función, contacta al administrador del sistema.
+            Si necesitas acceso a esta función, contacta al administrador.
           </Typography>
         </Paper>
       </Box>
