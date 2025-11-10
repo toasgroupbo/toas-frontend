@@ -16,6 +16,18 @@ api.interceptors.request.use(
       config.headers.Authorization = `Bearer ${token}`
     }
 
+    // Si es FormData, NO establecer Content-Type manualmente
+    // El navegador lo hará automáticamente con el boundary correcto
+    if (config.data instanceof FormData) {
+      // Crear nuevos headers sin Content-Type
+      const newHeaders = { ...config.headers }
+      delete newHeaders['Content-Type']
+
+      // IMPORTANTE: También deshabilitar transformRequest de Axios
+      config.headers = newHeaders as any
+      config.transformRequest = []
+    }
+
     return config
   },
   error => {

@@ -32,10 +32,11 @@ import {
 import type { ColumnDef, FilterFn } from '@tanstack/react-table'
 import type { TextFieldProps } from '@mui/material/TextField'
 
-import { useRoles, useCreateRole, useDeleteRole } from '@/hooks/useRoles'
-import type { Role, CreateRoleDto } from '@/types/api/roles'
+import { useRoles, useCreateRole, useDeleteRole, useUpdateRole } from '@/hooks/useRoles'
+import type { Role, CreateRoleDto, UpdateRoleDto } from '@/types/api/roles'
 import CreateRoleDialog from '@/views/Dashboard/roles/components/CreateRoleDialog'
 import DeleteRoleDialog from '@/views/Dashboard/roles/components/DeleteRoleDialog'
+import UpdateRoleDialog from '@/views/Dashboard/roles/components/UpdateRoleDialog'
 import { useSnackbar } from '@/contexts/SnackbarContext'
 import CustomTextField from '@core/components/mui/TextField'
 import tableStyles from '@core/styles/table.module.css'
@@ -83,6 +84,7 @@ const columnHelper = createColumnHelper<RoleWithActionsType>()
 
 const RolesPage = () => {
   const [createDialogOpen, setCreateDialogOpen] = useState(false)
+  const [updateDialogOpen, setUpdateDialogOpen] = useState(false)
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
   const [selectedRole, setSelectedRole] = useState<Role | null>(null)
   const [rowSelection, setRowSelection] = useState({})
@@ -92,6 +94,7 @@ const RolesPage = () => {
 
   const { data: roles, isLoading, error } = useRoles()
   const createMutation = useCreateRole()
+  const updateMutation = useUpdateRole()
   const deleteMutation = useDeleteRole()
   const { showSuccess, showError } = useSnackbar()
 
@@ -112,6 +115,23 @@ const RolesPage = () => {
       console.error('Error al crear rol:', error)
       showError(error?.response?.data?.message || 'Error al crear rol')
     }
+  }
+
+  const handleUpdateRole = async (id: number, data: UpdateRoleDto) => {
+    try {
+      await updateMutation.mutateAsync({ id, data })
+      setUpdateDialogOpen(false)
+      setSelectedRole(null)
+      showSuccess('Rol actualizado correctamente')
+    } catch (error: any) {
+      console.error('Error al actualizar rol:', error)
+      showError(error?.response?.data?.message || 'Error al actualizar rol')
+    }
+  }
+
+  const handleEditRole = (role: Role) => {
+    setSelectedRole(role)
+    setUpdateDialogOpen(true)
   }
 
   const handleDeleteRole = (role: Role) => {
@@ -162,18 +182,32 @@ const RolesPage = () => {
         cell: ({ row }) => (
           <div className='flex items-center gap-2'>
             {!row.original.isStatic && (
-              <Tooltip title='Eliminar'>
-                <IconButton
-                  size='small'
-                  onClick={() => handleDeleteRole(row.original)}
-                  sx={{
-                    color: 'error.main',
-                    '&:hover': { backgroundColor: 'error.light', color: 'white' }
-                  }}
-                >
-                  <i className='tabler-trash' style={{ fontSize: '18px' }} />
-                </IconButton>
-              </Tooltip>
+              <>
+                <Tooltip title='Editar'>
+                  <IconButton
+                    size='small'
+                    onClick={() => handleEditRole(row.original)}
+                    sx={{
+                      color: 'primary.main',
+                      '&:hover': { backgroundColor: 'primary.light', color: 'white' }
+                    }}
+                  >
+                    <i className='tabler-edit' style={{ fontSize: '18px' }} />
+                  </IconButton>
+                </Tooltip>
+                <Tooltip title='Eliminar'>
+                  <IconButton
+                    size='small'
+                    onClick={() => handleDeleteRole(row.original)}
+                    sx={{
+                      color: 'error.main',
+                      '&:hover': { backgroundColor: 'error.light', color: 'white' }
+                    }}
+                  >
+                    <i className='tabler-trash' style={{ fontSize: '18px' }} />
+                  </IconButton>
+                </Tooltip>
+              </>
             )}
           </div>
         ),
@@ -408,6 +442,18 @@ return (
         onClose={() => setCreateDialogOpen(false)}
         onSubmit={handleCreateRole}
         isLoading={createMutation.isPending}
+        existingRoles={roles || []}
+      />
+
+      <UpdateRoleDialog
+        open={updateDialogOpen}
+        onClose={() => {
+          setUpdateDialogOpen(false)
+          setSelectedRole(null)
+        }}
+        onSubmit={handleUpdateRole}
+        role={selectedRole}
+        isLoading={updateMutation.isPending}
         existingRoles={roles || []}
       />
 

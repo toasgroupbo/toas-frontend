@@ -2,7 +2,7 @@
 import Grid from '@mui/material/Grid2'
 import { Typography } from '@mui/material'
 
-import AddUsuario from '@/views/Dashboard/usuarios/add/AddUsuarios'
+import AddUsuario from '@/views/Dashboard/usuarios/add/AddUsuario'
 
 const AddUsuarioPage = () => {
   return (

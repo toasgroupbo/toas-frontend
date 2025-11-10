@@ -111,7 +111,7 @@ const verticalMenuData = (): VerticalMenuDataType[] => [
   {
     label: 'Usuarios',
     icon: 'tabler-users',
-    href: '/users'
+    href: '/usuarios/list'
   },
   {
     label: 'Roles y Permisos',

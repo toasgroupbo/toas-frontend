@@ -21,6 +21,11 @@ export interface CreateRoleDto {
   permissions: CreateRolePermissionDto[]
 }
 
+export interface UpdateRoleDto {
+  name?: string
+  permissions?: CreateRolePermissionDto[]
+}
+
 export type ResourceType = 
   | 'USER'
   | 'COMPANY'
