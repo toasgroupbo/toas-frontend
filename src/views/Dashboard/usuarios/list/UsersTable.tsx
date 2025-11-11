@@ -36,6 +36,7 @@ import { useUsers, useCreateUser } from '@/hooks/useUsers'
 import type { User, CreateUserDto } from '@/types/api/users'
 import CreateUserDialog from '@/views/Dashboard/usuarios/components/CreateUserDialog'
 import { useSnackbar } from '@/contexts/SnackbarContext'
+import { usePermissions } from '@/hooks/usePermissions'
 
 const getRoleDisplayName = (roleName: string): string => {
   const roleNames: Record<string, string> = {
@@ -100,6 +101,7 @@ const UsersTable = () => {
   const { data: users, isLoading, error } = useUsers()
   const createMutation = useCreateUser()
   const { showSuccess, showError } = useSnackbar()
+  const { canCreate } = usePermissions().getCRUDPermissions('USER')
 
   const [data, setData] = useState<User[]>([])
 
@@ -296,16 +298,18 @@ const UsersTable = () => {
             </Typography>
           </div>
 
-          <div className='flex max-sm:flex-col items-start sm:items-center gap-4 max-sm:is-full'>
-            <Button
-              variant='contained'
-              color='primary'
-              onClick={() => setCreateDialogOpen(true)}
-              startIcon={<i className='tabler-plus' />}
-            >
-              Nuevo Usuario
-            </Button>
-          </div>
+          {canCreate && (
+            <div className='flex max-sm:flex-col items-start sm:items-center gap-4 max-sm:is-full'>
+              <Button
+                variant='contained'
+                color='primary'
+                onClick={() => setCreateDialogOpen(true)}
+                startIcon={<i className='tabler-plus' />}
+              >
+                Nuevo Usuario
+              </Button>
+            </div>
+          )}
         </div>
 
         <div className='flex flex-wrap justify-between gap-4 px-6 pb-6'>

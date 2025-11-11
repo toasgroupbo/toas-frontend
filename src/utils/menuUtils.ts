@@ -1,82 +1,162 @@
 import type { VerticalMenuDataType } from '@/types/menuTypes'
+import type { Permission } from '@/types/api/auth'
 
-// ==================== CÓDIGO ORIGINAL  ====================
-/*
-export const filterMenuByRole = (menuItems: VerticalMenuDataType[], userRole: string): VerticalMenuDataType[] => {
+const hasPermission = (userPermissions: Permission[], resource: string, action: string): boolean => {
+  return userPermissions.some(perm => perm.resourse === resource && perm.permissions.includes(action))
+}
+
+export const filterMenuByRole = (
+  menuItems: VerticalMenuDataType[],
+  userRole: string,
+  isImpersonating: boolean = false,
+  hasCompany: boolean = false,
+  userPermissions: Permission[] = [],
+  isStaticRole: boolean = true
+): VerticalMenuDataType[] => {
   return menuItems.filter((item: any) => {
-    if (['Operador', 'Admin_Negocio', 'Operador_Negocio'].includes(userRole)) {
-      if (item.label === 'PRINCIPAL') return false
-      if (item.href === '/home') return false
+    if (item.label === 'Inicio') {
+      return true
     }
 
-    if (!['Super_Admin', 'Admin', 'Admin_Negocio'].includes(userRole)) {
-      if (item.label === 'GESTIÓN DE USUARIOS') return false
-      if (item.href === '/usuarios/list') return false
+    if (isStaticRole) {
+      if (userRole === 'SUPER_ADMIN') {
+        if (!isImpersonating && !hasCompany) {
+          const adminOnlyMenus = [
+            'MÓDULO ADMINISTRACIÓN',
+            'Empresas',
+            'Usuarios',
+            'Roles',
+            'REPORTES GLOBALES',
+            'Reporte de Depósitos',
+            'Reporte de Ventas',
+            'Reporte de Usuarios',
+            'CONFIGURACIÓN',
+            'Términos de Uso'
+          ]
+
+          return adminOnlyMenus.includes(item.label)
+        }
+
+        return true
+      }
+
+      if (userRole === 'ADMIN_APLICACION') {
+        const adminOnlyMenus = [
+          'MÓDULO ADMINISTRACIÓN',
+          'Empresas',
+          'Usuarios',
+          'Roles',
+          'REPORTES GLOBALES',
+          'Reporte de Depósitos',
+          'Reporte de Ventas',
+          'Reporte de Usuarios',
+          'CONFIGURACIÓN',
+          'Términos de Uso'
+        ]
+
+        return adminOnlyMenus.includes(item.label)
+      }
+
+      if (userRole === 'CAJERO') {
+        const cajeroMenus = ['OPERACIONES', 'Arqueo de Caja', 'Salidas']
+
+        return cajeroMenus.includes(item.label)
+      }
+
+      if (userRole === 'ADMIN_EMPRESA' || userRole === 'COMPANY_ADMIN') {
+        const empresaMenus = [
+          'GESTIÓN DE EMPRESA',
+          'Buses',
+          'Rutas',
+          'Dueños',
+          'Cajeros',
+          'OPERACIONES',
+          'Arqueo de Caja',
+          'Salidas'
+        ]
+
+        return empresaMenus.includes(item.label)
+      }
+
+      return false
     }
 
-    if (['Admin_Negocio', 'Operador_Negocio'].includes(userRole)) {
-      if (item.href === '/lugares/list') return false
-      if (item.href === '/servicios/list') return false
-      if (item.label === 'CATEGORÍAS') return false
+    if (!isStaticRole) {
+      const resourceMenuMap: Record<string, string> = {
+        COMPANY: 'Empresas',
+        USER: 'Usuarios',
+        ROL: 'Roles',
+        BUS: 'Buses',
+        ROUTE: 'Rutas',
+        OWNER: 'Dueños',
+        CASHIER: 'Cajeros',
+        TRAVEL: 'Salidas',
+        TICKET: 'Arqueo de Caja',
+        OFFICE: 'Oficinas'
+      }
 
-      const categoriasToHide = [
-        '/turistico/list',
-        '/gastronomia/list',
-        '/entretenimiento/list',
-        '/hospedaje/list',
-        '/agenciaviaje/list'
+      const sectionToResourcesMap: Record<string, string[]> = {
+        'MÓDULO ADMINISTRACIÓN': ['COMPANY', 'USER', 'ROL'],
+        'REPORTES GLOBALES': ['COMPANY', 'USER', 'TICKET', 'TRAVEL'],
+        'GESTIÓN DE EMPRESA': ['BUS', 'ROUTE', 'OWNER', 'CASHIER', 'OFFICE'],
+        OPERACIONES: ['TRAVEL', 'TICKET'],
+        CONFIGURACIÓN: ['COMPANY', 'USER', 'ROL']
+      }
+
+      const companyMenus = [
+        'GESTIÓN DE EMPRESA',
+        'Buses',
+        'Rutas',
+        'Dueños',
+        'Cajeros',
+        'OPERACIONES',
+        'Arqueo de Caja',
+        'Salidas',
+        'Oficinas'
       ]
 
-      if (categoriasToHide.includes(item.href)) return false
+      if (!hasCompany && !isImpersonating) {
+        if (companyMenus.includes(item.label)) {
+          return false
+        }
+      }
+
+      if (item.isSection) {
+        const sectionLabel = item.label
+        const resourcesInSection = sectionToResourcesMap[sectionLabel]
+
+        if (resourcesInSection) {
+          return resourcesInSection.some(resource => hasPermission(userPermissions, resource, 'READ'))
+        }
+
+        return false
+      }
+
+      for (const [resource, menuLabel] of Object.entries(resourceMenuMap)) {
+        if (item.label === menuLabel) {
+          return hasPermission(userPermissions, resource, 'READ')
+        }
+      }
+
+      if (item.label === 'Reporte de Depósitos' || item.label === 'Reporte de Ventas') {
+        return hasPermission(userPermissions, 'COMPANY', 'READ') || hasPermission(userPermissions, 'TICKET', 'READ')
+      }
+
+      if (item.label === 'Reporte de Usuarios') {
+        return hasPermission(userPermissions, 'USER', 'READ')
+      }
+
+      if (item.label === 'Términos de Uso') {
+        return (
+          hasPermission(userPermissions, 'COMPANY', 'READ') ||
+          hasPermission(userPermissions, 'USER', 'READ') ||
+          hasPermission(userPermissions, 'ROL', 'READ')
+        )
+      }
+
+      return false
     }
 
-    return true
-  })
-}
-*/
-
-export const filterMenuByRole = (menuItems: VerticalMenuDataType[], userRole: string): VerticalMenuDataType[] => {
-  return menuItems.filter((item: any) => {
-    if (userRole === 'CAJERO') {
-      if (item.label === 'MÓDULO ADMINISTRACIÓN') return false
-      if (item.label === 'MÓDULO REPORTES') return false
-      if (item.label === 'MÓDULO CONFIGURACIÓN') return false
-      if (item.label === 'MÓDULO GESTIÓN DE ACCESOS') return false
-
-      if (item.label === 'Empresas') return false
-      if (item.href === '/payments') return false
-      if (item.href === '/terms') return false
-      if (item.href === '/users') return false
-      if (item.href === '/roles') return false
-      if (item.label === 'Reportes') return false
-
-      if (item.label === 'Arqueo de Caja') return true
-
-      return true
-    }
-
-    if (userRole === 'ADMIN_EMPRESA') {
-      if (item.label === 'MÓDULO ADMINISTRACIÓN') return false
-      if (item.label === 'MÓDULO REPORTES') return false
-      if (item.label === 'MÓDULO GESTIÓN DE ACCESOS') return false
-
-      if (item.label === 'Reportes') return false
-      if (item.href === '/terms') return false
-      if (item.href === '/roles') return false
-      if (item.label === 'Empresas') return false
-      if (item.label === 'Usuarios') return false
-
-      return true
-    }
-
-    if (userRole === 'ADMIN_APLICACION') {
-      return true
-    }
-
-    if (userRole === 'SUPERADMIN') {
-      return true
-    }
-
-    return true
+    return false
   })
 }

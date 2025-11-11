@@ -11,19 +11,26 @@ export const api = axios.create({
 api.interceptors.request.use(
   config => {
     const token = localStorage.getItem('auth_token')
+    const actingAsCompany = localStorage.getItem('acting_as_company')
 
     if (token) {
       config.headers.Authorization = `Bearer ${token}`
     }
 
-    // Si es FormData, NO establecer Content-Type manualmente
-    // El navegador lo hará automáticamente con el boundary correcto
+    if (actingAsCompany) {
+      try {
+        const company = JSON.parse(actingAsCompany)
+
+        config.headers['companyUUID'] = company.id
+      } catch (error) {
+        console.error('Error parsing acting_as_company:', error)
+      }
+    }
+
     if (config.data instanceof FormData) {
-      // Crear nuevos headers sin Content-Type
       const newHeaders = { ...config.headers }
       delete newHeaders['Content-Type']
 
-      // IMPORTANTE: También deshabilitar transformRequest de Axios
       config.headers = newHeaders as any
       config.transformRequest = []
     }
@@ -38,7 +45,6 @@ api.interceptors.request.use(
 api.interceptors.response.use(
   response => response,
   error => {
-
     if (error.response?.status === 401 && !window.location.pathname.includes('/login')) {
       localStorage.removeItem('auth_token')
       localStorage.removeItem('auth_user')

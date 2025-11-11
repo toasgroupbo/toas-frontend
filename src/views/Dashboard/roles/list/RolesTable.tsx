@@ -40,6 +40,7 @@ import UpdateRoleDialog from '@/views/Dashboard/roles/components/UpdateRoleDialo
 import { useSnackbar } from '@/contexts/SnackbarContext'
 import CustomTextField from '@core/components/mui/TextField'
 import tableStyles from '@core/styles/table.module.css'
+import { usePermissions } from '@/hooks/usePermissions'
 
 type RoleWithActionsType = Role & {
   actions?: string
@@ -97,6 +98,7 @@ const RolesPage = () => {
   const updateMutation = useUpdateRole()
   const deleteMutation = useDeleteRole()
   const { showSuccess, showError } = useSnackbar()
+  const { canCreate, canUpdate, canDelete } = usePermissions().getCRUDPermissions('ROL')
 
   const [data, setData] = useState<Role[]>([])
 
@@ -183,30 +185,34 @@ const RolesPage = () => {
           <div className='flex items-center gap-2'>
             {!row.original.isStatic && (
               <>
-                <Tooltip title='Editar'>
-                  <IconButton
-                    size='small'
-                    onClick={() => handleEditRole(row.original)}
-                    sx={{
-                      color: 'primary.main',
-                      '&:hover': { backgroundColor: 'primary.light', color: 'white' }
-                    }}
-                  >
-                    <i className='tabler-edit' style={{ fontSize: '18px' }} />
-                  </IconButton>
-                </Tooltip>
-                <Tooltip title='Eliminar'>
-                  <IconButton
-                    size='small'
-                    onClick={() => handleDeleteRole(row.original)}
-                    sx={{
-                      color: 'error.main',
-                      '&:hover': { backgroundColor: 'error.light', color: 'white' }
-                    }}
-                  >
-                    <i className='tabler-trash' style={{ fontSize: '18px' }} />
-                  </IconButton>
-                </Tooltip>
+                {canUpdate && (
+                  <Tooltip title='Editar'>
+                    <IconButton
+                      size='small'
+                      onClick={() => handleEditRole(row.original)}
+                      sx={{
+                        color: 'primary.main',
+                        '&:hover': { backgroundColor: 'primary.light', color: 'white' }
+                      }}
+                    >
+                      <i className='tabler-edit' style={{ fontSize: '18px' }} />
+                    </IconButton>
+                  </Tooltip>
+                )}
+                {canDelete && (
+                  <Tooltip title='Eliminar'>
+                    <IconButton
+                      size='small'
+                      onClick={() => handleDeleteRole(row.original)}
+                      sx={{
+                        color: 'error.main',
+                        '&:hover': { backgroundColor: 'error.light', color: 'white' }
+                      }}
+                    >
+                      <i className='tabler-trash' style={{ fontSize: '18px' }} />
+                    </IconButton>
+                  </Tooltip>
+                )}
               </>
             )}
           </div>
@@ -262,7 +268,7 @@ return (
         }
       }
     ],
-    []
+    [canUpdate, canDelete, handleEditRole, handleDeleteRole]
   )
 
   const table = useReactTable({
@@ -317,16 +323,18 @@ return (
             </Typography>
           </div>
 
-          <div className='flex max-sm:flex-col items-start sm:items-center gap-4 max-sm:is-full'>
-            <Button
-              variant='contained'
-              color='primary'
-              onClick={() => setCreateDialogOpen(true)}
-              startIcon={<i className='tabler-plus' />}
-            >
-              Crear Rol
-            </Button>
-          </div>
+          {canCreate && (
+            <div className='flex max-sm:flex-col items-start sm:items-center gap-4 max-sm:is-full'>
+              <Button
+                variant='contained'
+                color='primary'
+                onClick={() => setCreateDialogOpen(true)}
+                startIcon={<i className='tabler-plus' />}
+              >
+                Crear Rol
+              </Button>
+            </div>
+          )}
         </div>
 
         <div className='flex flex-wrap justify-between gap-4 px-6 pb-6'>

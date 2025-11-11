@@ -44,9 +44,18 @@ const VerticalMenu = ({ scrollMenu }: Props) => {
   const theme = useTheme()
   const verticalNavOptions = useVerticalNav()
 
-  //filtros para el rol
-  const { userRole } = useAuth()
-  const filteredMenuData = filterMenuByRole(verticalMenuData(), userRole)
+  const { userRole, isImpersonating, hasCompany, user } = useAuth()
+  const userPermissions = user?.rol?.permissions || []
+  const isStaticRole = user?.rol?.isStatic ?? true
+
+  const filteredMenuData = filterMenuByRole(
+    verticalMenuData(),
+    userRole,
+    isImpersonating,
+    hasCompany,
+    userPermissions,
+    isStaticRole
+  )
 
   const { isBreakpointReached, transitionDuration } = verticalNavOptions
 

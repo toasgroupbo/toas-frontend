@@ -73,7 +73,6 @@ const UpdateCompanyDialog = ({ open, onClose, onSubmit, isLoading, company }: Up
         }
       })
 
-      // Construir URL completa del logo
       const logoUrl = company.logo.startsWith('http')
         ? company.logo
         : `${process.env.NEXT_PUBLIC_API_URL}${company.logo}`

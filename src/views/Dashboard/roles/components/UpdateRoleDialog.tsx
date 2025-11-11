@@ -53,7 +53,6 @@ const UpdateRoleDialog = ({ open, onClose, onSubmit, isLoading, existingRoles = 
     if (open && role) {
       reset({ name: role.name })
 
-      // Cargar permisos existentes
       const permissions: Partial<Record<ResourceType, PermissionType[]>> = {}
 
       role.permissions.forEach(permission => {
@@ -75,7 +74,6 @@ const UpdateRoleDialog = ({ open, onClose, onSubmit, isLoading, existingRoles = 
       return 'Este nombre está reservado para roles del sistema'
     }
 
-    // Verificar duplicados excluyendo el rol actual
     const isDuplicate = existingRoles.some(
       r => r.id !== role?.id && r.name.toLowerCase() === trimmedValue.toLowerCase()
     )
@@ -100,7 +98,7 @@ const UpdateRoleDialog = ({ open, onClose, onSubmit, isLoading, existingRoles = 
 
         delete newState[resource]
 
-return newState
+        return newState
       }
 
       return {
@@ -131,15 +129,13 @@ return newState
   const isResourceSelected = (resource: ResourceType) => {
     const permissions = selectedPermissions[resource] || []
 
-
-return permissions.length === PERMISSIONS.length
+    return permissions.length === PERMISSIONS.length
   }
 
   const isResourcePartiallySelected = (resource: ResourceType) => {
     const permissions = selectedPermissions[resource] || []
 
-
-return permissions.length > 0 && permissions.length < PERMISSIONS.length
+    return permissions.length > 0 && permissions.length < PERMISSIONS.length
   }
 
   const handleFormSubmit = (data: { name: string }) => {
@@ -174,7 +170,11 @@ return permissions.length > 0 && permissions.length < PERMISSIONS.length
     onClose()
   }
 
-  const totalSelectedPermissions = Object.values(selectedPermissions).reduce((acc, perms) => acc + (perms?.length || 0), 0)
+  const totalSelectedPermissions = Object.values(selectedPermissions).reduce(
+    (acc, perms) => acc + (perms?.length || 0),
+    0
+  )
+
   const nameError = errors.name?.message
 
   return (
@@ -231,7 +231,7 @@ return permissions.length > 0 && permissions.length < PERMISSIONS.length
                           Recurso
                         </Typography>
                       </TableCell>
-                      {PERMISSIONS.map((permission) => (
+                      {PERMISSIONS.map(permission => (
                         <TableCell key={permission.value} align='center' width='100px'>
                           <Typography variant='caption' fontWeight={600}>
                             {permission.label}
@@ -241,7 +241,7 @@ return permissions.length > 0 && permissions.length < PERMISSIONS.length
                     </TableRow>
                   </TableHead>
                   <TableBody>
-                    {RESOURCES.map((resource) => (
+                    {RESOURCES.map(resource => (
                       <TableRow key={resource.value} hover>
                         <TableCell>
                           <Box display='flex' alignItems='center' gap={1}>
@@ -254,7 +254,7 @@ return permissions.length > 0 && permissions.length < PERMISSIONS.length
                             <Typography variant='body2'>{resource.label}</Typography>
                           </Box>
                         </TableCell>
-                        {PERMISSIONS.map((permission) => (
+                        {PERMISSIONS.map(permission => (
                           <TableCell key={permission.value} align='center'>
                             <Checkbox
                               checked={(selectedPermissions[resource.value] || []).includes(permission.value)}
@@ -276,11 +276,7 @@ return permissions.length > 0 && permissions.length < PERMISSIONS.length
           <Button onClick={handleClose} disabled={isLoading} color='secondary'>
             Cancelar
           </Button>
-          <Button
-            type='submit'
-            variant='contained'
-            disabled={isLoading || totalSelectedPermissions === 0}
-          >
+          <Button type='submit' variant='contained' disabled={isLoading || totalSelectedPermissions === 0}>
             {isLoading ? 'Actualizando...' : 'Actualizar Rol'}
           </Button>
         </DialogActions>

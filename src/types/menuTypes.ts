@@ -27,12 +27,22 @@ export type VerticalMenuItemDataType = Omit<
     icon?: string
     prefix?: ReactNode | ChipProps
     suffix?: ReactNode | ChipProps
+    permission?: {
+      resource: string
+      action: string
+    }
+    requiresCompany?: boolean
   }
 export type VerticalSubMenuDataType = Omit<VerticalSubMenuProps, 'children' | 'icon' | 'prefix' | 'suffix'> & {
   children: VerticalMenuDataType[]
   icon?: string
   prefix?: ReactNode | ChipProps
   suffix?: ReactNode | ChipProps
+  permission?: {
+    resource: string
+    action: string
+  }
+  requiresCompany?: boolean
 }
 export type VerticalSectionDataType = Omit<VerticalMenuSectionProps, 'children'> & {
   isSection: boolean

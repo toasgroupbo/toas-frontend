@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useState, useCallback } from 'react'
 
 import Card from '@mui/material/Card'
 import Button from '@mui/material/Button'
@@ -39,7 +39,10 @@ import type { Company, CreateCompanyDto, UpdateCompanyDto } from '@/types/api/co
 import CreateCompanyDialog from '@/views/Dashboard/Companies/components/CreateCompanyDialog'
 import UpdateCompanyDialog from '@/views/Dashboard/Companies/components/UpdateCompanyDialog'
 import DeleteCompanyDialog from '@/views/Dashboard/Companies/components/DeleteCompanyDialog'
+import ActAsCompanyDialog from '@/views/Dashboard/Companies/components/ActAsCompanyDialog'
 import { useSnackbar } from '@/contexts/SnackbarContext'
+import { useAuth } from '@/contexts/AuthContext'
+import { usePermissions } from '@/hooks/usePermissions'
 
 type CompanyWithActionsType = Company & {
   actions?: string
@@ -90,6 +93,7 @@ const EmpresaListTable = () => {
   const [createDialogOpen, setCreateDialogOpen] = useState(false)
   const [updateDialogOpen, setUpdateDialogOpen] = useState(false)
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
+  const [actAsDialogOpen, setActAsDialogOpen] = useState(false)
   const [selectedCompany, setSelectedCompany] = useState<Company | null>(null)
 
   const { data: companies, isLoading, error } = useCompanies()
@@ -97,6 +101,8 @@ const EmpresaListTable = () => {
   const updateMutation = useUpdateCompany()
   const deleteMutation = useDeleteCompany()
   const { showSuccess, showError } = useSnackbar()
+  const { canImpersonate, setActingAsCompany } = useAuth()
+  const { canCreate, canUpdate, canDelete } = usePermissions().getCRUDPermissions('COMPANY')
 
   const [data, setData] = useState<Company[]>([])
 
@@ -153,6 +159,20 @@ const EmpresaListTable = () => {
     }
   }
 
+  const handleActAsCompany = useCallback((company: Company) => {
+    setSelectedCompany(company)
+    setActAsDialogOpen(true)
+  }, [])
+
+  const handleConfirmActAs = useCallback(() => {
+    if (!selectedCompany) return
+
+    setActingAsCompany(selectedCompany)
+    setActAsDialogOpen(false)
+    setSelectedCompany(null)
+    showSuccess(`Ahora estás actuando como: ${selectedCompany.name}`)
+  }, [selectedCompany, setActingAsCompany, showSuccess])
+
   const columns = useMemo<ColumnDef<CompanyWithActionsType, any>[]>(
     () => [
       {
@@ -181,30 +201,48 @@ const EmpresaListTable = () => {
         header: 'Acciones',
         cell: ({ row }) => (
           <div className='flex items-center gap-2'>
-            <Tooltip title='Editar'>
-              <IconButton
-                size='small'
-                onClick={() => handleEditCompany(row.original)}
-                sx={{
-                  color: 'primary.main',
-                  '&:hover': { backgroundColor: 'primary.light', color: 'white' }
-                }}
-              >
-                <i className='tabler-edit' style={{ fontSize: '18px' }} />
-              </IconButton>
-            </Tooltip>
-            <Tooltip title='Eliminar'>
-              <IconButton
-                size='small'
-                onClick={() => handleDeleteCompany(row.original)}
-                sx={{
-                  color: 'error.main',
-                  '&:hover': { backgroundColor: 'error.light', color: 'white' }
-                }}
-              >
-                <i className='tabler-trash' style={{ fontSize: '18px' }} />
-              </IconButton>
-            </Tooltip>
+            {canImpersonate && (
+              <Tooltip title='Actuar como empresa'>
+                <IconButton
+                  size='small'
+                  onClick={() => handleActAsCompany(row.original)}
+                  sx={{
+                    color: 'warning.main',
+                    '&:hover': { backgroundColor: 'warning.light', color: 'white' }
+                  }}
+                >
+                  <i className='tabler-switch-horizontal' />
+                </IconButton>
+              </Tooltip>
+            )}
+            {canUpdate && (
+              <Tooltip title='Editar'>
+                <IconButton
+                  size='small'
+                  onClick={() => handleEditCompany(row.original)}
+                  sx={{
+                    color: 'primary.main',
+                    '&:hover': { backgroundColor: 'primary.light', color: 'white' }
+                  }}
+                >
+                  <i className='tabler-edit' style={{ fontSize: '18px' }} />
+                </IconButton>
+              </Tooltip>
+            )}
+            {canDelete && (
+              <Tooltip title='Eliminar'>
+                <IconButton
+                  size='small'
+                  onClick={() => handleDeleteCompany(row.original)}
+                  sx={{
+                    color: 'error.main',
+                    '&:hover': { backgroundColor: 'error.light', color: 'white' }
+                  }}
+                >
+                  <i className='tabler-trash' style={{ fontSize: '18px' }} />
+                </IconButton>
+              </Tooltip>
+            )}
           </div>
         ),
         enableSorting: false
@@ -322,7 +360,7 @@ const EmpresaListTable = () => {
         )
       }
     ],
-    []
+    [canImpersonate, canUpdate, canDelete, handleActAsCompany]
   )
 
   const table = useReactTable({
@@ -373,16 +411,18 @@ const EmpresaListTable = () => {
             </Typography>
           </div>
 
-          <div className='flex max-sm:flex-col items-start sm:items-center gap-4 max-sm:is-full'>
-            <Button
-              variant='contained'
-              color='primary'
-              onClick={() => setCreateDialogOpen(true)}
-              startIcon={<i className='tabler-plus' />}
-            >
-              Nueva Empresa
-            </Button>
-          </div>
+          {canCreate && (
+            <div className='flex max-sm:flex-col items-start sm:items-center gap-4 max-sm:is-full'>
+              <Button
+                variant='contained'
+                color='primary'
+                onClick={() => setCreateDialogOpen(true)}
+                startIcon={<i className='tabler-plus' />}
+              >
+                Nueva Empresa
+              </Button>
+            </div>
+          )}
         </div>
 
         <div className='flex flex-wrap justify-between gap-4 px-6 pb-6'>
@@ -520,6 +560,16 @@ const EmpresaListTable = () => {
         onConfirm={handleConfirmDelete}
         company={selectedCompany}
         isLoading={deleteMutation.isPending}
+      />
+
+      <ActAsCompanyDialog
+        open={actAsDialogOpen}
+        onClose={() => {
+          setActAsDialogOpen(false)
+          setSelectedCompany(null)
+        }}
+        onConfirm={handleConfirmActAs}
+        company={selectedCompany}
       />
     </Box>
   )

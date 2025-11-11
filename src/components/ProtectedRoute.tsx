@@ -20,85 +20,104 @@ interface ProtectedRouteProps extends ChildrenType {
 }
 
 const ROUTE_RESOURCE_MAP: Record<string, { resource: string; permission: string }> = {
-  '/empresa/buses': { resource: 'BUS', permission: 'READ' },
-  '/empresa/buses/nuevo': { resource: 'BUS', permission: 'CREATE' },
-  '/empresa/rutas': { resource: 'ROUTE', permission: 'READ' },
-  '/empresa/rutas/nuevo': { resource: 'ROUTE', permission: 'CREATE' },
-  '/empresa/viajes': { resource: 'TRAVEL', permission: 'READ' },
-  '/empresa/viajes/nuevo': { resource: 'TRAVEL', permission: 'CREATE' },
-  '/empresa/oficinas': { resource: 'OFFICE', permission: 'READ' },
-  '/empresa/oficinas/nuevo': { resource: 'OFFICE', permission: 'CREATE' },
-  '/empresa/propietarios': { resource: 'OWNER', permission: 'READ' },
-  '/empresa/propietarios/nuevo': { resource: 'OWNER', permission: 'CREATE' },
-  '/ventas/tickets': { resource: 'TICKET', permission: 'READ' },
-  '/ventas/tickets/nuevo': { resource: 'TICKET', permission: 'CREATE' },
-  '/ventas/caja': { resource: 'CASHIER', permission: 'READ' },
-  '/configuracion/roles': { resource: 'ROL', permission: 'READ' },
-  '/configuracion/roles/nuevo': { resource: 'ROL', permission: 'CREATE' },
-  '/configuracion/usuarios': { resource: 'USER', permission: 'READ' },
-  '/configuracion/usuarios/nuevo': { resource: 'USER', permission: 'CREATE' },
-  '/configuracion/empresas': { resource: 'COMPANY', permission: 'READ' },
-  '/configuracion/clientes': { resource: 'CUSTOMER', permission: 'READ' }
+  '/companies/list': { resource: 'COMPANY', permission: 'READ' },
+  '/usuarios/list': { resource: 'USER', permission: 'READ' },
+  '/roles/list': { resource: 'ROL', permission: 'READ' },
+
+  '/buses/list': { resource: 'BUS', permission: 'READ' },
+  '/rutas/list': { resource: 'ROUTE', permission: 'READ' },
+  '/duenos/list': { resource: 'OWNER', permission: 'READ' },
+  '/cajeros/list': { resource: 'CASHIER', permission: 'READ' },
+
+  '/arqueo/list': { resource: 'TICKET', permission: 'READ' },
+  '/salidas/list': { resource: 'TRAVEL', permission: 'READ' }
 }
+
+const COMPANY_ROUTES = ['/buses', '/rutas', '/duenos', '/cajeros', '/arqueo', '/salidas']
 
 const STATIC_ROLE_PERMISSIONS: Record<string, string[]> = {
   SUPER_ADMIN: ['*'],
-  COMPANY_ADMIN: [
-    '/home',
-    '/empresa',
-    '/empresa/dashboard',
-    '/empresa/buses',
-    '/empresa/conductores',
-    '/empresa/rutas',
-    '/empresa/viajes',
-    '/empresa/oficinas',
-    '/empresa/propietarios',
-    '/empresa/reportes',
-    '/empresa/configuracion'
-  ],
-  CASHIER: [
-    '/home',
-    '/ventas',
-    '/ventas/caja',
-    '/ventas/tickets',
-    '/ventas/viajes'
-  ]
+  ADMIN_APLICACION: ['/home', '/companies', '/usuarios', '/roles', '/reportes', '/terminos'],
+  ADMIN_EMPRESA: ['/home', '/buses', '/rutas', '/duenos', '/cajeros', '/arqueo', '/salidas'],
+  COMPANY_ADMIN: ['/home', '/buses', '/rutas', '/duenos', '/cajeros', '/arqueo', '/salidas'],
+  CAJERO: ['/home', '/arqueo', '/salidas']
 }
 
 const hasPermissionForRoute = (
-  pathname: string, 
-  userRole: string, 
-  userPermissions: Permission[]
+  pathname: string,
+  userRole: string,
+  userPermissions: Permission[],
+  hasCompany: boolean,
+  isImpersonating: boolean,
+  isStaticRole: boolean
 ): boolean => {
-  const allowedRoutes = STATIC_ROLE_PERMISSIONS[userRole]
-  
-  if (allowedRoutes) {
-    if (allowedRoutes.includes('*')) return true
-    
-return allowedRoutes.some(route => 
-      pathname === route || pathname.startsWith(route + '/')
-    )
+  if (['/dashboard', '/home'].includes(pathname)) {
+    return true
   }
 
-  const routeConfig = ROUTE_RESOURCE_MAP[pathname]
-  
-  if (!routeConfig) {
-    const dashboardAccess = ['/dashboard', '/home'].includes(pathname)
+  if (isStaticRole) {
+    if (userRole === 'SUPER_ADMIN') {
+      if (!hasCompany && !isImpersonating) {
+        const isCompanyRoute = COMPANY_ROUTES.some(route => pathname.startsWith(route))
 
-    
-return dashboardAccess
+        return !isCompanyRoute
+      }
+
+      return true
+    }
+
+    if (userRole === 'ADMIN_APLICACION') {
+      const allowedRoutes = STATIC_ROLE_PERMISSIONS.ADMIN_APLICACION
+
+      return allowedRoutes.some(route => pathname === route || pathname.startsWith(route + '/'))
+    }
+
+    if (userRole === 'CAJERO') {
+      if (!hasCompany) return false
+
+      const allowedRoutes = STATIC_ROLE_PERMISSIONS.CAJERO
+
+      return allowedRoutes.some(route => pathname === route || pathname.startsWith(route + '/'))
+    }
+
+    if (userRole === 'ADMIN_EMPRESA' || userRole === 'COMPANY_ADMIN') {
+      if (!hasCompany) return false
+
+      const allowedRoutes = STATIC_ROLE_PERMISSIONS.ADMIN_EMPRESA
+
+      return allowedRoutes.some(route => pathname === route || pathname.startsWith(route + '/'))
+    }
   }
 
-  const hasPermission = userPermissions.some(perm => 
-    perm.resourse === routeConfig.resource && 
-    perm.permissions.includes(routeConfig.permission)
-  )
+  if (!isStaticRole) {
+    const routeConfig = ROUTE_RESOURCE_MAP[pathname]
 
-  return hasPermission
+    if (routeConfig) {
+      const hasPermission = userPermissions.some(
+        perm => perm.resourse === routeConfig.resource && perm.permissions.includes(routeConfig.permission)
+      )
+
+      if (!hasPermission) return false
+
+      const isCompanyRoute = COMPANY_ROUTES.some(route => pathname.startsWith(route))
+
+      if (isCompanyRoute && !hasCompany && !isImpersonating) {
+        return false
+      }
+
+      return true
+    }
+
+    return false
+  }
+
+  return false
 }
 
 const ProtectedRoute = ({ children, publicRoutes = ['/login', '/'] }: ProtectedRouteProps) => {
-  const { isAuthenticated, isLoading, user, userRole, isSuperAdmin, isCompanyAdmin, hasCompany } = useAuth()
+  const { isAuthenticated, isLoading, user, userRole, isSuperAdmin, isCompanyAdmin, hasCompany, isImpersonating } =
+    useAuth()
+
   const router = useRouter()
   const pathname = usePathname()
   const [showError, setShowError] = useState(false)
@@ -107,8 +126,8 @@ const ProtectedRoute = ({ children, publicRoutes = ['/login', '/'] }: ProtectedR
   const isPublicRoute = publicRoutes.some(route => {
     if (pathname === route) return true
     if (route !== '/' && pathname.startsWith(route)) return true
-    
-return false
+
+    return false
   })
 
   useEffect(() => {
@@ -116,40 +135,52 @@ return false
       if (!isAuthenticated && !isPublicRoute) {
         setShowError(true)
         setShowRoleError(false)
-        
-return
+
+        return
       }
 
       if (isAuthenticated && pathname === '/login') {
         if (isSuperAdmin) {
           router.push('/home')
         } else if (isCompanyAdmin && hasCompany) {
-          router.push('/empresa/home')
-        } else if (userRole === 'CASHIER') {
-          router.push('/ventas/caja')
+          router.push('/home')
+        } else if (userRole === 'CAJERO') {
+          router.push('/arqueo/list')
         } else {
           router.push('/home')
         }
 
-        
-return
+        return
       }
 
       if (isAuthenticated && !isPublicRoute) {
         const userPermissions = user?.rol.permissions || []
-        
-        if (!hasPermissionForRoute(pathname, userRole, userPermissions)) {
+        const isStaticRole = user?.rol?.isStatic ?? true
+
+        if (!hasPermissionForRoute(pathname, userRole, userPermissions, hasCompany, isImpersonating, isStaticRole)) {
           setShowRoleError(true)
           setShowError(false)
-          
-return
+
+          return
         }
       }
 
       setShowError(false)
       setShowRoleError(false)
     }
-  }, [isAuthenticated, isLoading, pathname, isPublicRoute, router, user, userRole, isSuperAdmin, isCompanyAdmin, hasCompany])
+  }, [
+    isAuthenticated,
+    isLoading,
+    pathname,
+    isPublicRoute,
+    router,
+    user,
+    userRole,
+    isSuperAdmin,
+    isCompanyAdmin,
+    hasCompany,
+    isImpersonating
+  ])
 
   if (isLoading) {
     return (
@@ -256,10 +287,8 @@ return
               color='secondary'
               startIcon={<i className='tabler-dashboard' />}
               onClick={() => {
-                if (isSuperAdmin) {
-                  router.push('/home')
-                } else if (isCompanyAdmin && hasCompany) {
-                  router.push('/empresa/home')
+                if (userRole === 'CAJERO') {
+                  router.push('/arqueo/list')
                 } else {
                   router.push('/home')
                 }

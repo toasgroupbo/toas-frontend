@@ -25,7 +25,6 @@ import type { ApexOptions } from 'apexcharts'
 // Styled Component Imports
 const AppReactApexCharts = dynamic(() => import('@/libs/styles/AppReactApexCharts'))
 
-// Datos estáticos de flotas
 const FLEET_DATA = {
   empresas: [
     { nombre: 'Trans Cordillera', buses: 24, rutas: 8 },
@@ -66,7 +65,6 @@ const FleetReport = () => {
   // Hooks
   const theme = useTheme()
 
-  // Calcular datos
   const empresasData = FLEET_DATA.empresas
   const busesCount = empresasData.map(emp => emp.buses)
   const rutasCount = empresasData.map(emp => emp.rutas)
@@ -75,13 +73,11 @@ const FleetReport = () => {
   const totalRutas = rutasCount.reduce((sum, count) => sum + count, 0)
   const totalEmpresas = empresasData.length
 
-  // Encontrar la empresa líder
   const empresaLider = empresasData.reduce(
     (max, current) => (current.buses > max.buses ? current : max),
     empresasData[0] || { buses: 0, nombre: '', rutas: 0 }
   )
 
-  // Datos para el gráfico de barras
   const barSeries = [
     {
       name: 'Buses',

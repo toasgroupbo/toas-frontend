@@ -2,18 +2,16 @@
 import type { VerticalMenuDataType } from '@/types/menuTypes'
 
 const verticalMenuData = (): VerticalMenuDataType[] => [
-  // PRINCIPAL
-  {
-    isSection: true,
-    label: 'PRINCIPAL'
-  },
+  //INICIO
+
   {
     label: 'Inicio',
     icon: 'tabler-home',
     href: '/home'
   },
 
-  // MÓDULO ADMINISTRACIÓN
+  //MENÚS ADMINISTRATIVOS
+
   {
     isSection: true,
     label: 'MÓDULO ADMINISTRACIÓN'
@@ -23,100 +21,98 @@ const verticalMenuData = (): VerticalMenuDataType[] => [
     icon: 'tabler-building',
     href: '/companies/list'
   },
-
-  // MÓDULO OPERACIONES
-  {
-    isSection: true,
-    label: 'MÓDULO OPERACIONES'
-  },
-  {
-    label: 'Arqueo de Caja',
-    icon: 'tabler-calculator',
-    children: [
-      {
-        label: 'Cajeros',
-        icon: 'tabler-users',
-        href: '/arqueo/list'
-      },
-      {
-        label: 'Salidas',
-        icon: 'tabler-arrow-up',
-        href: '/cash-register/expenses'
-      },
-      {
-        label: 'Ventas',
-        icon: 'tabler-shopping-cart',
-        href: '/cash-register/sales'
-      }
-    ]
-  },
-  {
-    isSection: true,
-    label: 'MÓDULO TRANSPORTE'
-  },
-  {
-    label: 'Gestión de Buses',
-    icon: 'tabler-bus',
-    href: '/buses/list'
-  },
-
-  // MÓDULO REPORTES
-  {
-    isSection: true,
-    label: 'MÓDULO REPORTES'
-  },
-  {
-    label: 'Reportes',
-    icon: 'tabler-report',
-    children: [
-      {
-        label: 'Depósitos',
-        icon: 'tabler-cash',
-        href: '/reports/deposits'
-      },
-      {
-        label: 'Ventas',
-        icon: 'tabler-chart-bar',
-        href: '/reports/sales'
-      },
-      {
-        label: 'Usuario',
-        icon: 'tabler-user-check',
-        href: '/reports/users'
-      }
-    ]
-  },
-
-  // MÓDULO CONFIGURACIÓN
-  {
-    isSection: true,
-    label: 'MÓDULO CONFIGURACIÓN'
-  },
-  {
-    label: 'Pagos de la Aplicación',
-    icon: 'tabler-credit-card',
-    href: '/payments'
-  },
-  {
-    label: 'Términos de Usuario',
-    icon: 'tabler-file-text',
-    href: '/terms'
-  },
-
-  // MÓDULO GESTIÓN DE ACCESOS
-  {
-    isSection: true,
-    label: 'MÓDULO GESTIÓN DE ACCESOS'
-  },
   {
     label: 'Usuarios',
     icon: 'tabler-users',
     href: '/usuarios/list'
   },
   {
-    label: 'Roles y Permisos',
-    icon: 'tabler-shield-lock',
+    label: 'Roles',
+    icon: 'tabler-shield',
     href: '/roles/list'
+  },
+
+  //REPORTES GLOBALES
+
+  {
+    isSection: true,
+    label: 'REPORTES GLOBALES'
+  },
+  {
+    label: 'Reporte de Depósitos',
+    icon: 'tabler-report-money',
+    href: '/reportes/depositos'
+  },
+  {
+    label: 'Reporte de Ventas',
+    icon: 'tabler-chart-line',
+    href: '/reportes/ventas'
+  },
+  {
+    label: 'Reporte de Usuarios',
+    icon: 'tabler-users-group',
+    href: '/reportes/usuarios'
+  },
+
+  //  GESTIÓN DE EMPRESA
+
+  {
+    isSection: true,
+    label: 'GESTIÓN DE EMPRESA'
+  },
+  {
+    label: 'Buses',
+    icon: 'tabler-bus',
+    href: '/buses/list'
+  },
+  {
+    label: 'Rutas',
+    icon: 'tabler-route',
+    href: '/rutas/list',
+
+    permission: {
+      resource: 'rutas',
+      action: 'read'
+    }
+  },
+  {
+    label: 'Dueños',
+    icon: 'tabler-user-star',
+    href: '/duenos/list'
+  },
+  {
+    label: 'Cajeros',
+    icon: 'tabler-cash',
+    href: '/cajeros/list'
+  },
+
+  //OPERACIONES
+
+  {
+    isSection: true,
+    label: 'OPERACIONES'
+  },
+  {
+    label: 'Arqueo de Caja',
+    icon: 'tabler-calculator',
+    href: '/arqueo/list'
+  },
+  {
+    label: 'Salidas',
+    icon: 'tabler-clock-up',
+    href: '/salidas/list'
+  },
+
+  //  CONFIGURACIÓN
+
+  {
+    isSection: true,
+    label: 'CONFIGURACIÓN'
+  },
+  {
+    label: 'Términos de Uso',
+    icon: 'tabler-file-text',
+    href: '/terminos'
   }
 ]
 

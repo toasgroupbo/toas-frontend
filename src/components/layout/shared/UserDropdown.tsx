@@ -79,6 +79,9 @@ const UserDropdown = () => {
       .slice(0, 2)
   }
 
+  const displayName = user?.fullName || 'Usuario'
+  const displayEmail = user?.email || 'email@ejemplo.com'
+
   return (
     <>
       <Badge
@@ -90,12 +93,12 @@ const UserDropdown = () => {
       >
         <Avatar
           ref={anchorRef}
-          alt={user?.usuario || 'Usuario'}
+          alt={displayName}
           src='/images/avatars/1.png'
           onClick={handleDropdownOpen}
           className='cursor-pointer bs-[38px] is-[38px]'
         >
-          {!user?.usuario ? '?' : getInitials(user.usuario)}
+          {getInitials(displayName)}
         </Avatar>
       </Badge>
       <Popper
@@ -117,17 +120,48 @@ const UserDropdown = () => {
               <ClickAwayListener onClickAway={e => handleDropdownClose(e as MouseEvent | TouchEvent)}>
                 <MenuList>
                   <div className='flex items-center plb-2 pli-6 gap-2' tabIndex={-1}>
-                    <Avatar alt={user?.usuario || 'Usuario'} src='/images/avatars/1.png'>
-                      {user?.usuario ? getInitials(user.usuario) : '?'}
+                    <Avatar alt={displayName} src='/images/avatars/1.png'>
+                      {getInitials(displayName)}
                     </Avatar>
                     <div className='flex items-start flex-col'>
                       <Typography className='font-medium' color='text.primary'>
-                        {user?.usuario || 'Usuario'}
+                        {displayName}
                       </Typography>
-                      <Typography variant='caption'>{user?.correo || 'email@ejemplo.com'}</Typography>
+                      <Typography variant='caption' color='text.secondary'>
+                        {user?.rol?.name ? user.rol.name.replace('_', ' ') : 'Sin rol'}
+                      </Typography>
                     </div>
                   </div>
                   <Divider className='mlb-1' />
+
+                  {/* Información del usuario */}
+                  <div className='pli-6 plb-2'>
+                    <div className='flex items-center gap-2 mb-2'>
+                      <i className='tabler-mail text-textSecondary' style={{ fontSize: '18px' }} />
+                      <Typography variant='body2' color='text.secondary'>
+                        {displayEmail}
+                      </Typography>
+                    </div>
+                    {user?.ci && (
+                      <div className='flex items-center gap-2 mb-2'>
+                        <i className='tabler-id text-textSecondary' style={{ fontSize: '18px' }} />
+                        <Typography variant='body2' color='text.secondary'>
+                          CI: {user.ci}
+                        </Typography>
+                      </div>
+                    )}
+                    {user?.companyId && (
+                      <div className='flex items-center gap-2'>
+                        <i className='tabler-building text-textSecondary' style={{ fontSize: '18px' }} />
+                        <Typography variant='body2' color='text.secondary'>
+                          {user.company?.name || 'Empresa'}
+                        </Typography>
+                      </div>
+                    )}
+                  </div>
+
+                  <Divider className='mlb-1' />
+
                   <MenuItem className='mli-2 gap-3' onClick={e => handleDropdownClose(e)}>
                     <i className='tabler-user' />
                     <Typography color='text.primary'>Mi Perfil</Typography>

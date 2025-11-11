@@ -23,7 +23,6 @@ type DataType = {
 }
 
 const FleetStatisticsCard = () => {
-  // Datos estáticos para el sistema de flotas
   const data: DataType[] = [
     {
       stats: '5',
@@ -62,7 +61,6 @@ const FleetStatisticsCard = () => {
     }
   ]
 
-  // Calcular total de buses
   const totalBuses = 110
   const isLoadingAny = data.some(item => item.isLoading)
 
