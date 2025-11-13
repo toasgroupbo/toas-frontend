@@ -27,6 +27,10 @@ const deleteUser = async (id: string): Promise<void> => {
   await api.delete(`/api/users/${id}`)
 }
 
+const changePassword = async ({ id, password }: { id: string; password: string }): Promise<void> => {
+  await api.put(`/api/users/${id}`, { password })
+}
+
 export const useUsers = () => {
   return useQuery({
     queryKey: ['users'],
@@ -61,6 +65,17 @@ export const useDeleteUser = () => {
 
   return useMutation({
     mutationFn: deleteUser,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['users'] })
+    }
+  })
+}
+
+export const useChangePassword = () => {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: changePassword,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['users'] })
     }

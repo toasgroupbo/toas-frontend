@@ -7,7 +7,7 @@ import { useRouter } from 'next/navigation'
 import CreateUserDialog from '@/views/Dashboard/usuarios/components/CreateUserDialog'
 import { useCreateUser } from '@/hooks/useUsers'
 import { useSnackbar } from '@/contexts/SnackbarContext'
-import type { CreateUserDto } from '@/types/api/users'
+import type { CreateUserDto, UpdateUserDto } from '@/types/api/users'
 
 const AddUsuario = () => {
   const router = useRouter()
@@ -19,9 +19,9 @@ const AddUsuario = () => {
     setCreateDialogOpen(true)
   }, [])
 
-  const handleCreateUser = async (data: CreateUserDto) => {
+  const handleCreateUser = async (data: CreateUserDto | UpdateUserDto) => {
     try {
-      await createMutation.mutateAsync(data)
+      await createMutation.mutateAsync(data as CreateUserDto)
       setCreateDialogOpen(false)
       showSuccess('Usuario creado correctamente')
       router.push('/usuarios/list')

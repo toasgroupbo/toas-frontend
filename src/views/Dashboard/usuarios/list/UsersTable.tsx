@@ -12,6 +12,8 @@ import Typography from '@mui/material/Typography'
 import Box from '@mui/material/Box'
 import CircularProgress from '@mui/material/CircularProgress'
 import Alert from '@mui/material/Alert'
+import IconButton from '@mui/material/IconButton'
+import Tooltip from '@mui/material/Tooltip'
 import type { TextFieldProps } from '@mui/material/TextField'
 import classnames from 'classnames'
 import { rankItem } from '@tanstack/match-sorter-utils'
@@ -32,9 +34,11 @@ import { Pagination } from '@mui/material'
 
 import CustomTextField from '@core/components/mui/TextField'
 import tableStyles from '@core/styles/table.module.css'
-import { useUsers, useCreateUser } from '@/hooks/useUsers'
-import type { User, CreateUserDto } from '@/types/api/users'
+import { useUsers, useCreateUser, useUpdateUser, useDeleteUser, useChangePassword } from '@/hooks/useUsers'
+import type { User, CreateUserDto, UpdateUserDto } from '@/types/api/users'
 import CreateUserDialog from '@/views/Dashboard/usuarios/components/CreateUserDialog'
+import ChangePasswordDialog from '@/views/Dashboard/usuarios/components/ChangePasswordDialog'
+import DeleteUserDialog from '@/views/Dashboard/usuarios/components/DeleteUserDialog'
 import { useSnackbar } from '@/contexts/SnackbarContext'
 import { usePermissions } from '@/hooks/usePermissions'
 
@@ -97,11 +101,18 @@ const UsersTable = () => {
   const [pageSize, setPageSize] = useState(10)
   const [searchQuery, setSearchQuery] = useState('')
   const [createDialogOpen, setCreateDialogOpen] = useState(false)
+  const [editDialogOpen, setEditDialogOpen] = useState(false)
+  const [passwordDialogOpen, setPasswordDialogOpen] = useState(false)
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
+  const [selectedUser, setSelectedUser] = useState<User | null>(null)
 
   const { data: users, isLoading, error } = useUsers()
   const createMutation = useCreateUser()
+  const updateMutation = useUpdateUser()
+  const deleteMutation = useDeleteUser()
+  const changePasswordMutation = useChangePassword()
   const { showSuccess, showError } = useSnackbar()
-  const { canCreate } = usePermissions().getCRUDPermissions('USER')
+  const { canCreate, canUpdate, canDelete } = usePermissions().getCRUDPermissions('USER')
 
   const [data, setData] = useState<User[]>([])
 
@@ -111,14 +122,71 @@ const UsersTable = () => {
     }
   }, [users])
 
-  const handleCreateUser = async (data: CreateUserDto) => {
+  const handleCreateUser = async (data: CreateUserDto | UpdateUserDto) => {
     try {
-      await createMutation.mutateAsync(data)
+      await createMutation.mutateAsync(data as CreateUserDto)
       setCreateDialogOpen(false)
       showSuccess('Usuario creado correctamente')
     } catch (error: any) {
       console.error('Error al crear usuario:', error)
       showError(error?.response?.data?.message || 'Error al crear usuario')
+    }
+  }
+
+  const handleEditUser = (user: User) => {
+    setSelectedUser(user)
+    setEditDialogOpen(true)
+  }
+
+  const handleUpdateUser = async (data: CreateUserDto | UpdateUserDto) => {
+    if (!selectedUser) return
+
+    try {
+      await updateMutation.mutateAsync({ id: selectedUser.id, data: data as UpdateUserDto })
+      setEditDialogOpen(false)
+      setSelectedUser(null)
+      showSuccess('Usuario actualizado correctamente')
+    } catch (error: any) {
+      console.error('Error al actualizar usuario:', error)
+      showError(error?.response?.data?.message || 'Error al actualizar usuario')
+    }
+  }
+
+  const handleChangePassword = (user: User) => {
+    setSelectedUser(user)
+    setPasswordDialogOpen(true)
+  }
+
+  const handlePasswordSubmit = async (password: string) => {
+    if (!selectedUser) return
+
+    try {
+      await changePasswordMutation.mutateAsync({ id: selectedUser.id, password })
+      setPasswordDialogOpen(false)
+      setSelectedUser(null)
+      showSuccess('Contraseña cambiada correctamente')
+    } catch (error: any) {
+      console.error('Error al cambiar contraseña:', error)
+      showError(error?.response?.data?.message || 'Error al cambiar contraseña')
+    }
+  }
+
+  const handleDeleteUser = (user: User) => {
+    setSelectedUser(user)
+    setDeleteDialogOpen(true)
+  }
+
+  const handleDeleteConfirm = async () => {
+    if (!selectedUser) return
+
+    try {
+      await deleteMutation.mutateAsync(selectedUser.id)
+      setDeleteDialogOpen(false)
+      setSelectedUser(null)
+      showSuccess('Usuario eliminado correctamente')
+    } catch (error: any) {
+      console.error('Error al eliminar usuario:', error)
+      showError(error?.response?.data?.message || 'Error al eliminar usuario')
     }
   }
 
@@ -146,6 +214,35 @@ const UsersTable = () => {
           />
         )
       },
+      columnHelper.accessor('actions', {
+        header: 'Acciones',
+        cell: ({ row }) => (
+          <div className='flex items-center gap-1'>
+            {canUpdate && (
+              <Tooltip title='Editar'>
+                <IconButton size='small' onClick={() => handleEditUser(row.original)} color='primary'>
+                  <i className='tabler-edit' />
+                </IconButton>
+              </Tooltip>
+            )}
+            {canUpdate && (
+              <Tooltip title='Cambiar Contraseña'>
+                <IconButton size='small' onClick={() => handleChangePassword(row.original)} color='warning'>
+                  <i className='tabler-key' />
+                </IconButton>
+              </Tooltip>
+            )}
+            {canDelete && (
+              <Tooltip title='Eliminar'>
+                <IconButton size='small' onClick={() => handleDeleteUser(row.original)} color='error'>
+                  <i className='tabler-trash' />
+                </IconButton>
+              </Tooltip>
+            )}
+          </div>
+        ),
+        enableSorting: false
+      }),
       columnHelper.accessor('fullName', {
         header: 'Usuario',
         cell: ({ row }) => (
@@ -247,7 +344,7 @@ const UsersTable = () => {
           )
       })
     ],
-    []
+    [canUpdate, canDelete]
   )
 
   const table = useReactTable({
@@ -425,6 +522,41 @@ const UsersTable = () => {
         onClose={() => setCreateDialogOpen(false)}
         onSubmit={handleCreateUser}
         isLoading={createMutation.isPending}
+        mode='create'
+      />
+
+      <CreateUserDialog
+        open={editDialogOpen}
+        onClose={() => {
+          setEditDialogOpen(false)
+          setSelectedUser(null)
+        }}
+        onSubmit={handleUpdateUser}
+        isLoading={updateMutation.isPending}
+        user={selectedUser}
+        mode='edit'
+      />
+
+      <ChangePasswordDialog
+        open={passwordDialogOpen}
+        onClose={() => {
+          setPasswordDialogOpen(false)
+          setSelectedUser(null)
+        }}
+        onSubmit={handlePasswordSubmit}
+        isLoading={changePasswordMutation.isPending}
+        userName={selectedUser?.fullName}
+      />
+
+      <DeleteUserDialog
+        open={deleteDialogOpen}
+        onClose={() => {
+          setDeleteDialogOpen(false)
+          setSelectedUser(null)
+        }}
+        onConfirm={handleDeleteConfirm}
+        isLoading={deleteMutation.isPending}
+        user={selectedUser}
       />
     </Box>
   )
