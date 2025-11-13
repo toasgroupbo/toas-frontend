@@ -33,14 +33,13 @@ import type { ColumnDef, FilterFn } from '@tanstack/react-table'
 import type { TextFieldProps } from '@mui/material/TextField'
 
 import { useRoles, useCreateRole, useDeleteRole, useUpdateRole } from '@/hooks/useRoles'
-import type { Role, CreateRoleDto, UpdateRoleDto } from '@/types/api/roles'
-import CreateRoleDialog from '@/views/Dashboard/roles/components/CreateRoleDialog'
+import type { Role, CreateRoleDto } from '@/types/api/roles'
 import DeleteRoleDialog from '@/views/Dashboard/roles/components/DeleteRoleDialog'
-import UpdateRoleDialog from '@/views/Dashboard/roles/components/UpdateRoleDialog'
 import { useSnackbar } from '@/contexts/SnackbarContext'
 import CustomTextField from '@core/components/mui/TextField'
 import tableStyles from '@core/styles/table.module.css'
 import { usePermissions } from '@/hooks/usePermissions'
+import RoleDialog from '../components/RolesDialog'
 
 type RoleWithActionsType = Role & {
   actions?: string
@@ -50,8 +49,8 @@ const fuzzyFilter: FilterFn<any> = (row, columnId, value, addMeta) => {
   const itemRank = rankItem(row.getValue(columnId), value)
 
   addMeta({ itemRank })
-  
-return itemRank.passed
+
+  return itemRank.passed
 }
 
 const DebouncedInput = ({
@@ -108,26 +107,23 @@ const RolesPage = () => {
     }
   }, [roles])
 
-  const handleCreateRole = async (data: CreateRoleDto) => {
+  const handleCreateOrUpdateRole = async (roleData: CreateRoleDto, id?: number) => {
     try {
-      await createMutation.mutateAsync(data)
-      setCreateDialogOpen(false)
-      showSuccess('Rol creado correctamente')
+      if (id) {
+        // Modo edición
+        await updateMutation.mutateAsync({ id, data: roleData })
+        setUpdateDialogOpen(false)
+        setSelectedRole(null)
+        showSuccess('Rol actualizado correctamente')
+      } else {
+        // Modo creación
+        await createMutation.mutateAsync(roleData)
+        setCreateDialogOpen(false)
+        showSuccess('Rol creado correctamente')
+      }
     } catch (error: any) {
-      console.error('Error al crear rol:', error)
-      showError(error?.response?.data?.message || 'Error al crear rol')
-    }
-  }
-
-  const handleUpdateRole = async (id: number, data: UpdateRoleDto) => {
-    try {
-      await updateMutation.mutateAsync({ id, data })
-      setUpdateDialogOpen(false)
-      setSelectedRole(null)
-      showSuccess('Rol actualizado correctamente')
-    } catch (error: any) {
-      console.error('Error al actualizar rol:', error)
-      showError(error?.response?.data?.message || 'Error al actualizar rol')
+      console.error('Error al guardar rol:', error)
+      showError(error?.response?.data?.message || 'Error al guardar rol')
     }
   }
 
@@ -226,9 +222,7 @@ const RolesPage = () => {
             <Typography className='font-medium' color='text.primary'>
               {row.original.name}
             </Typography>
-            {row.original.isStatic && (
-              <Chip label='Estático' size='small' color='primary' variant='tonal' />
-            )}
+            {row.original.isStatic && <Chip label='Estático' size='small' color='primary' variant='tonal' />}
           </Box>
         )
       }),
@@ -246,8 +240,7 @@ const RolesPage = () => {
         cell: ({ row }) => {
           const total = row.original.permissions.reduce((acc, p) => acc + p.permissions.length, 0)
 
-          
-return (
+          return (
             <Box
               sx={{
                 width: 40,
@@ -268,7 +261,7 @@ return (
         }
       }
     ],
-    [canUpdate, canDelete, handleEditRole, handleDeleteRole]
+    [canUpdate, canDelete]
   )
 
   const table = useReactTable({
@@ -305,11 +298,7 @@ return (
   }
 
   if (error) {
-    return (
-      <Alert severity='error'>
-        Error al cargar los roles. Por favor, intenta nuevamente.
-      </Alert>
-    )
+    return <Alert severity='error'>Error al cargar los roles. Por favor, intenta nuevamente.</Alert>
   }
 
   return (
@@ -445,26 +434,29 @@ return (
         />
       </Card>
 
-      <CreateRoleDialog
+      {/* Diálogo para CREAR */}
+      <RoleDialog
         open={createDialogOpen}
         onClose={() => setCreateDialogOpen(false)}
-        onSubmit={handleCreateRole}
-        isLoading={createMutation.isPending}
+        onSubmit={handleCreateOrUpdateRole}
         existingRoles={roles || []}
+        isLoading={createMutation.isPending}
       />
 
-      <UpdateRoleDialog
+      {/* Diálogo para EDITAR */}
+      <RoleDialog
         open={updateDialogOpen}
         onClose={() => {
           setUpdateDialogOpen(false)
           setSelectedRole(null)
         }}
-        onSubmit={handleUpdateRole}
+        onSubmit={handleCreateOrUpdateRole}
+        existingRoles={roles || []}
         role={selectedRole}
         isLoading={updateMutation.isPending}
-        existingRoles={roles || []}
       />
 
+      {/* Diálogo para ELIMINAR */}
       <DeleteRoleDialog
         open={deleteDialogOpen}
         onClose={() => {

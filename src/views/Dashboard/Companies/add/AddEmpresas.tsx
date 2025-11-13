@@ -13,7 +13,13 @@ import Button from '@mui/material/Button'
 import Box from '@mui/material/Box'
 import CircularProgress from '@mui/material/CircularProgress'
 
-import { useCompanies, useCreateCompany, useUpdateCompany, useDeleteCompany } from '@/hooks/useCompanies'
+import {
+  useCompanies,
+  useCompanyById,
+  useCreateCompany,
+  useUpdateCompany,
+  useDeleteCompany
+} from '@/hooks/useCompanies'
 import { useSnackbar } from '@/contexts/SnackbarContext'
 import type { CreateCompanyDto, UpdateCompanyDto, Company } from '@/types/api/company'
 import CreateCompanyDialog from '../components/CreateCompanyDialog'
@@ -32,6 +38,7 @@ const FormularioEmpresa: React.FC<Props> = ({ empresaId }) => {
   const [selectedCompany, setSelectedCompany] = useState<Company | null>(null)
 
   const { data: companies, isLoading: loadingCompanies } = useCompanies()
+  const { data: companyData } = useCompanyById(empresaId)
   const createMutation = useCreateCompany()
   const updateMutation = useUpdateCompany()
   const deleteMutation = useDeleteCompany()
@@ -40,17 +47,13 @@ const FormularioEmpresa: React.FC<Props> = ({ empresaId }) => {
   const isEditMode = !!empresaId
 
   useEffect(() => {
-    if (isEditMode && companies) {
-      const company = companies.find(c => c.id === empresaId)
-
-      if (company) {
-        setSelectedCompany(company)
-        setUpdateDialogOpen(true)
-      }
+    if (isEditMode && companyData) {
+      setSelectedCompany(companyData)
+      setUpdateDialogOpen(true)
     } else if (!isEditMode) {
       setCreateDialogOpen(true)
     }
-  }, [empresaId, companies, isEditMode])
+  }, [empresaId, companyData, isEditMode])
 
   const handleCreateCompany = async (data: CreateCompanyDto) => {
     try {
@@ -64,9 +67,19 @@ const FormularioEmpresa: React.FC<Props> = ({ empresaId }) => {
     }
   }
 
-  const handleUpdateCompany = async (id: string, data: UpdateCompanyDto) => {
+  const handleUpdateCompany = async (
+    companyId: string,
+    bankAccountId: string,
+    companyData: any,
+    bankAccountData: any
+  ) => {
     try {
-      await updateMutation.mutateAsync({ id, data })
+      await updateMutation.mutateAsync({
+        companyId,
+        bankAccountId,
+        companyData,
+        bankAccountData
+      })
       setUpdateDialogOpen(false)
       showSuccess('Empresa actualizada correctamente')
       router.push('/companies/list')
@@ -97,7 +110,7 @@ const FormularioEmpresa: React.FC<Props> = ({ empresaId }) => {
     router.push('/companies/list')
   }
 
-  if (isEditMode && loadingCompanies) {
+  if (isEditMode && (loadingCompanies || !companyData)) {
     return (
       <Grid container spacing={6}>
         <Grid size={{ xs: 12 }}>
@@ -113,7 +126,7 @@ const FormularioEmpresa: React.FC<Props> = ({ empresaId }) => {
     )
   }
 
-  if (isEditMode && !selectedCompany && !loadingCompanies) {
+  if (isEditMode && !companyData && !loadingCompanies) {
     return (
       <Grid container spacing={6}>
         <Grid size={{ xs: 12 }}>

@@ -128,9 +128,21 @@ const EmpresaListTable = () => {
     setUpdateDialogOpen(true)
   }
 
-  const handleUpdateCompany = async (id: string, data: UpdateCompanyDto) => {
+  const handleUpdateCompany = async (
+    companyId: string,
+    bankAccountId: string,
+    companyData: any,
+    bankAccountData: any
+  ) => {
     try {
-      await updateMutation.mutateAsync({ id, data })
+      await updateMutation.mutateAsync({
+        companyId,
+        bankAccountId,
+        companyData,
+        bankAccountData,
+        originalBankAccount: selectedCompany?.bankAccount
+      })
+
       setUpdateDialogOpen(false)
       setSelectedCompany(null)
       showSuccess('Empresa actualizada correctamente')

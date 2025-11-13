@@ -11,17 +11,21 @@ import Typography from '@mui/material/Typography'
 import IconButton from '@mui/material/IconButton'
 import Box from '@mui/material/Box'
 import Grid from '@mui/material/Grid2'
-import MenuItem from '@mui/material/MenuItem'
+
 import InputAdornment from '@mui/material/InputAdornment'
 import Alert from '@mui/material/Alert'
 import { useForm, Controller } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 
+import { MenuItem } from '@mui/material'
+
 import CustomTextField from '@core/components/mui/TextField'
 import type { CreateCompanyDto } from '@/types/api/company'
-import { BANCOS_BOLIVIA, TIPOS_CUENTA } from '@/types/api/company'
+
 import { useUploadImage } from '@/hooks/useUploadImage'
 import { createCompanySchema, type CreateCompanyFormData } from '@/schemas/companySchemas'
+
+import { BANCOS_BOLIVIA, TIPOS_CUENTA } from '@/types/api/company'
 
 interface CreateCompanyDialogProps {
   open: boolean
@@ -189,7 +193,10 @@ const CreateCompanyDialog = ({ open, onClose, onSubmit, isLoading }: CreateCompa
                   </>
                 ) : (
                   <>
-                    <i className='tabler-upload' style={{ fontSize: '48px', color: 'var(--mui-palette-text-disabled)' }} />
+                    <i
+                      className='tabler-upload'
+                      style={{ fontSize: '48px', color: 'var(--mui-palette-text-disabled)' }}
+                    />
                     <Typography variant='body2' color='text.secondary' sx={{ mt: 1 }}>
                       Haga clic para seleccionar un logo
                     </Typography>
@@ -245,10 +252,14 @@ const CreateCompanyDialog = ({ open, onClose, onSubmit, isLoading }: CreateCompa
                 render={({ field }) => (
                   <CustomTextField
                     fullWidth
-                    type='number'
+                    type='text'
                     label='Comisión (%) *'
                     {...field}
-                    onChange={e => field.onChange(Number(e.target.value))}
+                    onChange={e => {
+                      const value = e.target.value.replace(/[^0-9.]/g, '')
+
+                      field.onChange(value === '' ? '' : Number(value))
+                    }}
                     error={!!errors.commission}
                     helperText={errors.commission?.message}
                     disabled={isLoading}
@@ -289,7 +300,6 @@ const CreateCompanyDialog = ({ open, onClose, onSubmit, isLoading }: CreateCompa
                 )}
               />
             </Grid>
-
             {/* Datos Bancarios */}
             <Grid size={12}>
               <Typography variant='h6' sx={{ mt: 2, mb: 1 }}>
@@ -297,6 +307,7 @@ const CreateCompanyDialog = ({ open, onClose, onSubmit, isLoading }: CreateCompa
               </Typography>
             </Grid>
 
+            {/* CAMBIAR A SELECT */}
             <Grid size={{ xs: 12, sm: 6 }}>
               <Controller
                 name='bankAccount.bank'
@@ -318,7 +329,6 @@ const CreateCompanyDialog = ({ open, onClose, onSubmit, isLoading }: CreateCompa
                       )
                     }}
                   >
-                    <MenuItem value=''>Seleccione un banco</MenuItem>
                     {BANCOS_BOLIVIA.map(banco => (
                       <MenuItem key={banco} value={banco}>
                         {banco}
@@ -329,6 +339,7 @@ const CreateCompanyDialog = ({ open, onClose, onSubmit, isLoading }: CreateCompa
               />
             </Grid>
 
+            {/* CAMBIAR A SELECT */}
             <Grid size={{ xs: 12, sm: 6 }}>
               <Controller
                 name='bankAccount.typeAccount'
@@ -342,6 +353,13 @@ const CreateCompanyDialog = ({ open, onClose, onSubmit, isLoading }: CreateCompa
                     error={!!errors.bankAccount?.typeAccount}
                     helperText={errors.bankAccount?.typeAccount?.message}
                     disabled={isLoading}
+                    InputProps={{
+                      startAdornment: (
+                        <InputAdornment position='start'>
+                          <i className='tabler-wallet' />
+                        </InputAdornment>
+                      )
+                    }}
                   >
                     {TIPOS_CUENTA.map(tipo => (
                       <MenuItem key={tipo.value} value={tipo.value}>
@@ -352,7 +370,6 @@ const CreateCompanyDialog = ({ open, onClose, onSubmit, isLoading }: CreateCompa
                 )}
               />
             </Grid>
-
             <Grid size={12}>
               <CustomTextField
                 fullWidth

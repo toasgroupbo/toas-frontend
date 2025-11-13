@@ -1,7 +1,7 @@
 export interface BankAccount {
   id?: string
   bank: string
-  typeAccount: 'caja_ahorro' | 'cuenta_corriente'
+  typeAccount: string
   account: string
 }
 
@@ -31,7 +31,7 @@ export interface CreateCompanyDto {
   hours_before_closing: number
   bankAccount: {
     bank: string
-    typeAccount: 'caja_ahorro' | 'cuenta_corriente'
+    typeAccount: string
     account: string
   }
   manager: {
@@ -50,7 +50,7 @@ export interface UpdateCompanyDto {
   hours_before_closing?: number
   bankAccount?: {
     bank: string
-    typeAccount: 'caja_ahorro' | 'cuenta_corriente'
+    typeAccount: string
     account: string
   }
   manager?: {
@@ -63,19 +63,25 @@ export interface UpdateCompanyDto {
 }
 
 export const BANCOS_BOLIVIA = [
-  'Banco de Crédito de Bolivia',
-  'Banco Unión',
   'Banco Nacional de Bolivia',
+  'Banco de Crédito de Bolivia',
   'Banco Mercantil Santa Cruz',
+  'Banco Unión',
   'Banco FIE',
-  'Banco Sol',
   'Banco Ganadero',
   'Banco Económico',
-  'Banco Bisa',
-  'Banco Fortaleza'
+  'Banco PRODEM',
+  'BancoSol',
+  'BancoVisión',
+  'Banco Fortaleza',
+  'Banco BISA'
 ] as const
 
 export const TIPOS_CUENTA = [
   { value: 'caja_ahorro', label: 'Caja de Ahorro' },
-  { value: 'cuenta_corriente', label: 'Cuenta Corriente' }
+  { value: 'cuenta_corriente', label: 'Cuenta Corriente' },
+  { value: 'otro', label: 'Otro' }
 ] as const
+
+export type BancoBolivia = (typeof BANCOS_BOLIVIA)[number]
+export type TipoCuenta = (typeof TIPOS_CUENTA)[number]['value']

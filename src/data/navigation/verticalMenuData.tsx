@@ -22,7 +22,7 @@ const verticalMenuData = (): VerticalMenuDataType[] => [
     href: '/companies/list'
   },
   {
-    label: 'Usuarios',
+    label: 'Administradores',
     icon: 'tabler-users',
     href: '/usuarios/list'
   },

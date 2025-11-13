@@ -24,7 +24,7 @@ export const filterMenuByRole = (
           const adminOnlyMenus = [
             'MÓDULO ADMINISTRACIÓN',
             'Empresas',
-            'Usuarios',
+            'Administradores',
             'Roles',
             'REPORTES GLOBALES',
             'Reporte de Depósitos',
@@ -44,7 +44,7 @@ export const filterMenuByRole = (
         const adminOnlyMenus = [
           'MÓDULO ADMINISTRACIÓN',
           'Empresas',
-          'Usuarios',
+          'Administradores',
           'Roles',
           'REPORTES GLOBALES',
           'Reporte de Depósitos',
@@ -84,7 +84,7 @@ export const filterMenuByRole = (
     if (!isStaticRole) {
       const resourceMenuMap: Record<string, string> = {
         COMPANY: 'Empresas',
-        USER: 'Usuarios',
+        USER: 'Administradores',
         ROL: 'Roles',
         BUS: 'Buses',
         ROUTE: 'Rutas',

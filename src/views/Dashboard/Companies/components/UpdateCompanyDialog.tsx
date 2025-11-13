@@ -11,22 +11,23 @@ import Typography from '@mui/material/Typography'
 import IconButton from '@mui/material/IconButton'
 import Box from '@mui/material/Box'
 import Grid from '@mui/material/Grid2'
-import MenuItem from '@mui/material/MenuItem'
+
 import InputAdornment from '@mui/material/InputAdornment'
-import Alert from '@mui/material/Alert'
+
 import { useForm, Controller } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
+import MenuItem from '@mui/material/MenuItem'
 
 import CustomTextField from '@core/components/mui/TextField'
-import type { UpdateCompanyDto, Company } from '@/types/api/company'
-import { BANCOS_BOLIVIA, TIPOS_CUENTA } from '@/types/api/company'
 import { useUploadImage } from '@/hooks/useUploadImage'
 import { updateCompanySchema, type UpdateCompanyFormData } from '@/schemas/companySchemas'
+
+import { BANCOS_BOLIVIA, TIPOS_CUENTA, type Company } from '@/types/api/company'
 
 interface UpdateCompanyDialogProps {
   open: boolean
   onClose: () => void
-  onSubmit: (id: string, data: UpdateCompanyDto) => void
+  onSubmit: (companyId: string, bankAccountId: string, companyData: any, bankAccountData: any) => void
   isLoading?: boolean
   company: Company | null
 }
@@ -34,6 +35,8 @@ interface UpdateCompanyDialogProps {
 const UpdateCompanyDialog = ({ open, onClose, onSubmit, isLoading, company }: UpdateCompanyDialogProps) => {
   const [logoPreview, setLogoPreview] = useState<string>('')
   const [logoFile, setLogoFile] = useState<File | null>(null)
+  const [uploadError, setUploadError] = useState<string>('')
+  const [isUploading, setIsUploading] = useState(false)
 
   const uploadImageMutation = useUploadImage()
 
@@ -79,6 +82,8 @@ const UpdateCompanyDialog = ({ open, onClose, onSubmit, isLoading, company }: Up
 
       setLogoPreview(logoUrl)
       setLogoFile(null)
+
+      setUploadError('')
     }
   }, [open, company, reset])
 
@@ -86,7 +91,21 @@ const UpdateCompanyDialog = ({ open, onClose, onSubmit, isLoading, company }: Up
     const file = event.target.files?.[0]
 
     if (file) {
+      if (!file.type.startsWith('image/')) {
+        setUploadError('Por favor seleccione una imagen válida')
+
+        return
+      }
+
+      if (file.size > 5 * 1024 * 1024) {
+        setUploadError('La imagen no debe superar los 5MB')
+
+        return
+      }
+
       setLogoFile(file)
+      setUploadError('')
+
       const reader = new FileReader()
 
       reader.onloadend = () => {
@@ -98,45 +117,97 @@ const UpdateCompanyDialog = ({ open, onClose, onSubmit, isLoading, company }: Up
   }
 
   const handleRemoveLogo = () => {
-    setLogoPreview('')
-    setLogoFile(null)
-    setValue('logo', '')
+    if (company) {
+      const logoUrl = company.logo.startsWith('http')
+        ? company.logo
+        : `${process.env.NEXT_PUBLIC_API_URL}${company.logo}`
+
+      setLogoPreview(logoUrl)
+      setLogoFile(null)
+      setValue('logo', company.logo)
+    } else {
+      setLogoPreview('')
+      setLogoFile(null)
+      setValue('logo', '')
+    }
+
+    setUploadError('')
   }
 
   const handleFormSubmit = async (data: UpdateCompanyFormData) => {
-    if (!company) return
+    if (!company) {
+      setUploadError('Error: No se encontró la información de la empresa')
+      console.error('❌ Company is null or undefined')
+
+      return
+    }
+
+    if (!company.id) {
+      setUploadError('Error: ID de empresa no disponible')
+      console.error('❌ Company ID is missing:', company)
+
+      return
+    }
+
+    if (!company.bankAccount?.id) {
+      setUploadError('Error: ID de cuenta bancaria no disponible')
+      console.error('❌ Bank account ID is missing:', company.bankAccount)
+
+      return
+    }
 
     try {
-      let logoUrl = data.logo || ''
+      setIsUploading(true)
+      setUploadError('')
+
+      let logoUrl = data.logo || company.logo
 
       if (logoFile) {
-        logoUrl = await uploadImageMutation.mutateAsync(logoFile)
-      }
+        try {
+          logoUrl = await uploadImageMutation.mutateAsync(logoFile)
+        } catch (error) {
+          console.error('❌ Error al subir imagen:', error)
+          setUploadError('Error al subir la imagen. Por favor, intente nuevamente.')
+          setIsUploading(false)
 
-      const formattedData: UpdateCompanyDto = {
-        name: data.name,
-        logo: logoUrl,
-        commission: data.commission,
-        hours_before_closing: data.hours_before_closing,
-        bankAccount: {
-          bank: data.bankAccount.bank,
-          typeAccount: data.bankAccount.typeAccount,
-          account: data.bankAccount.account
+          return
         }
       }
 
-      onSubmit(company.id, formattedData)
+      const companyData = {
+        name: data.name,
+        logo: logoUrl,
+        commission: data.commission,
+        hours_before_closing: data.hours_before_closing
+      }
+
+      const bankAccountData = {
+        bank: data.bankAccount.bank,
+        typeAccount: data.bankAccount.typeAccount,
+        account: data.bankAccount.account
+      }
+
+      await onSubmit(company.id, company.bankAccount.id, companyData, bankAccountData)
+
+      setIsUploading(false)
     } catch (error) {
-      console.error('Error al subir imagen:', error)
+      console.error('❌ Error en handleFormSubmit:', error)
+      setUploadError('Error al actualizar la empresa. Por favor, intente nuevamente.')
+      setIsUploading(false)
     }
   }
 
   const handleClose = () => {
-    reset()
-    setLogoPreview('')
-    setLogoFile(null)
-    onClose()
+    if (!isLoading && !isUploading) {
+      reset()
+      setLogoPreview('')
+      setLogoFile(null)
+      setUploadError('')
+      onClose()
+    }
   }
+
+  const isProcessing = isLoading || isUploading
 
   return (
     <Dialog open={open} onClose={handleClose} maxWidth='md' fullWidth>
@@ -148,7 +219,7 @@ const UpdateCompanyDialog = ({ open, onClose, onSubmit, isLoading, company }: Up
               Actualice la información de la empresa
             </Typography>
           </Box>
-          <IconButton onClick={handleClose} disabled={isLoading}>
+          <IconButton onClick={handleClose} disabled={isProcessing}>
             <i className='tabler-x' />
           </IconButton>
         </Box>
@@ -165,16 +236,17 @@ const UpdateCompanyDialog = ({ open, onClose, onSubmit, isLoading, company }: Up
               <Box
                 sx={{
                   border: '2px dashed',
-                  borderColor: errors.logo ? 'error.main' : 'divider',
+                  borderColor: errors.logo || uploadError ? 'error.main' : 'divider',
                   borderRadius: 2,
                   p: 3,
                   textAlign: 'center',
                   position: 'relative',
-                  minHeight: 150,
+                  minHeight: 180,
                   display: 'flex',
                   flexDirection: 'column',
                   alignItems: 'center',
-                  justifyContent: 'center'
+                  justifyContent: 'center',
+                  bgcolor: logoPreview ? 'background.paper' : 'action.hover'
                 }}
               >
                 {logoPreview ? (
@@ -185,23 +257,25 @@ const UpdateCompanyDialog = ({ open, onClose, onSubmit, isLoading, company }: Up
                       alt='Logo preview'
                       sx={{
                         maxWidth: '100%',
-                        maxHeight: 120,
-                        objectFit: 'contain'
+                        maxHeight: 150,
+                        objectFit: 'contain',
+                        mb: 1
                       }}
                     />
+                    <Typography variant='caption' color='text.secondary' sx={{ mb: 1 }}>
+                      {logoFile ? 'Nueva imagen seleccionada' : 'Imagen actual'}
+                    </Typography>
                     <IconButton
                       size='small'
                       onClick={handleRemoveLogo}
                       sx={{
-                        position: 'absolute',
-                        top: 8,
-                        right: 8,
-                        bgcolor: 'error.main',
+                        bgcolor: logoFile ? 'warning.main' : 'action.selected',
                         color: 'white',
-                        '&:hover': { bgcolor: 'error.dark' }
+                        '&:hover': { bgcolor: logoFile ? 'warning.dark' : 'action.hover' }
                       }}
+                      title={logoFile ? 'Cancelar cambio' : 'Restaurar original'}
                     >
-                      <i className='tabler-trash' style={{ fontSize: '16px' }} />
+                      <i className='tabler-x' style={{ fontSize: '16px' }} />
                     </IconButton>
                   </>
                 ) : (
@@ -211,7 +285,10 @@ const UpdateCompanyDialog = ({ open, onClose, onSubmit, isLoading, company }: Up
                       style={{ fontSize: '48px', color: 'var(--mui-palette-text-disabled)' }}
                     />
                     <Typography variant='body2' color='text.secondary' sx={{ mt: 1 }}>
-                      Haga clic para cambiar el logo
+                      Haga clic o arrastre una imagen aquí
+                    </Typography>
+                    <Typography variant='caption' color='text.disabled' sx={{ mt: 0.5 }}>
+                      PNG, JPG, GIF hasta 5MB
                     </Typography>
                   </>
                 )}
@@ -219,16 +296,21 @@ const UpdateCompanyDialog = ({ open, onClose, onSubmit, isLoading, company }: Up
                   type='file'
                   accept='image/*'
                   onChange={handleLogoChange}
+                  disabled={isProcessing}
                   style={{
                     position: 'absolute',
                     inset: 0,
                     opacity: 0,
-                    cursor: 'pointer'
+                    cursor: isProcessing ? 'not-allowed' : 'pointer'
                   }}
                 />
               </Box>
+              {uploadError && (
+                <Typography variant='caption' color='error' sx={{ mt: 1, display: 'block' }}>
+                  {uploadError}
+                </Typography>
+              )}
             </Grid>
-
             {/* Nombre */}
             <Grid size={12}>
               <CustomTextField
@@ -238,7 +320,7 @@ const UpdateCompanyDialog = ({ open, onClose, onSubmit, isLoading, company }: Up
                 {...register('name')}
                 error={!!errors.name}
                 helperText={errors.name?.message}
-                disabled={isLoading}
+                disabled={isProcessing}
                 InputProps={{
                   startAdornment: (
                     <InputAdornment position='start'>
@@ -248,7 +330,6 @@ const UpdateCompanyDialog = ({ open, onClose, onSubmit, isLoading, company }: Up
                 }}
               />
             </Grid>
-
             {/* Comisión y Horas */}
             <Grid size={{ xs: 12, sm: 6 }}>
               <Controller
@@ -257,13 +338,17 @@ const UpdateCompanyDialog = ({ open, onClose, onSubmit, isLoading, company }: Up
                 render={({ field }) => (
                   <CustomTextField
                     fullWidth
-                    type='number'
+                    type='text'
                     label='Comisión (%) *'
                     {...field}
-                    onChange={e => field.onChange(Number(e.target.value))}
+                    onChange={e => {
+                      const value = e.target.value.replace(/[^0-9.]/g, '')
+
+                      field.onChange(value === '' ? '' : Number(value))
+                    }}
                     error={!!errors.commission}
                     helperText={errors.commission?.message}
-                    disabled={isLoading}
+                    disabled={isProcessing}
                     InputProps={{
                       startAdornment: (
                         <InputAdornment position='start'>
@@ -275,7 +360,6 @@ const UpdateCompanyDialog = ({ open, onClose, onSubmit, isLoading, company }: Up
                 )}
               />
             </Grid>
-
             <Grid size={{ xs: 12, sm: 6 }}>
               <Controller
                 name='hours_before_closing'
@@ -289,7 +373,7 @@ const UpdateCompanyDialog = ({ open, onClose, onSubmit, isLoading, company }: Up
                     onChange={e => field.onChange(Number(e.target.value))}
                     error={!!errors.hours_before_closing}
                     helperText={errors.hours_before_closing?.message}
-                    disabled={isLoading}
+                    disabled={isProcessing}
                     InputProps={{
                       startAdornment: (
                         <InputAdornment position='start'>
@@ -301,14 +385,6 @@ const UpdateCompanyDialog = ({ open, onClose, onSubmit, isLoading, company }: Up
                 )}
               />
             </Grid>
-
-            {/* Datos Bancarios */}
-            <Grid size={12}>
-              <Typography variant='h6' sx={{ mt: 2, mb: 1 }}>
-                Datos Bancarios
-              </Typography>
-            </Grid>
-
             <Grid size={{ xs: 12, sm: 6 }}>
               <Controller
                 name='bankAccount.bank'
@@ -321,7 +397,7 @@ const UpdateCompanyDialog = ({ open, onClose, onSubmit, isLoading, company }: Up
                     {...field}
                     error={!!errors.bankAccount?.bank}
                     helperText={errors.bankAccount?.bank?.message}
-                    disabled={isLoading}
+                    disabled={isProcessing}
                     InputProps={{
                       startAdornment: (
                         <InputAdornment position='start'>
@@ -330,7 +406,6 @@ const UpdateCompanyDialog = ({ open, onClose, onSubmit, isLoading, company }: Up
                       )
                     }}
                   >
-                    <MenuItem value=''>Seleccione un banco</MenuItem>
                     {BANCOS_BOLIVIA.map(banco => (
                       <MenuItem key={banco} value={banco}>
                         {banco}
@@ -353,7 +428,14 @@ const UpdateCompanyDialog = ({ open, onClose, onSubmit, isLoading, company }: Up
                     {...field}
                     error={!!errors.bankAccount?.typeAccount}
                     helperText={errors.bankAccount?.typeAccount?.message}
-                    disabled={isLoading}
+                    disabled={isProcessing}
+                    InputProps={{
+                      startAdornment: (
+                        <InputAdornment position='start'>
+                          <i className='tabler-wallet' />
+                        </InputAdornment>
+                      )
+                    }}
                   >
                     {TIPOS_CUENTA.map(tipo => (
                       <MenuItem key={tipo.value} value={tipo.value}>
@@ -364,7 +446,6 @@ const UpdateCompanyDialog = ({ open, onClose, onSubmit, isLoading, company }: Up
                 )}
               />
             </Grid>
-
             <Grid size={12}>
               <CustomTextField
                 fullWidth
@@ -373,7 +454,7 @@ const UpdateCompanyDialog = ({ open, onClose, onSubmit, isLoading, company }: Up
                 {...register('bankAccount.account')}
                 error={!!errors.bankAccount?.account}
                 helperText={errors.bankAccount?.account?.message}
-                disabled={isLoading}
+                disabled={isProcessing}
                 InputProps={{
                   startAdornment: (
                     <InputAdornment position='start'>
@@ -383,12 +464,6 @@ const UpdateCompanyDialog = ({ open, onClose, onSubmit, isLoading, company }: Up
                 }}
               />
             </Grid>
-
-            {uploadImageMutation.isError && (
-              <Grid size={12}>
-                <Alert severity='error'>Error al subir la imagen. Por favor, intente nuevamente.</Alert>
-              </Grid>
-            )}
           </Grid>
         </DialogContent>
 
@@ -397,16 +472,20 @@ const UpdateCompanyDialog = ({ open, onClose, onSubmit, isLoading, company }: Up
             Cancelar
           </Button>
           <Button
-            type='submit'
+            onClick={handleSubmit(handleFormSubmit)}
             variant='contained'
-            disabled={isLoading || uploadImageMutation.isPending}
-            startIcon={uploadImageMutation.isPending ? <i className='tabler-loader' /> : <i className='tabler-check' />}
+            disabled={isProcessing}
+            startIcon={
+              isUploading ? (
+                <i className='tabler-loader' />
+              ) : isLoading ? (
+                <i className='tabler-loader' />
+              ) : (
+                <i className='tabler-check' />
+              )
+            }
           >
-            {uploadImageMutation.isPending
-              ? 'Subiendo imagen...'
-              : isLoading
-                ? 'Actualizando...'
-                : 'Actualizar Empresa'}
+            {isUploading ? 'Subiendo imagen...' : isLoading ? 'Actualizando...' : 'Actualizar Empresa'}
           </Button>
         </DialogActions>
       </form>
