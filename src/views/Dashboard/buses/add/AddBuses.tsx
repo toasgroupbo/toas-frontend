@@ -1242,7 +1242,7 @@ const FormularioBus: React.FC<Props> = ({ busId }) => {
                 sx={{ pb: 2 }}
               />
               <CardContent>
-                {/* CONFIGURACIÓN DE PRECIO GLOBAL */}
+              
                 <Card
                   variant='outlined'
                   sx={{
@@ -1578,7 +1578,7 @@ const FormularioBus: React.FC<Props> = ({ busId }) => {
                           ))}
                         </Box>
 
-                        {/* Indicador TRASERA */}
+                     
                         <Box
                           sx={{
                             backgroundColor: 'grey.800',
@@ -1601,7 +1601,7 @@ const FormularioBus: React.FC<Props> = ({ busId }) => {
                         </Box>
                       </Paper>
 
-                      {/* Divider entre pisos */}
+                     
                       {piso < (tipoPiso === 'dos' ? 2 : 1) && (
                         <Divider sx={{ my: 5 }}>
                           <Chip
@@ -1662,7 +1662,7 @@ const FormularioBus: React.FC<Props> = ({ busId }) => {
 
                   <Divider sx={{ my: 2 }} />
 
-                  {/* AGREGAR RESUMEN DE PRECIO */}
+                  
                   <Paper
                     sx={{
                       p: 2,

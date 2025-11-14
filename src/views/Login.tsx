@@ -104,11 +104,11 @@ const LoginV1 = ({ mode }: { mode: SystemMode }) => {
         }}
       >
         <source src="/videos/videof.mp4" type="video/mp4" />
-        {/* Agrega más formatos si es necesario para compatibilidad */}
+        
         <source src="/videos/background-login.webm" type="video/webm" />
       </video>
 
-      {/* Overlay oscuro opcional para mejorar la legibilidad */}
+     
       <div
         style={{
           position: 'absolute',

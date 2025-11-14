@@ -244,7 +244,7 @@ const CreateCompanyDialog = ({ open, onClose, onSubmit, isLoading }: CreateCompa
               />
             </Grid>
 
-            {/* Comisión y Horas */}
+           
             <Grid size={{ xs: 12, sm: 6 }}>
               <Controller
                 name='commission'
@@ -300,14 +300,14 @@ const CreateCompanyDialog = ({ open, onClose, onSubmit, isLoading }: CreateCompa
                 )}
               />
             </Grid>
-            {/* Datos Bancarios */}
+          
             <Grid size={12}>
               <Typography variant='h6' sx={{ mt: 2, mb: 1 }}>
                 Datos Bancarios
               </Typography>
             </Grid>
 
-            {/* CAMBIAR A SELECT */}
+           
             <Grid size={{ xs: 12, sm: 6 }}>
               <Controller
                 name='bankAccount.bank'
@@ -339,7 +339,7 @@ const CreateCompanyDialog = ({ open, onClose, onSubmit, isLoading }: CreateCompa
               />
             </Grid>
 
-            {/* CAMBIAR A SELECT */}
+        
             <Grid size={{ xs: 12, sm: 6 }}>
               <Controller
                 name='bankAccount.typeAccount'
@@ -389,7 +389,7 @@ const CreateCompanyDialog = ({ open, onClose, onSubmit, isLoading }: CreateCompa
               />
             </Grid>
 
-            {/* Datos del Administrador */}
+            
             <Grid size={12}>
               <Typography variant='h6' sx={{ mt: 2, mb: 1 }}>
                 Datos del Administrador
