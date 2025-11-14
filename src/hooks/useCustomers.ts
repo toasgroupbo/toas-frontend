@@ -11,6 +11,7 @@ const fetchCustomers = async (params: CustomersQueryParams): Promise<CustomersRe
   if (params.page) queryParams.append('page', params.page.toString())
   if (params.limit) queryParams.append('limit', params.limit.toString())
   if (params.search) queryParams.append('search', params.search)
+
   if (params.is_verified !== undefined && params.is_verified !== 'all') {
     queryParams.append('is_verified', params.is_verified.toString())
   }

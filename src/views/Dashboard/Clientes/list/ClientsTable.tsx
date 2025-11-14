@@ -218,6 +218,7 @@ const ClientsTable = () => {
               value={verificationFilter}
               onChange={e => {
                 const value = e.target.value
+
                 setVerificationFilter(value === 'all' ? 'all' : value === 'true')
                 setCurrentPage(1)
               }}
