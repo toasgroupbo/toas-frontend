@@ -30,6 +30,7 @@ export const filterMenuByRole = (
             'Reporte de Depósitos',
             'Reporte de Ventas',
             'Reporte de Usuarios',
+            'Clientes',
             'CONFIGURACIÓN',
             'Términos de Uso'
           ]
@@ -50,6 +51,7 @@ export const filterMenuByRole = (
           'Reporte de Depósitos',
           'Reporte de Ventas',
           'Reporte de Usuarios',
+          'Clientes',
           'CONFIGURACIÓN',
           'Términos de Uso'
         ]
@@ -86,6 +88,7 @@ export const filterMenuByRole = (
         COMPANY: 'Empresas',
         USER: 'Administradores',
         ROL: 'Roles',
+        CUSTOMER: 'Clientes',
         BUS: 'Buses',
         ROUTE: 'Rutas',
         OWNER: 'Dueños',
@@ -97,7 +100,7 @@ export const filterMenuByRole = (
 
       const sectionToResourcesMap: Record<string, string[]> = {
         'MÓDULO ADMINISTRACIÓN': ['COMPANY', 'USER', 'ROL'],
-        'REPORTES GLOBALES': ['COMPANY', 'USER', 'TICKET', 'TRAVEL'],
+        'REPORTES GLOBALES': ['COMPANY', 'USER', 'CUSTOMER', 'TICKET', 'TRAVEL'],
         'GESTIÓN DE EMPRESA': ['BUS', 'ROUTE', 'OWNER', 'CASHIER', 'OFFICE'],
         OPERACIONES: ['TRAVEL', 'TICKET'],
         CONFIGURACIÓN: ['COMPANY', 'USER', 'ROL']

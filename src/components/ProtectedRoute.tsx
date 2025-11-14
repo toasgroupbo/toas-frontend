@@ -23,6 +23,7 @@ const ROUTE_RESOURCE_MAP: Record<string, { resource: string; permission: string 
   '/companies/list': { resource: 'COMPANY', permission: 'READ' },
   '/usuarios/list': { resource: 'USER', permission: 'READ' },
   '/roles/list': { resource: 'ROL', permission: 'READ' },
+  '/clientes/list': { resource: 'CUSTOMER', permission: 'READ' },
 
   '/buses/list': { resource: 'BUS', permission: 'READ' },
   '/rutas/list': { resource: 'ROUTE', permission: 'READ' },
@@ -37,7 +38,7 @@ const COMPANY_ROUTES = ['/buses', '/rutas', '/duenos', '/cajeros', '/arqueo', '/
 
 const STATIC_ROLE_PERMISSIONS: Record<string, string[]> = {
   SUPER_ADMIN: ['*'],
-  ADMIN_APLICACION: ['/home', '/companies', '/usuarios', '/roles', '/reportes', '/terminos'],
+  ADMIN_APLICACION: ['/home', '/companies', '/usuarios', '/roles', '/clientes', '/reportes', '/terminos'],
   ADMIN_EMPRESA: ['/home', '/buses', '/rutas', '/duenos', '/cajeros', '/arqueo', '/salidas'],
   COMPANY_ADMIN: ['/home', '/buses', '/rutas', '/duenos', '/cajeros', '/arqueo', '/salidas'],
   CAJERO: ['/home', '/arqueo', '/salidas']

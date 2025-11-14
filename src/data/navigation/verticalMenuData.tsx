@@ -53,6 +53,15 @@ const verticalMenuData = (): VerticalMenuDataType[] => [
     icon: 'tabler-users-group',
     href: '/reportes/usuarios'
   },
+  {
+    label: 'Clientes',
+    icon: 'tabler-user-check',
+    href: '/clientes/list',
+    permission: {
+      resource: 'CUSTOMER',
+      action: 'READ'
+    }
+  },
 
   //  GESTIÓN DE EMPRESA
 
