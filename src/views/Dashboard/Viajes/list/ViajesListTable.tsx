@@ -6,13 +6,13 @@ import Card from '@mui/material/Card'
 import Button from '@mui/material/Button'
 import Chip from '@mui/material/Chip'
 import Checkbox from '@mui/material/Checkbox'
-import IconButton from '@mui/material/IconButton'
 import TablePagination from '@mui/material/TablePagination'
 import MenuItem from '@mui/material/MenuItem'
 import Typography from '@mui/material/Typography'
 import Box from '@mui/material/Box'
 import CircularProgress from '@mui/material/CircularProgress'
 import Alert from '@mui/material/Alert'
+import IconButton from '@mui/material/IconButton'
 import Tooltip from '@mui/material/Tooltip'
 import type { TextFieldProps } from '@mui/material/TextField'
 import classnames from 'classnames'
@@ -34,14 +34,14 @@ import { Pagination } from '@mui/material'
 
 import CustomTextField from '@core/components/mui/TextField'
 import tableStyles from '@core/styles/table.module.css'
-import { useOwners, useCreateOwner, useUpdateOwner, useDeleteOwner } from '@/hooks/useOwners'
-import type { Owner, CreateOwnerDto } from '@/types/api/owners'
-import OwnerDialog from '@/views/Dashboard/Duenos/components/OwnerDialog'
-import DeleteOwnerDialog from '@/views/Dashboard/Duenos/components/DeleteOwnerDialog'
+import { useTravels, useCreateTravel, useDeleteTravel } from '@/hooks/useTravels'
+import type { Travel } from '@/types/api/travels'
+import CreateTravelDialog from '@/views/Dashboard/Viajes/components/CreateTravelDialog'
+import DeleteTravelDialog from '@/views/Dashboard/Viajes/components/DeleteTravelDialog'
 import { useSnackbar } from '@/contexts/SnackbarContext'
 import { usePermissions } from '@/hooks/usePermissions'
 
-type OwnerWithActionsType = Owner & {
+type TravelWithActionsType = Travel & {
   actions?: string
 }
 
@@ -80,110 +80,86 @@ const DebouncedInput = ({
   return <CustomTextField {...props} value={value} onChange={e => setValue(e.target.value)} />
 }
 
-const columnHelper = createColumnHelper<OwnerWithActionsType>()
+const columnHelper = createColumnHelper<TravelWithActionsType>()
 
-const OwnersTable = () => {
+const TravelsTable = () => {
   const [rowSelection, setRowSelection] = useState({})
   const [currentPage, setCurrentPage] = useState(1)
   const [pageSize, setPageSize] = useState(10)
   const [searchQuery, setSearchQuery] = useState('')
   const [createDialogOpen, setCreateDialogOpen] = useState(false)
-  const [updateDialogOpen, setUpdateDialogOpen] = useState(false)
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
-  const [selectedOwner, setSelectedOwner] = useState<Owner | null>(null)
+  const [selectedTravel, setSelectedTravel] = useState<Travel | null>(null)
 
-  const { data: owners, isLoading, error } = useOwners()
-  const createMutation = useCreateOwner()
-  const updateMutation = useUpdateOwner()
-  const deleteMutation = useDeleteOwner()
+  const { data: travels, isLoading, error } = useTravels()
+  const createMutation = useCreateTravel()
+  const deleteMutation = useDeleteTravel()
   const { showSuccess, showError } = useSnackbar()
-  const { canCreate, canUpdate, canDelete } = usePermissions().getCRUDPermissions('OWNER')
+  const { canCreate, canDelete } = usePermissions().getCRUDPermissions('TRAVEL')
 
-  const [data, setData] = useState<Owner[]>([])
+  const [data, setData] = useState<Travel[]>([])
 
   useEffect(() => {
-    if (owners) {
-      setData(owners)
+    if (travels) {
+      setData(travels)
     }
-  }, [owners])
+  }, [travels])
 
-  const handleCreateOwner = async (
-    ownerData: { name: string; ci: string; phone: string },
-    bankAccountData: { bank: string; typeAccount: 'caja_ahorro' | 'cuenta_corriente' | 'otro'; account: string }
-  ) => {
+  const handleOpenCreateDialog = () => {
+    setCreateDialogOpen(true)
+  }
+
+  const handleCloseCreateDialog = () => {
+    setCreateDialogOpen(false)
+  }
+
+  const handleSubmitCreate = async (data: any) => {
     try {
-      const createData: CreateOwnerDto = {
-        name: ownerData.name,
-        ci: ownerData.ci,
-        phone: ownerData.phone,
-        bankAccount: bankAccountData
-      }
-
-      /*   console.log('Datos que se envían al backend:', JSON.stringify(createData, null, 2)) */
-
-      await createMutation.mutateAsync(createData)
-      setCreateDialogOpen(false)
-      showSuccess('Dueño creado correctamente')
+      await createMutation.mutateAsync(data)
+      showSuccess('Viaje creado correctamente')
+      handleCloseCreateDialog()
     } catch (error: any) {
-      console.error('Error al crear dueño:', error)
-      console.error('📊 Error response data:', error?.response?.data)
-      showError(error?.response?.data?.message || 'Error al crear dueño')
+      console.error('Error al crear viaje:', error)
+      showError(error?.response?.data?.message || 'Error al crear el viaje')
     }
   }
 
-  const handleEditOwner = (owner: Owner) => {
-    setSelectedOwner(owner)
-    setUpdateDialogOpen(true)
-  }
-
-  const handleUpdateOwner = async (
-    ownerData: { name: string; ci: string; phone: string },
-    bankAccountData: { bank: string; typeAccount: 'caja_ahorro' | 'cuenta_corriente' | 'otro'; account: string }
-  ) => {
-    if (!selectedOwner) return
-
-    try {
-      await updateMutation.mutateAsync({
-        ownerId: selectedOwner.id,
-        bankAccountId: selectedOwner.bankAccount.id,
-        ownerData,
-        bankAccountData,
-        originalBankAccount: {
-          bank: selectedOwner.bankAccount.bank,
-          typeAccount: selectedOwner.bankAccount.typeAccount,
-          account: selectedOwner.bankAccount.account
-        }
-      })
-
-      setUpdateDialogOpen(false)
-      setSelectedOwner(null)
-      showSuccess('Dueño actualizado correctamente')
-    } catch (error: any) {
-      console.error('Error al actualizar dueño:', error)
-      showError(error?.response?.data?.message || 'Error al actualizar dueño')
-    }
-  }
-
-  const handleDeleteOwner = (owner: Owner) => {
-    setSelectedOwner(owner)
+  const handleOpenDeleteDialog = (travel: Travel) => {
+    setSelectedTravel(travel)
     setDeleteDialogOpen(true)
   }
 
+  const handleCloseDeleteDialog = () => {
+    setDeleteDialogOpen(false)
+    setSelectedTravel(null)
+  }
+
   const handleConfirmDelete = async () => {
-    if (!selectedOwner) return
+    if (!selectedTravel) return
 
     try {
-      await deleteMutation.mutateAsync(selectedOwner.id)
-      setDeleteDialogOpen(false)
-      setSelectedOwner(null)
-      showSuccess('Dueño eliminado correctamente')
+      await deleteMutation.mutateAsync(selectedTravel.id)
+      showSuccess('Viaje eliminado correctamente')
+      handleCloseDeleteDialog()
     } catch (error: any) {
-      console.error('Error al eliminar dueño:', error)
-      showError(error?.response?.data?.message || 'Error al eliminar dueño')
+      console.error('Error al eliminar viaje:', error)
+      showError(error?.response?.data?.message || 'Error al eliminar el viaje')
     }
   }
 
-  const columns = useMemo<ColumnDef<OwnerWithActionsType, any>[]>(
+  const formatDateTime = (dateString: string) => {
+    const date = new Date(dateString)
+
+    return date.toLocaleString('es-ES', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    })
+  }
+
+  const columns = useMemo<ColumnDef<TravelWithActionsType, any>[]>(
     () => [
       {
         id: 'select',
@@ -211,25 +187,11 @@ const OwnersTable = () => {
         header: 'Acciones',
         cell: ({ row }) => (
           <div className='flex items-center gap-2'>
-            {canUpdate && (
-              <Tooltip title='Editar'>
-                <IconButton
-                  size='small'
-                  onClick={() => handleEditOwner(row.original)}
-                  sx={{
-                    color: 'primary.main',
-                    '&:hover': { backgroundColor: 'primary.light', color: 'white' }
-                  }}
-                >
-                  <i className='tabler-edit' style={{ fontSize: '18px' }} />
-                </IconButton>
-              </Tooltip>
-            )}
             {canDelete && (
               <Tooltip title='Eliminar'>
                 <IconButton
                   size='small'
-                  onClick={() => handleDeleteOwner(row.original)}
+                  onClick={() => handleOpenDeleteDialog(row.original)}
                   sx={{
                     color: 'error.main',
                     '&:hover': { backgroundColor: 'error.light', color: 'white' }
@@ -243,71 +205,110 @@ const OwnersTable = () => {
         ),
         enableSorting: false
       }),
-      columnHelper.accessor('name', {
-        header: 'Nombre',
+      columnHelper.accessor('bus', {
+        header: 'Bus',
         cell: ({ row }) => (
-          <div className='flex flex-col gap-1'>
-            <div className='flex items-center gap-1'>
-              <i className='tabler-user' style={{ fontSize: '16px', color: 'var(--mui-palette-text-secondary)' }} />
+          <div className='flex items-center gap-2'>
+            <i className='tabler-bus' style={{ fontSize: '20px', color: 'var(--mui-palette-primary-main)' }} />
+            <div className='flex flex-col'>
               <Typography className='font-medium' color='text.primary' variant='body2'>
-                {row.original.name}
+                {row.original.bus.name}
               </Typography>
+              <Chip label={row.original.bus.plaque} size='small' variant='outlined' />
             </div>
-            <Typography variant='caption' color='text.secondary'>
-              CI: {row.original.ci}
-            </Typography>
           </div>
         )
       }),
-      {
-        id: 'phone',
-        header: 'Teléfono',
+      columnHelper.accessor('route', {
+        header: 'Ruta',
         cell: ({ row }) => (
-          <div className='flex items-center gap-1'>
-            <i className='tabler-phone' style={{ fontSize: '16px', color: 'var(--mui-palette-success-main)' }} />
-            <Typography variant='body2'>{row.original.phone}</Typography>
-          </div>
-        )
-      },
-      columnHelper.accessor('bankAccount', {
-        header: 'Banco',
-        cell: ({ row }) => {
-          const getTypeLabel = (type: string) => {
-            switch (type) {
-              case 'caja_ahorro':
-                return 'Caja de Ahorro'
-              case 'cuenta_corriente':
-                return 'Cuenta Corriente'
-              case 'otro':
-                return 'Otro'
-              default:
-                return type
-            }
-          }
-
-          return (
-            <div className='flex flex-col gap-1'>
+          <div className='flex items-center gap-2'>
+            <Box
+              sx={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 1,
+                p: 1,
+                borderRadius: 1,
+                bgcolor: 'action.hover'
+              }}
+            >
               <div className='flex items-center gap-1'>
-                <i
-                  className='tabler-building-bank'
-                  style={{ fontSize: '16px', color: 'var(--mui-palette-primary-main)' }}
-                />
-                <Typography variant='body2' color='text.primary'>
-                  {row.original.bankAccount.bank}
+                <i className='tabler-flag' style={{ fontSize: '16px', color: 'var(--mui-palette-success-main)' }} />
+                <Typography variant='caption' fontWeight='medium'>
+                  {row.original.route.officeOrigin.place}
                 </Typography>
               </div>
-              <Typography variant='caption' color='text.secondary'>
-                {getTypeLabel(row.original.bankAccount.typeAccount)}
-              </Typography>
-              <Typography variant='caption' color='text.secondary'>
-                Cta: {row.original.bankAccount.account}
-              </Typography>
-            </div>
-          )
-        }
+              <i className='tabler-arrow-right' style={{ fontSize: '16px' }} />
+              <div className='flex items-center gap-1'>
+                <i
+                  className='tabler-flag-filled'
+                  style={{ fontSize: '16px', color: 'var(--mui-palette-error-main)' }}
+                />
+                <Typography variant='caption' fontWeight='medium'>
+                  {row.original.route.officeDestination.place}
+                </Typography>
+              </div>
+            </Box>
+          </div>
+        )
+      }),
+      columnHelper.accessor('departure_time', {
+        header: 'Salida',
+        cell: ({ row }) => (
+          <div className='flex items-center gap-1'>
+            <i className='tabler-clock' style={{ fontSize: '16px', color: 'var(--mui-palette-info-main)' }} />
+            <Typography variant='body2'>{formatDateTime(row.original.departure_time)}</Typography>
+          </div>
+        )
+      }),
+      columnHelper.accessor('arrival_time', {
+        header: 'Llegada',
+        cell: ({ row }) => (
+          <div className='flex items-center gap-1'>
+            <i className='tabler-clock-check' style={{ fontSize: '16px', color: 'var(--mui-palette-success-main)' }} />
+            <Typography variant='body2'>{formatDateTime(row.original.arrival_time)}</Typography>
+          </div>
+        )
+      }),
+      columnHelper.accessor('price_deck_1', {
+        header: 'Precio Piso 1',
+        cell: ({ row }) => (
+          <Chip
+            label={`Bs. ${row.original.price_deck_1}`}
+            color='success'
+            variant='tonal'
+            size='small'
+            icon={<i className='tabler-currency-dollar' style={{ fontSize: '14px' }} />}
+          />
+        )
+      }),
+      columnHelper.accessor('price_deck_2', {
+        header: 'Precio Piso 2',
+        cell: ({ row }) => (
+          <Chip
+            label={`Bs. ${row.original.price_deck_2}`}
+            color='info'
+            variant='tonal'
+            size='small'
+            icon={<i className='tabler-currency-dollar' style={{ fontSize: '14px' }} />}
+          />
+        )
+      }),
+      columnHelper.accessor('isActive', {
+        header: 'Estado',
+        cell: ({ row }) => (
+          <Chip
+            label={row.original.isActive ? 'Activo' : 'Inactivo'}
+            color={row.original.isActive ? 'success' : 'default'}
+            variant='tonal'
+            size='small'
+            icon={<i className={row.original.isActive ? 'tabler-check' : 'tabler-x'} style={{ fontSize: '14px' }} />}
+          />
+        )
       })
     ],
-    [canUpdate, canDelete]
+    [canDelete]
   )
 
   const table = useReactTable({
@@ -344,7 +345,7 @@ const OwnersTable = () => {
   }
 
   if (error) {
-    return <Alert severity='error'>Error al cargar los dueños. Por favor, intenta nuevamente.</Alert>
+    return <Alert severity='error'>Error al cargar los viajes. Por favor, intenta nuevamente.</Alert>
   }
 
   return (
@@ -352,17 +353,18 @@ const OwnersTable = () => {
       <Card>
         <div className='flex flex-wrap justify-between gap-4 p-6'>
           <div className='flex flex-col gap-2'>
-            <Typography variant='h4'>Lista de Dueños</Typography>
+            <Typography variant='h4'>Lista de Viajes</Typography>
           </div>
+
           {canCreate && (
             <div className='flex max-sm:flex-col items-start sm:items-center gap-4 max-sm:is-full'>
               <Button
                 variant='contained'
                 color='primary'
-                onClick={() => setCreateDialogOpen(true)}
+                onClick={handleOpenCreateDialog}
                 startIcon={<i className='tabler-plus' />}
               >
-                Nuevo Dueño
+                Nuevo Viaje
               </Button>
             </div>
           )}
@@ -376,7 +378,7 @@ const OwnersTable = () => {
                 setSearchQuery(String(value))
                 setCurrentPage(1)
               }}
-              placeholder='Buscar dueños...'
+              placeholder='Buscar viajes...'
               className='max-sm:is-full min-w-[300px] flex-1 max-w-md'
             />
           </div>
@@ -430,7 +432,7 @@ const OwnersTable = () => {
               <tbody>
                 <tr>
                   <td colSpan={table.getVisibleFlatColumns().length} className='text-center py-8'>
-                    <Typography>No hay dueños disponibles</Typography>
+                    <Typography>No hay viajes disponibles</Typography>
                   </td>
                 </tr>
               </tbody>
@@ -455,7 +457,7 @@ const OwnersTable = () => {
           component={() => (
             <div className='flex justify-between items-center flex-wrap pli-6 border-bs bs-auto plb-[12.5px] gap-2'>
               <Typography color='text.disabled'>
-                {`Mostrando ${(currentPage - 1) * pageSize + 1} a ${Math.min(currentPage * pageSize, totalRecords)} de ${totalRecords} dueños`}
+                {`Mostrando ${(currentPage - 1) * pageSize + 1} a ${Math.min(currentPage * pageSize, totalRecords)} de ${totalRecords} viajes`}
               </Typography>
               <Pagination
                 shape='rounded'
@@ -476,37 +478,22 @@ const OwnersTable = () => {
         />
       </Card>
 
-      <OwnerDialog
+      <CreateTravelDialog
         open={createDialogOpen}
-        onClose={() => setCreateDialogOpen(false)}
-        onSubmit={handleCreateOwner}
+        onClose={handleCloseCreateDialog}
+        onSubmit={handleSubmitCreate}
         isLoading={createMutation.isPending}
       />
 
-      <OwnerDialog
-        open={updateDialogOpen}
-        onClose={() => {
-          setUpdateDialogOpen(false)
-          setSelectedOwner(null)
-        }}
-        onSubmit={handleUpdateOwner}
-        owner={selectedOwner}
-        isLoading={updateMutation.isPending}
-        isEdit
-      />
-
-      <DeleteOwnerDialog
+      <DeleteTravelDialog
         open={deleteDialogOpen}
-        onClose={() => {
-          setDeleteDialogOpen(false)
-          setSelectedOwner(null)
-        }}
+        onClose={handleCloseDeleteDialog}
         onConfirm={handleConfirmDelete}
-        owner={selectedOwner}
+        travel={selectedTravel}
         isLoading={deleteMutation.isPending}
       />
     </Box>
   )
 }
 
-export default OwnersTable
+export default TravelsTable

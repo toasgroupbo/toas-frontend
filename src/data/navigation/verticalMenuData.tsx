@@ -70,9 +70,23 @@ const verticalMenuData = (): VerticalMenuDataType[] => [
     label: 'GESTIÓN DE EMPRESA'
   },
   {
+    label: 'Dueños',
+    icon: 'tabler-user-star',
+    href: '/duenos/list'
+  },
+  {
     label: 'Buses',
     icon: 'tabler-bus',
     href: '/buses/list'
+  },
+  {
+    label: 'Oficinas',
+    icon: 'tabler-building',
+    href: '/oficinas/list',
+    permission: {
+      resource: 'OFFICE',
+      action: 'READ'
+    }
   },
   {
     label: 'Rutas',
@@ -80,15 +94,20 @@ const verticalMenuData = (): VerticalMenuDataType[] => [
     href: '/rutas/list',
 
     permission: {
-      resource: 'rutas',
-      action: 'read'
+      resource: 'ROUTE',
+      action: 'READ'
     }
   },
   {
-    label: 'Dueños',
-    icon: 'tabler-user-star',
-    href: '/duenos/list'
+    label: 'Viajes',
+    icon: 'tabler-road',
+    href: '/viajes/list',
+    permission: {
+      resource: 'TRIP',
+      action: 'READ'
+    }
   },
+
   {
     label: 'Cajeros',
     icon: 'tabler-cash',

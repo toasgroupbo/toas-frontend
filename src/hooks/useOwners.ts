@@ -125,7 +125,6 @@ const deleteOwner = async (id: string): Promise<void> => {
 export const useOwners = () => {
   const { companyUUID, hasCompany, isImpersonating } = useAuth()
 
-  // Solo hacer la query si el usuario tiene compañía o está impersonando
   const shouldFetch = hasCompany || isImpersonating
 
   return useQuery({

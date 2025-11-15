@@ -6,13 +6,13 @@ import Card from '@mui/material/Card'
 import Button from '@mui/material/Button'
 import Chip from '@mui/material/Chip'
 import Checkbox from '@mui/material/Checkbox'
-import IconButton from '@mui/material/IconButton'
 import TablePagination from '@mui/material/TablePagination'
 import MenuItem from '@mui/material/MenuItem'
 import Typography from '@mui/material/Typography'
 import Box from '@mui/material/Box'
 import CircularProgress from '@mui/material/CircularProgress'
 import Alert from '@mui/material/Alert'
+import IconButton from '@mui/material/IconButton'
 import Tooltip from '@mui/material/Tooltip'
 import type { TextFieldProps } from '@mui/material/TextField'
 import classnames from 'classnames'
@@ -34,14 +34,15 @@ import { Pagination } from '@mui/material'
 
 import CustomTextField from '@core/components/mui/TextField'
 import tableStyles from '@core/styles/table.module.css'
-import { useOwners, useCreateOwner, useUpdateOwner, useDeleteOwner } from '@/hooks/useOwners'
-import type { Owner, CreateOwnerDto } from '@/types/api/owners'
-import OwnerDialog from '@/views/Dashboard/Duenos/components/OwnerDialog'
-import DeleteOwnerDialog from '@/views/Dashboard/Duenos/components/DeleteOwnerDialog'
+import { useRoutes, useCreateRoute, useUpdateRoute, useDeleteRoute } from '@/hooks/useRoutes'
+import type { Route } from '@/types/api/rutas'
+import RouteFormDialog from '@/views/Dashboard/Rutas/components/RouteFormDialog'
+import DeleteRouteDialog from '@/views/Dashboard/Rutas/components/DeleteRouteDialog'
 import { useSnackbar } from '@/contexts/SnackbarContext'
 import { usePermissions } from '@/hooks/usePermissions'
+import { useOffices } from '@/hooks/useOffices'
 
-type OwnerWithActionsType = Owner & {
+type RouteWithActionsType = Route & {
   actions?: string
 }
 
@@ -80,110 +81,97 @@ const DebouncedInput = ({
   return <CustomTextField {...props} value={value} onChange={e => setValue(e.target.value)} />
 }
 
-const columnHelper = createColumnHelper<OwnerWithActionsType>()
+const columnHelper = createColumnHelper<RouteWithActionsType>()
 
-const OwnersTable = () => {
+const RoutesTable = () => {
   const [rowSelection, setRowSelection] = useState({})
   const [currentPage, setCurrentPage] = useState(1)
   const [pageSize, setPageSize] = useState(10)
   const [searchQuery, setSearchQuery] = useState('')
-  const [createDialogOpen, setCreateDialogOpen] = useState(false)
-  const [updateDialogOpen, setUpdateDialogOpen] = useState(false)
+  const [formDialogOpen, setFormDialogOpen] = useState(false)
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
-  const [selectedOwner, setSelectedOwner] = useState<Owner | null>(null)
+  const [selectedRoute, setSelectedRoute] = useState<Route | null>(null)
+  const [isEditMode, setIsEditMode] = useState(false)
 
-  const { data: owners, isLoading, error } = useOwners()
-  const createMutation = useCreateOwner()
-  const updateMutation = useUpdateOwner()
-  const deleteMutation = useDeleteOwner()
+  const { data: routes, isLoading, error } = useRoutes()
+
+  const createMutation = useCreateRoute()
+
+  const updateMutation = useUpdateRoute()
+  const deleteMutation = useDeleteRoute()
   const { showSuccess, showError } = useSnackbar()
-  const { canCreate, canUpdate, canDelete } = usePermissions().getCRUDPermissions('OWNER')
+  const { canCreate, canUpdate, canDelete } = usePermissions().getCRUDPermissions('ROUTE')
 
-  const [data, setData] = useState<Owner[]>([])
+  const [data, setData] = useState<Route[]>([])
 
   useEffect(() => {
-    if (owners) {
-      setData(owners)
+    if (routes) {
+      setData(routes)
     }
-  }, [owners])
+  }, [routes])
 
-  const handleCreateOwner = async (
-    ownerData: { name: string; ci: string; phone: string },
-    bankAccountData: { bank: string; typeAccount: 'caja_ahorro' | 'cuenta_corriente' | 'otro'; account: string }
-  ) => {
+  const handleOpenCreateDialog = () => {
+    setIsEditMode(false)
+    setSelectedRoute(null)
+    setFormDialogOpen(true)
+  }
+
+  const handleOpenEditDialog = (route: Route) => {
+    setIsEditMode(true)
+    setSelectedRoute(route)
+    setFormDialogOpen(true)
+  }
+
+  const handleCloseFormDialog = () => {
+    setFormDialogOpen(false)
+    setSelectedRoute(null)
+    setIsEditMode(false)
+  }
+
+  const handleSubmitForm = async (data: any) => {
     try {
-      const createData: CreateOwnerDto = {
-        name: ownerData.name,
-        ci: ownerData.ci,
-        phone: ownerData.phone,
-        bankAccount: bankAccountData
+      if (isEditMode && selectedRoute) {
+        await updateMutation.mutateAsync({
+          id: selectedRoute.id,
+          data
+        })
+        showSuccess('Ruta actualizada correctamente')
+      } else {
+        await createMutation.mutateAsync(data)
+        showSuccess('Ruta creada correctamente')
       }
 
-      /*   console.log('Datos que se envían al backend:', JSON.stringify(createData, null, 2)) */
-
-      await createMutation.mutateAsync(createData)
-      setCreateDialogOpen(false)
-      showSuccess('Dueño creado correctamente')
+      handleCloseFormDialog()
     } catch (error: any) {
-      console.error('Error al crear dueño:', error)
-      console.error('📊 Error response data:', error?.response?.data)
-      showError(error?.response?.data?.message || 'Error al crear dueño')
+      console.error('Error al guardar ruta:', error)
+      showError(error?.response?.data?.message || 'Error al guardar la ruta')
     }
   }
 
-  const handleEditOwner = (owner: Owner) => {
-    setSelectedOwner(owner)
-    setUpdateDialogOpen(true)
-  }
-
-  const handleUpdateOwner = async (
-    ownerData: { name: string; ci: string; phone: string },
-    bankAccountData: { bank: string; typeAccount: 'caja_ahorro' | 'cuenta_corriente' | 'otro'; account: string }
-  ) => {
-    if (!selectedOwner) return
-
-    try {
-      await updateMutation.mutateAsync({
-        ownerId: selectedOwner.id,
-        bankAccountId: selectedOwner.bankAccount.id,
-        ownerData,
-        bankAccountData,
-        originalBankAccount: {
-          bank: selectedOwner.bankAccount.bank,
-          typeAccount: selectedOwner.bankAccount.typeAccount,
-          account: selectedOwner.bankAccount.account
-        }
-      })
-
-      setUpdateDialogOpen(false)
-      setSelectedOwner(null)
-      showSuccess('Dueño actualizado correctamente')
-    } catch (error: any) {
-      console.error('Error al actualizar dueño:', error)
-      showError(error?.response?.data?.message || 'Error al actualizar dueño')
-    }
-  }
-
-  const handleDeleteOwner = (owner: Owner) => {
-    setSelectedOwner(owner)
+  const handleOpenDeleteDialog = (route: Route) => {
+    setSelectedRoute(route)
     setDeleteDialogOpen(true)
   }
 
+  const handleCloseDeleteDialog = () => {
+    setDeleteDialogOpen(false)
+    setSelectedRoute(null)
+  }
+
   const handleConfirmDelete = async () => {
-    if (!selectedOwner) return
+    if (!selectedRoute) return
 
     try {
-      await deleteMutation.mutateAsync(selectedOwner.id)
-      setDeleteDialogOpen(false)
-      setSelectedOwner(null)
-      showSuccess('Dueño eliminado correctamente')
+      await deleteMutation.mutateAsync(selectedRoute.id)
+      showSuccess('Ruta eliminada correctamente')
+      handleCloseDeleteDialog()
     } catch (error: any) {
-      console.error('Error al eliminar dueño:', error)
-      showError(error?.response?.data?.message || 'Error al eliminar dueño')
+      console.error('Error al eliminar ruta:', error)
+      showError(error?.response?.data?.message || 'Error al eliminar la ruta')
     }
   }
 
-  const columns = useMemo<ColumnDef<OwnerWithActionsType, any>[]>(
+  const columns = useMemo<ColumnDef<RouteWithActionsType, any>[]>(
     () => [
       {
         id: 'select',
@@ -215,7 +203,7 @@ const OwnersTable = () => {
               <Tooltip title='Editar'>
                 <IconButton
                   size='small'
-                  onClick={() => handleEditOwner(row.original)}
+                  onClick={() => handleOpenEditDialog(row.original)}
                   sx={{
                     color: 'primary.main',
                     '&:hover': { backgroundColor: 'primary.light', color: 'white' }
@@ -229,7 +217,7 @@ const OwnersTable = () => {
               <Tooltip title='Eliminar'>
                 <IconButton
                   size='small'
-                  onClick={() => handleDeleteOwner(row.original)}
+                  onClick={() => handleOpenDeleteDialog(row.original)}
                   sx={{
                     color: 'error.main',
                     '&:hover': { backgroundColor: 'error.light', color: 'white' }
@@ -243,69 +231,114 @@ const OwnersTable = () => {
         ),
         enableSorting: false
       }),
-      columnHelper.accessor('name', {
-        header: 'Nombre',
+      columnHelper.accessor('officeOrigin', {
+        header: 'Origen',
         cell: ({ row }) => (
-          <div className='flex flex-col gap-1'>
-            <div className='flex items-center gap-1'>
-              <i className='tabler-user' style={{ fontSize: '16px', color: 'var(--mui-palette-text-secondary)' }} />
+          <div className='flex items-center gap-2'>
+            <Box
+              sx={{
+                width: 36,
+                height: 36,
+                borderRadius: '50%',
+                bgcolor: 'success.main',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                color: 'white'
+              }}
+            >
+              <i className='tabler-flag' style={{ fontSize: '18px' }} />
+            </Box>
+            <div className='flex flex-col'>
               <Typography className='font-medium' color='text.primary' variant='body2'>
-                {row.original.name}
+                {row.original.officeOrigin.name}
+              </Typography>
+              <Typography variant='caption' color='text.secondary'>
+                {row.original.officeOrigin.place}
               </Typography>
             </div>
-            <Typography variant='caption' color='text.secondary'>
-              CI: {row.original.ci}
-            </Typography>
+          </div>
+        )
+      }),
+      columnHelper.accessor('officeDestination', {
+        header: 'Destino',
+        cell: ({ row }) => (
+          <div className='flex items-center gap-2'>
+            <Box
+              sx={{
+                width: 36,
+                height: 36,
+                borderRadius: '50%',
+                bgcolor: 'error.main',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                color: 'white'
+              }}
+            >
+              <i className='tabler-flag-filled' style={{ fontSize: '18px' }} />
+            </Box>
+            <div className='flex flex-col'>
+              <Typography className='font-medium' color='text.primary' variant='body2'>
+                {row.original.officeDestination.name}
+              </Typography>
+              <Typography variant='caption' color='text.secondary'>
+                {row.original.officeDestination.place}
+              </Typography>
+            </div>
+          </div>
+        )
+      }),
+      columnHelper.accessor('isActive', {
+        header: 'Estado',
+        cell: ({ row }) => (
+          <Chip
+            label={row.original.isActive ? 'Activa' : 'Inactiva'}
+            color={row.original.isActive ? 'success' : 'default'}
+            variant='tonal'
+            size='small'
+            icon={<i className={row.original.isActive ? 'tabler-check' : 'tabler-x'} style={{ fontSize: '14px' }} />}
+          />
+        )
+      }),
+      columnHelper.accessor('pass_by', {
+        header: 'Trayecto',
+        cell: ({ row }) => (
+          <div className='flex flex-wrap gap-1'>
+            {row.original.pass_by && row.original.pass_by.length > 0 ? (
+              row.original.pass_by.map((location, index) => (
+                <Chip
+                  key={index}
+                  label={location}
+                  size='small'
+                  variant='outlined'
+                  color='info'
+                  icon={<i className='tabler-map-pin' style={{ fontSize: '14px' }} />}
+                />
+              ))
+            ) : (
+              <Chip label='Sin trayecto definido' size='small' variant='outlined' color='default' />
+            )}
           </div>
         )
       }),
       {
-        id: 'phone',
-        header: 'Teléfono',
-        cell: ({ row }) => (
-          <div className='flex items-center gap-1'>
-            <i className='tabler-phone' style={{ fontSize: '16px', color: 'var(--mui-palette-success-main)' }} />
-            <Typography variant='body2'>{row.original.phone}</Typography>
-          </div>
-        )
-      },
-      columnHelper.accessor('bankAccount', {
-        header: 'Banco',
+        id: 'routeInfo',
+        header: 'Puntos',
         cell: ({ row }) => {
-          const getTypeLabel = (type: string) => {
-            switch (type) {
-              case 'caja_ahorro':
-                return 'Caja de Ahorro'
-              case 'cuenta_corriente':
-                return 'Cuenta Corriente'
-              case 'otro':
-                return 'Otro'
-              default:
-                return type
-            }
-          }
+          const totalPoints = row.original.pass_by?.length || 0
 
           return (
-            <div className='flex flex-col gap-1'>
-              <div className='flex items-center gap-1'>
-                <i
-                  className='tabler-building-bank'
-                  style={{ fontSize: '16px', color: 'var(--mui-palette-primary-main)' }}
-                />
-                <Typography variant='body2' color='text.primary'>
-                  {row.original.bankAccount.bank}
-                </Typography>
-              </div>
-              <Typography variant='caption' color='text.secondary'>
-                {getTypeLabel(row.original.bankAccount.typeAccount)}
-              </Typography>
-              <Typography variant='caption' color='text.secondary'>
-                Cta: {row.original.bankAccount.account}
-              </Typography>
-            </div>
+            <Chip
+              label={`${totalPoints} punto${totalPoints !== 1 ? 's' : ''}`}
+              size='small'
+              color='primary'
+              variant='tonal'
+              icon={<i className='tabler-route' style={{ fontSize: '14px' }} />}
+            />
           )
         }
-      })
+      }
     ],
     [canUpdate, canDelete]
   )
@@ -344,7 +377,7 @@ const OwnersTable = () => {
   }
 
   if (error) {
-    return <Alert severity='error'>Error al cargar los dueños. Por favor, intenta nuevamente.</Alert>
+    return <Alert severity='error'>Error al cargar las rutas. Por favor, intenta nuevamente.</Alert>
   }
 
   return (
@@ -352,17 +385,18 @@ const OwnersTable = () => {
       <Card>
         <div className='flex flex-wrap justify-between gap-4 p-6'>
           <div className='flex flex-col gap-2'>
-            <Typography variant='h4'>Lista de Dueños</Typography>
+            <Typography variant='h4'>Lista de Rutas</Typography>
           </div>
+
           {canCreate && (
             <div className='flex max-sm:flex-col items-start sm:items-center gap-4 max-sm:is-full'>
               <Button
                 variant='contained'
                 color='primary'
-                onClick={() => setCreateDialogOpen(true)}
+                onClick={handleOpenCreateDialog}
                 startIcon={<i className='tabler-plus' />}
               >
-                Nuevo Dueño
+                Nueva Ruta
               </Button>
             </div>
           )}
@@ -376,7 +410,7 @@ const OwnersTable = () => {
                 setSearchQuery(String(value))
                 setCurrentPage(1)
               }}
-              placeholder='Buscar dueños...'
+              placeholder='Buscar rutas...'
               className='max-sm:is-full min-w-[300px] flex-1 max-w-md'
             />
           </div>
@@ -430,7 +464,7 @@ const OwnersTable = () => {
               <tbody>
                 <tr>
                   <td colSpan={table.getVisibleFlatColumns().length} className='text-center py-8'>
-                    <Typography>No hay dueños disponibles</Typography>
+                    <Typography>No hay rutas disponibles</Typography>
                   </td>
                 </tr>
               </tbody>
@@ -455,7 +489,7 @@ const OwnersTable = () => {
           component={() => (
             <div className='flex justify-between items-center flex-wrap pli-6 border-bs bs-auto plb-[12.5px] gap-2'>
               <Typography color='text.disabled'>
-                {`Mostrando ${(currentPage - 1) * pageSize + 1} a ${Math.min(currentPage * pageSize, totalRecords)} de ${totalRecords} dueños`}
+                {`Mostrando ${(currentPage - 1) * pageSize + 1} a ${Math.min(currentPage * pageSize, totalRecords)} de ${totalRecords} rutas`}
               </Typography>
               <Pagination
                 shape='rounded'
@@ -476,37 +510,24 @@ const OwnersTable = () => {
         />
       </Card>
 
-      <OwnerDialog
-        open={createDialogOpen}
-        onClose={() => setCreateDialogOpen(false)}
-        onSubmit={handleCreateOwner}
-        isLoading={createMutation.isPending}
+      <RouteFormDialog
+        open={formDialogOpen}
+        onClose={handleCloseFormDialog}
+        onSubmit={handleSubmitForm}
+        route={selectedRoute}
+        isEditMode={isEditMode}
+        isLoading={isEditMode ? updateMutation.isPending : createMutation.isPending}
       />
 
-      <OwnerDialog
-        open={updateDialogOpen}
-        onClose={() => {
-          setUpdateDialogOpen(false)
-          setSelectedOwner(null)
-        }}
-        onSubmit={handleUpdateOwner}
-        owner={selectedOwner}
-        isLoading={updateMutation.isPending}
-        isEdit
-      />
-
-      <DeleteOwnerDialog
+      <DeleteRouteDialog
         open={deleteDialogOpen}
-        onClose={() => {
-          setDeleteDialogOpen(false)
-          setSelectedOwner(null)
-        }}
+        onClose={handleCloseDeleteDialog}
         onConfirm={handleConfirmDelete}
-        owner={selectedOwner}
+        route={selectedRoute}
         isLoading={deleteMutation.isPending}
       />
     </Box>
   )
 }
 
-export default OwnersTable
+export default RoutesTable

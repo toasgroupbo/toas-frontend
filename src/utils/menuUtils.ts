@@ -72,9 +72,11 @@ export const filterMenuByRole = (
           'Rutas',
           'Dueños',
           'Cajeros',
+          'Oficinas',
           'OPERACIONES',
           'Arqueo de Caja',
-          'Salidas'
+          'Salidas',
+          'Viajes'
         ]
 
         return empresaMenus.includes(item.label)
@@ -95,13 +97,14 @@ export const filterMenuByRole = (
         CASHIER: 'Cajeros',
         TRAVEL: 'Salidas',
         TICKET: 'Arqueo de Caja',
-        OFFICE: 'Oficinas'
+        OFFICE: 'Oficinas',
+        TRIP: 'Viajes'
       }
 
       const sectionToResourcesMap: Record<string, string[]> = {
         'MÓDULO ADMINISTRACIÓN': ['COMPANY', 'USER', 'ROL'],
         'REPORTES GLOBALES': ['COMPANY', 'USER', 'CUSTOMER', 'TICKET', 'TRAVEL'],
-        'GESTIÓN DE EMPRESA': ['BUS', 'ROUTE', 'OWNER', 'CASHIER', 'OFFICE'],
+        'GESTIÓN DE EMPRESA': ['BUS', 'ROUTE', 'OWNER', 'CASHIER', 'OFFICE', 'TRIP'],
         OPERACIONES: ['TRAVEL', 'TICKET'],
         CONFIGURACIÓN: ['COMPANY', 'USER', 'ROL']
       }
@@ -115,7 +118,8 @@ export const filterMenuByRole = (
         'OPERACIONES',
         'Arqueo de Caja',
         'Salidas',
-        'Oficinas'
+        'Oficinas',
+        'Viajes'
       ]
 
       if (!hasCompany && !isImpersonating) {

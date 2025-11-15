@@ -14,6 +14,7 @@ import Alert from '@mui/material/Alert'
 import { useAuth } from '@/contexts/AuthContext'
 import type { ChildrenType } from '@core/types'
 import type { Permission } from '@/types/api/auth'
+import NotFound from '@/views/NotFound'
 
 interface ProtectedRouteProps extends ChildrenType {
   publicRoutes?: string[]
@@ -31,16 +32,28 @@ const ROUTE_RESOURCE_MAP: Record<string, { resource: string; permission: string 
   '/cajeros/list': { resource: 'CASHIER', permission: 'READ' },
 
   '/arqueo/list': { resource: 'TICKET', permission: 'READ' },
-  '/salidas/list': { resource: 'TRAVEL', permission: 'READ' }
+  '/salidas/list': { resource: 'TRAVEL', permission: 'READ' },
+  '/oficinas/list': { resource: 'OFFICE', permission: 'READ' },
+  '/viajes/list': { resource: 'TRIP', permission: 'READ' }
 }
 
-const COMPANY_ROUTES = ['/buses', '/rutas', '/duenos', '/cajeros', '/arqueo', '/salidas']
+const COMPANY_ROUTES = ['/buses', '/rutas', '/duenos', '/cajeros', '/arqueo', '/salidas', '/oficinas', '/viajes']
 
 const STATIC_ROLE_PERMISSIONS: Record<string, string[]> = {
   SUPER_ADMIN: ['*'],
-  ADMIN_APLICACION: ['/home', '/companies', '/usuarios', '/roles', '/clientes', '/reportes', '/terminos'],
-  ADMIN_EMPRESA: ['/home', '/buses', '/rutas', '/duenos', '/cajeros', '/arqueo', '/salidas'],
-  COMPANY_ADMIN: ['/home', '/buses', '/rutas', '/duenos', '/cajeros', '/arqueo', '/salidas'],
+  ADMIN_APLICACION: [
+    '/home',
+    '/companies',
+    '/usuarios',
+    '/roles',
+    '/clientes',
+    '/reportes',
+    '/terminos',
+    'oficinas',
+    'viajes'
+  ],
+  ADMIN_EMPRESA: ['/home', '/buses', '/rutas', '/duenos', '/cajeros', '/arqueo', '/salidas', 'oficinas', 'viajes'],
+  COMPANY_ADMIN: ['/home', '/buses', '/rutas', '/duenos', '/cajeros', '/arqueo', '/salidas', 'oficinas', 'viajes'],
   CAJERO: ['/home', '/arqueo', '/salidas']
 }
 
@@ -195,115 +208,11 @@ const ProtectedRoute = ({ children, publicRoutes = ['/login', '/'] }: ProtectedR
   }
 
   if (showError && !isAuthenticated && !isPublicRoute) {
-    return (
-      <Box
-        display='flex'
-        flexDirection='column'
-        justifyContent='center'
-        alignItems='center'
-        minHeight='100vh'
-        gap={3}
-        sx={{ p: 3, backgroundColor: 'background.default' }}
-      >
-        <Paper elevation={3} sx={{ p: 4, textAlign: 'center', maxWidth: 500, width: '100%' }}>
-          <Box sx={{ mb: 3 }}>
-            <i className='tabler-lock-access' style={{ fontSize: '4rem', color: 'var(--mui-palette-error-main)' }} />
-          </Box>
-          <Typography variant='h4' color='error' gutterBottom>
-            Acceso Denegado
-          </Typography>
-          <Typography variant='body1' color='text.secondary' sx={{ mb: 3 }}>
-            No tienes permisos para acceder a esta página. Por favor, inicia sesión para continuar.
-          </Typography>
-          <Alert severity='warning' sx={{ mb: 3, textAlign: 'left' }}>
-            <Typography variant='body2'>
-              <strong>Ruta solicitada:</strong> {pathname}
-            </Typography>
-          </Alert>
-          <Box display='flex' gap={2} justifyContent='center' flexWrap='wrap'>
-            <Button
-              variant='contained'
-              color='primary'
-              startIcon={<i className='tabler-login' />}
-              onClick={() => router.push('/login')}
-            >
-              Iniciar Sesión
-            </Button>
-            <Button
-              variant='outlined'
-              color='secondary'
-              startIcon={<i className='tabler-home' />}
-              onClick={() => router.push('/')}
-            >
-              Ir al Inicio
-            </Button>
-          </Box>
-          <Typography variant='caption' color='text.disabled' sx={{ mt: 3, display: 'block' }}>
-            Si crees que esto es un error, contacta al administrador.
-          </Typography>
-        </Paper>
-      </Box>
-    )
+    return <NotFound mode='light' />
   }
 
   if (showRoleError && isAuthenticated) {
-    return (
-      <Box
-        display='flex'
-        flexDirection='column'
-        justifyContent='center'
-        alignItems='center'
-        minHeight='100vh'
-        gap={3}
-        sx={{ p: 3, backgroundColor: 'background.default' }}
-      >
-        <Paper elevation={3} sx={{ p: 4, textAlign: 'center', maxWidth: 500, width: '100%' }}>
-          <Box sx={{ mb: 3 }}>
-            <i className='tabler-shield-x' style={{ fontSize: '4rem', color: 'var(--mui-palette-warning-main)' }} />
-          </Box>
-          <Typography variant='h4' color='warning.main' gutterBottom>
-            Permisos Insuficientes
-          </Typography>
-          <Typography variant='body1' color='text.secondary' sx={{ mb: 3 }}>
-            No tienes permisos suficientes para acceder a esta sección del sistema.
-          </Typography>
-          <Alert severity='info' sx={{ mb: 3, textAlign: 'left' }}>
-            <Typography variant='body2'>
-              <strong>Tu rol:</strong> {userRole}
-              <br />
-              <strong>Ruta solicitada:</strong> {pathname}
-            </Typography>
-          </Alert>
-          <Box display='flex' gap={2} justifyContent='center' flexWrap='wrap'>
-            <Button
-              variant='contained'
-              color='primary'
-              startIcon={<i className='tabler-arrow-back' />}
-              onClick={() => router.back()}
-            >
-              Volver Atrás
-            </Button>
-            <Button
-              variant='outlined'
-              color='secondary'
-              startIcon={<i className='tabler-dashboard' />}
-              onClick={() => {
-                if (userRole === 'CAJERO') {
-                  router.push('/arqueo/list')
-                } else {
-                  router.push('/home')
-                }
-              }}
-            >
-              Ir al Dashboard
-            </Button>
-          </Box>
-          <Typography variant='caption' color='text.disabled' sx={{ mt: 3, display: 'block' }}>
-            Si necesitas acceso a esta función, contacta al administrador.
-          </Typography>
-        </Paper>
-      </Box>
-    )
+    return <NotFound mode='light' />
   }
 
   return <>{children}</>

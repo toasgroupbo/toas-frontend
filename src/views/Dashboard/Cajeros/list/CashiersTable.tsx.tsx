@@ -6,13 +6,13 @@ import Card from '@mui/material/Card'
 import Button from '@mui/material/Button'
 import Chip from '@mui/material/Chip'
 import Checkbox from '@mui/material/Checkbox'
-import IconButton from '@mui/material/IconButton'
 import TablePagination from '@mui/material/TablePagination'
 import MenuItem from '@mui/material/MenuItem'
 import Typography from '@mui/material/Typography'
 import Box from '@mui/material/Box'
 import CircularProgress from '@mui/material/CircularProgress'
 import Alert from '@mui/material/Alert'
+import IconButton from '@mui/material/IconButton'
 import Tooltip from '@mui/material/Tooltip'
 import type { TextFieldProps } from '@mui/material/TextField'
 import classnames from 'classnames'
@@ -34,14 +34,21 @@ import { Pagination } from '@mui/material'
 
 import CustomTextField from '@core/components/mui/TextField'
 import tableStyles from '@core/styles/table.module.css'
-import { useOwners, useCreateOwner, useUpdateOwner, useDeleteOwner } from '@/hooks/useOwners'
-import type { Owner, CreateOwnerDto } from '@/types/api/owners'
-import OwnerDialog from '@/views/Dashboard/Duenos/components/OwnerDialog'
-import DeleteOwnerDialog from '@/views/Dashboard/Duenos/components/DeleteOwnerDialog'
+import {
+  useCashiers,
+  useCreateCashier,
+  useUpdateCashier,
+  useDeleteCashier,
+  useChangePasswordCashier
+} from '@/hooks/useCashiers'
+import type { Cashier, CreateCashierDto, UpdateCashierDto } from '@/types/api/cashiers'
+import CreateCashierDialog from '@/views/Dashboard/Cajeros/components/CreateCashierDialog'
+import ChangePasswordDialog from '@/views/Dashboard/Cajeros/components/ChangePasswordDialog'
+import DeleteCashierDialog from '@/views/Dashboard/Cajeros/components/DeleteCashierDialog'
 import { useSnackbar } from '@/contexts/SnackbarContext'
 import { usePermissions } from '@/hooks/usePermissions'
 
-type OwnerWithActionsType = Owner & {
+type CashierWithActionsType = Cashier & {
   actions?: string
 }
 
@@ -80,110 +87,109 @@ const DebouncedInput = ({
   return <CustomTextField {...props} value={value} onChange={e => setValue(e.target.value)} />
 }
 
-const columnHelper = createColumnHelper<OwnerWithActionsType>()
+const columnHelper = createColumnHelper<CashierWithActionsType>()
 
-const OwnersTable = () => {
+const CashiersTable = () => {
   const [rowSelection, setRowSelection] = useState({})
   const [currentPage, setCurrentPage] = useState(1)
   const [pageSize, setPageSize] = useState(10)
   const [searchQuery, setSearchQuery] = useState('')
   const [createDialogOpen, setCreateDialogOpen] = useState(false)
-  const [updateDialogOpen, setUpdateDialogOpen] = useState(false)
+  const [editDialogOpen, setEditDialogOpen] = useState(false)
+  const [passwordDialogOpen, setPasswordDialogOpen] = useState(false)
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
-  const [selectedOwner, setSelectedOwner] = useState<Owner | null>(null)
+  const [selectedCashier, setSelectedCashier] = useState<Cashier | null>(null)
 
-  const { data: owners, isLoading, error } = useOwners()
-  const createMutation = useCreateOwner()
-  const updateMutation = useUpdateOwner()
-  const deleteMutation = useDeleteOwner()
+  const { data: cashiers, isLoading, error } = useCashiers()
+  const createMutation = useCreateCashier()
+  const updateMutation = useUpdateCashier()
+  const deleteMutation = useDeleteCashier()
+  const changePasswordMutation = useChangePasswordCashier()
   const { showSuccess, showError } = useSnackbar()
-  const { canCreate, canUpdate, canDelete } = usePermissions().getCRUDPermissions('OWNER')
+  const { canCreate, canUpdate, canDelete } = usePermissions().getCRUDPermissions('CASHIER')
 
-  const [data, setData] = useState<Owner[]>([])
+  const [data, setData] = useState<Cashier[]>([])
 
   useEffect(() => {
-    if (owners) {
-      setData(owners)
+    if (cashiers) {
+      setData(cashiers)
     }
-  }, [owners])
+  }, [cashiers])
 
-  const handleCreateOwner = async (
-    ownerData: { name: string; ci: string; phone: string },
-    bankAccountData: { bank: string; typeAccount: 'caja_ahorro' | 'cuenta_corriente' | 'otro'; account: string }
-  ) => {
+  const handleCreateCashier = async (data: CreateCashierDto | UpdateCashierDto, officeId: string) => {
     try {
-      const createData: CreateOwnerDto = {
-        name: ownerData.name,
-        ci: ownerData.ci,
-        phone: ownerData.phone,
-        bankAccount: bankAccountData
-      }
-
-      /*   console.log('Datos que se envían al backend:', JSON.stringify(createData, null, 2)) */
-
-      await createMutation.mutateAsync(createData)
+      await createMutation.mutateAsync(data as CreateCashierDto)
       setCreateDialogOpen(false)
-      showSuccess('Dueño creado correctamente')
+      showSuccess('Cajero creado correctamente')
     } catch (error: any) {
-      console.error('Error al crear dueño:', error)
-      console.error('📊 Error response data:', error?.response?.data)
-      showError(error?.response?.data?.message || 'Error al crear dueño')
+      console.error('Error al crear cajero:', error)
+      showError(error?.response?.data?.message || 'Error al crear cajero')
     }
   }
 
-  const handleEditOwner = (owner: Owner) => {
-    setSelectedOwner(owner)
-    setUpdateDialogOpen(true)
+  const handleEditCashier = (cashier: Cashier) => {
+    setSelectedCashier(cashier)
+    setEditDialogOpen(true)
   }
 
-  const handleUpdateOwner = async (
-    ownerData: { name: string; ci: string; phone: string },
-    bankAccountData: { bank: string; typeAccount: 'caja_ahorro' | 'cuenta_corriente' | 'otro'; account: string }
-  ) => {
-    if (!selectedOwner) return
+  const handleUpdateCashier = async (data: CreateCashierDto | UpdateCashierDto, officeId: string) => {
+    if (!selectedCashier) return
 
     try {
       await updateMutation.mutateAsync({
-        ownerId: selectedOwner.id,
-        bankAccountId: selectedOwner.bankAccount.id,
-        ownerData,
-        bankAccountData,
-        originalBankAccount: {
-          bank: selectedOwner.bankAccount.bank,
-          typeAccount: selectedOwner.bankAccount.typeAccount,
-          account: selectedOwner.bankAccount.account
-        }
+        cashierId: selectedCashier.id,
+        cashierData: data as UpdateCashierDto,
+        officeData: officeId,
+        originalOffice: selectedCashier.office?.id
       })
-
-      setUpdateDialogOpen(false)
-      setSelectedOwner(null)
-      showSuccess('Dueño actualizado correctamente')
+      setEditDialogOpen(false)
+      setSelectedCashier(null)
+      showSuccess('Cajero actualizado correctamente')
     } catch (error: any) {
-      console.error('Error al actualizar dueño:', error)
-      showError(error?.response?.data?.message || 'Error al actualizar dueño')
+      console.error('Error al actualizar cajero:', error)
+      showError(error?.response?.data?.message || 'Error al actualizar cajero')
     }
   }
 
-  const handleDeleteOwner = (owner: Owner) => {
-    setSelectedOwner(owner)
+  const handleChangePassword = (cashier: Cashier) => {
+    setSelectedCashier(cashier)
+    setPasswordDialogOpen(true)
+  }
+
+  const handlePasswordSubmit = async (password: string) => {
+    if (!selectedCashier) return
+
+    try {
+      await changePasswordMutation.mutateAsync({ id: selectedCashier.id, password })
+      setPasswordDialogOpen(false)
+      setSelectedCashier(null)
+      showSuccess('Contraseña cambiada correctamente')
+    } catch (error: any) {
+      console.error('Error al cambiar contraseña:', error)
+      showError(error?.response?.data?.message || 'Error al cambiar contraseña')
+    }
+  }
+
+  const handleDeleteCashier = (cashier: Cashier) => {
+    setSelectedCashier(cashier)
     setDeleteDialogOpen(true)
   }
 
-  const handleConfirmDelete = async () => {
-    if (!selectedOwner) return
+  const handleDeleteConfirm = async () => {
+    if (!selectedCashier) return
 
     try {
-      await deleteMutation.mutateAsync(selectedOwner.id)
+      await deleteMutation.mutateAsync(selectedCashier.id)
       setDeleteDialogOpen(false)
-      setSelectedOwner(null)
-      showSuccess('Dueño eliminado correctamente')
+      setSelectedCashier(null)
+      showSuccess('Cajero eliminado correctamente')
     } catch (error: any) {
-      console.error('Error al eliminar dueño:', error)
-      showError(error?.response?.data?.message || 'Error al eliminar dueño')
+      console.error('Error al eliminar cajero:', error)
+      showError(error?.response?.data?.message || 'Error al eliminar cajero')
     }
   }
 
-  const columns = useMemo<ColumnDef<OwnerWithActionsType, any>[]>(
+  const columns = useMemo<ColumnDef<CashierWithActionsType, any>[]>(
     () => [
       {
         id: 'select',
@@ -210,32 +216,25 @@ const OwnersTable = () => {
       columnHelper.accessor('actions', {
         header: 'Acciones',
         cell: ({ row }) => (
-          <div className='flex items-center gap-2'>
+          <div className='flex items-center gap-1'>
             {canUpdate && (
               <Tooltip title='Editar'>
-                <IconButton
-                  size='small'
-                  onClick={() => handleEditOwner(row.original)}
-                  sx={{
-                    color: 'primary.main',
-                    '&:hover': { backgroundColor: 'primary.light', color: 'white' }
-                  }}
-                >
-                  <i className='tabler-edit' style={{ fontSize: '18px' }} />
+                <IconButton size='small' onClick={() => handleEditCashier(row.original)} color='primary'>
+                  <i className='tabler-edit' />
+                </IconButton>
+              </Tooltip>
+            )}
+            {canUpdate && (
+              <Tooltip title='Cambiar Contraseña'>
+                <IconButton size='small' onClick={() => handleChangePassword(row.original)} color='warning'>
+                  <i className='tabler-key' />
                 </IconButton>
               </Tooltip>
             )}
             {canDelete && (
               <Tooltip title='Eliminar'>
-                <IconButton
-                  size='small'
-                  onClick={() => handleDeleteOwner(row.original)}
-                  sx={{
-                    color: 'error.main',
-                    '&:hover': { backgroundColor: 'error.light', color: 'white' }
-                  }}
-                >
-                  <i className='tabler-trash' style={{ fontSize: '18px' }} />
+                <IconButton size='small' onClick={() => handleDeleteCashier(row.original)} color='error'>
+                  <i className='tabler-trash' />
                 </IconButton>
               </Tooltip>
             )}
@@ -243,24 +242,46 @@ const OwnersTable = () => {
         ),
         enableSorting: false
       }),
-      columnHelper.accessor('name', {
-        header: 'Nombre',
+      columnHelper.accessor('fullName', {
+        header: 'Cajero',
         cell: ({ row }) => (
-          <div className='flex flex-col gap-1'>
-            <div className='flex items-center gap-1'>
-              <i className='tabler-user' style={{ fontSize: '16px', color: 'var(--mui-palette-text-secondary)' }} />
-              <Typography className='font-medium' color='text.primary' variant='body2'>
-                {row.original.name}
+          <div className='flex items-center gap-2'>
+            <Box
+              sx={{
+                width: 40,
+                height: 40,
+                borderRadius: '50%',
+                bgcolor: 'success.main',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                color: 'white',
+                fontWeight: 'bold'
+              }}
+            >
+              {row.original.fullName.charAt(0).toUpperCase()}
+            </Box>
+            <div className='flex flex-col'>
+              <Typography className='font-medium' color='text.primary'>
+                {row.original.fullName}
+              </Typography>
+              <Typography variant='caption' color='text.secondary'>
+                {row.original.email}
               </Typography>
             </div>
-            <Typography variant='caption' color='text.secondary'>
-              CI: {row.original.ci}
-            </Typography>
           </div>
         )
       }),
-      {
-        id: 'phone',
+      columnHelper.accessor('ci', {
+        header: 'CI',
+        cell: ({ row }) => (
+          <div className='flex items-center gap-1'>
+            <i className='tabler-id' style={{ fontSize: '16px', color: 'var(--mui-palette-text-secondary)' }} />
+            <Typography variant='body2'>{row.original.ci}</Typography>
+          </div>
+        )
+      }),
+      columnHelper.accessor('phone', {
         header: 'Teléfono',
         cell: ({ row }) => (
           <div className='flex items-center gap-1'>
@@ -268,43 +289,62 @@ const OwnersTable = () => {
             <Typography variant='body2'>{row.original.phone}</Typography>
           </div>
         )
-      },
-      columnHelper.accessor('bankAccount', {
-        header: 'Banco',
-        cell: ({ row }) => {
-          const getTypeLabel = (type: string) => {
-            switch (type) {
-              case 'caja_ahorro':
-                return 'Caja de Ahorro'
-              case 'cuenta_corriente':
-                return 'Cuenta Corriente'
-              case 'otro':
-                return 'Otro'
-              default:
-                return type
-            }
-          }
-
-          return (
-            <div className='flex flex-col gap-1'>
-              <div className='flex items-center gap-1'>
-                <i
-                  className='tabler-building-bank'
-                  style={{ fontSize: '16px', color: 'var(--mui-palette-primary-main)' }}
-                />
-                <Typography variant='body2' color='text.primary'>
-                  {row.original.bankAccount.bank}
+      }),
+      columnHelper.accessor('office', {
+        header: 'Oficina',
+        cell: ({ row }) =>
+          row.original.office ? (
+            <div className='flex items-center gap-2'>
+              <i className='tabler-building' style={{ fontSize: '18px', color: 'var(--mui-palette-primary-main)' }} />
+              <div className='flex flex-col'>
+                <Typography variant='body2' fontWeight='medium'>
+                  {row.original.office.name}
+                </Typography>
+                <Typography variant='caption' color='text.secondary'>
+                  {row.original.office.place}
                 </Typography>
               </div>
-              <Typography variant='caption' color='text.secondary'>
-                {getTypeLabel(row.original.bankAccount.typeAccount)}
-              </Typography>
-              <Typography variant='caption' color='text.secondary'>
-                Cta: {row.original.bankAccount.account}
-              </Typography>
             </div>
+          ) : (
+            <Chip label='Sin Oficina' color='default' variant='outlined' size='small' />
           )
-        }
+      }),
+      columnHelper.accessor('company', {
+        header: 'Empresa',
+        cell: ({ row }) =>
+          row.original.company ? (
+            <div className='flex items-center gap-2'>
+              {row.original.company.logo && (
+                <Box
+                  sx={{
+                    width: 30,
+                    height: 30,
+                    borderRadius: 1,
+                    overflow: 'hidden',
+                    border: '1px solid',
+                    borderColor: 'divider'
+                  }}
+                >
+                  <img
+                    src={
+                      row.original.company.logo.startsWith('http')
+                        ? row.original.company.logo
+                        : `${process.env.NEXT_PUBLIC_API_URL}${row.original.company.logo}`
+                    }
+                    alt={row.original.company.name}
+                    style={{
+                      width: '100%',
+                      height: '100%',
+                      objectFit: 'cover'
+                    }}
+                  />
+                </Box>
+              )}
+              <Typography variant='body2'>{row.original.company.name}</Typography>
+            </div>
+          ) : (
+            <Chip label='Sin Empresa' color='default' variant='outlined' size='small' />
+          )
       })
     ],
     [canUpdate, canDelete]
@@ -344,7 +384,7 @@ const OwnersTable = () => {
   }
 
   if (error) {
-    return <Alert severity='error'>Error al cargar los dueños. Por favor, intenta nuevamente.</Alert>
+    return <Alert severity='error'>Error al cargar los cajeros. Por favor, intenta nuevamente.</Alert>
   }
 
   return (
@@ -352,8 +392,9 @@ const OwnersTable = () => {
       <Card>
         <div className='flex flex-wrap justify-between gap-4 p-6'>
           <div className='flex flex-col gap-2'>
-            <Typography variant='h4'>Lista de Dueños</Typography>
+            <Typography variant='h4'>Lista de Cajeros</Typography>
           </div>
+
           {canCreate && (
             <div className='flex max-sm:flex-col items-start sm:items-center gap-4 max-sm:is-full'>
               <Button
@@ -362,7 +403,7 @@ const OwnersTable = () => {
                 onClick={() => setCreateDialogOpen(true)}
                 startIcon={<i className='tabler-plus' />}
               >
-                Nuevo Dueño
+                Nuevo Cajero
               </Button>
             </div>
           )}
@@ -376,7 +417,7 @@ const OwnersTable = () => {
                 setSearchQuery(String(value))
                 setCurrentPage(1)
               }}
-              placeholder='Buscar dueños...'
+              placeholder='Buscar cajeros...'
               className='max-sm:is-full min-w-[300px] flex-1 max-w-md'
             />
           </div>
@@ -430,7 +471,7 @@ const OwnersTable = () => {
               <tbody>
                 <tr>
                   <td colSpan={table.getVisibleFlatColumns().length} className='text-center py-8'>
-                    <Typography>No hay dueños disponibles</Typography>
+                    <Typography>No hay cajeros disponibles</Typography>
                   </td>
                 </tr>
               </tbody>
@@ -455,7 +496,7 @@ const OwnersTable = () => {
           component={() => (
             <div className='flex justify-between items-center flex-wrap pli-6 border-bs bs-auto plb-[12.5px] gap-2'>
               <Typography color='text.disabled'>
-                {`Mostrando ${(currentPage - 1) * pageSize + 1} a ${Math.min(currentPage * pageSize, totalRecords)} de ${totalRecords} dueños`}
+                {`Mostrando ${(currentPage - 1) * pageSize + 1} a ${Math.min(currentPage * pageSize, totalRecords)} de ${totalRecords} cajeros`}
               </Typography>
               <Pagination
                 shape='rounded'
@@ -476,37 +517,49 @@ const OwnersTable = () => {
         />
       </Card>
 
-      <OwnerDialog
+      <CreateCashierDialog
         open={createDialogOpen}
         onClose={() => setCreateDialogOpen(false)}
-        onSubmit={handleCreateOwner}
+        onSubmit={handleCreateCashier}
         isLoading={createMutation.isPending}
+        mode='create'
       />
 
-      <OwnerDialog
-        open={updateDialogOpen}
+      <CreateCashierDialog
+        open={editDialogOpen}
         onClose={() => {
-          setUpdateDialogOpen(false)
-          setSelectedOwner(null)
+          setEditDialogOpen(false)
+          setSelectedCashier(null)
         }}
-        onSubmit={handleUpdateOwner}
-        owner={selectedOwner}
+        onSubmit={handleUpdateCashier}
         isLoading={updateMutation.isPending}
-        isEdit
+        cashier={selectedCashier}
+        mode='edit'
       />
 
-      <DeleteOwnerDialog
+      <ChangePasswordDialog
+        open={passwordDialogOpen}
+        onClose={() => {
+          setPasswordDialogOpen(false)
+          setSelectedCashier(null)
+        }}
+        onSubmit={handlePasswordSubmit}
+        isLoading={changePasswordMutation.isPending}
+        userName={selectedCashier?.fullName}
+      />
+
+      <DeleteCashierDialog
         open={deleteDialogOpen}
         onClose={() => {
           setDeleteDialogOpen(false)
-          setSelectedOwner(null)
+          setSelectedCashier(null)
         }}
-        onConfirm={handleConfirmDelete}
-        owner={selectedOwner}
+        onConfirm={handleDeleteConfirm}
         isLoading={deleteMutation.isPending}
+        cashier={selectedCashier}
       />
     </Box>
   )
 }
 
-export default OwnersTable
+export default CashiersTable

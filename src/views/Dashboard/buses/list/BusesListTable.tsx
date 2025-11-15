@@ -14,11 +14,9 @@ import TablePagination from '@mui/material/TablePagination'
 import MenuItem from '@mui/material/MenuItem'
 import Typography from '@mui/material/Typography'
 import Box from '@mui/material/Box'
-import Dialog from '@mui/material/Dialog'
-import DialogTitle from '@mui/material/DialogTitle'
-import DialogContent from '@mui/material/DialogContent'
-import DialogContentText from '@mui/material/DialogContentText'
-import DialogActions from '@mui/material/DialogActions'
+import CircularProgress from '@mui/material/CircularProgress'
+import Alert from '@mui/material/Alert'
+import Tooltip from '@mui/material/Tooltip'
 import type { TextFieldProps } from '@mui/material/TextField'
 import classnames from 'classnames'
 import { rankItem } from '@tanstack/match-sorter-utils'
@@ -35,113 +33,19 @@ import {
   getSortedRowModel
 } from '@tanstack/react-table'
 import type { ColumnDef, FilterFn } from '@tanstack/react-table'
-import type { RankingInfo } from '@tanstack/match-sorter-utils'
 import { Pagination } from '@mui/material'
 
-import BusDetailModal from '@/views/Dashboard/buses/list/BusView'
 import CustomTextField from '@core/components/mui/TextField'
 import tableStyles from '@core/styles/table.module.css'
+import { useBuses, useDeleteBus } from '@/hooks/useBuses'
+import type { Bus } from '@/types/api/buses'
+import DeleteBusDialog from '../components/DeleteBusDialog'
+import { useSnackbar } from '@/contexts/SnackbarContext'
+import { usePermissions } from '@/hooks/usePermissions'
 
-declare module '@tanstack/table-core' {
-  interface FilterFns {
-    fuzzy: FilterFn<unknown>
-  }
-  interface FilterMeta {
-    itemRank: RankingInfo
-  }
-}
-
-type BusType = {
-  id: number
-  nro: number
-  placa: string
-  marca: string
-  modelo: string
-  tipo: 'Leito' | 'Semi-Leito' | 'Ejecutivo' | 'Cama'
-  asientosPiso1: number
-  asientosPiso2: number
-  imagenInterior: string
-  imagenExterior: string
-}
-
-type BusWithActionsType = BusType & {
+type BusWithActionsType = Bus & {
   actions?: string
 }
-
-const busDataStatic: BusType[] = [
-  {
-    id: 1,
-    nro: 1,
-    placa: '2345JKF',
-    marca: 'Nissan',
-    modelo: 'Civilian',
-    tipo: 'Leito',
-    asientosPiso1: 13,
-    asientosPiso2: 33,
-    imagenInterior: '/images/illustrations/characters/interior.png',
-    imagenExterior: '/images/illustrations/characters/exterior.png'
-  },
-  {
-    id: 2,
-    nro: 2,
-    placa: '2345JKF',
-    marca: 'Nissan',
-    modelo: 'Civilian',
-    tipo: 'Leito',
-    asientosPiso1: 13,
-    asientosPiso2: 33,
-    imagenInterior: '/images/illustrations/characters/interior.png',
-    imagenExterior: '/images/illustrations/characters/exterior.png'
-  },
-  {
-    id: 3,
-    nro: 3,
-    placa: '2345JKF',
-    marca: 'Nissan',
-    modelo: 'Civilian',
-    tipo: 'Leito',
-    asientosPiso1: 13,
-    asientosPiso2: 33,
-    imagenInterior: '/images/illustrations/characters/interior.png',
-    imagenExterior: '/images/illustrations/characters/exterior.png'
-  },
-  {
-    id: 4,
-    nro: 4,
-    placa: '2345JKF',
-    marca: 'Nissan',
-    modelo: 'Civilian',
-    tipo: 'Leito',
-    asientosPiso1: 13,
-    asientosPiso2: 33,
-    imagenInterior: '/images/illustrations/characters/interior.png',
-    imagenExterior: '/images/illustrations/characters/exterior.png'
-  },
-  {
-    id: 5,
-    nro: 5,
-    placa: '8765ABC',
-    marca: 'Mercedes Benz',
-    modelo: 'O-500',
-    tipo: 'Ejecutivo',
-    asientosPiso1: 18,
-    asientosPiso2: 24,
-    imagenInterior: '/images/illustrations/characters/interior.png',
-    imagenExterior: '/images/illustrations/characters/exterior.png'
-  },
-  {
-    id: 6,
-    nro: 6,
-    placa: '1234XYZ',
-    marca: 'Scania',
-    modelo: 'K-360',
-    tipo: 'Cama',
-    asientosPiso1: 10,
-    asientosPiso2: 20,
-    imagenInterior: '/images/illustrations/characters/interior.png',
-    imagenExterior: '/images/illustrations/characters/exterior.png'
-  }
-]
 
 const fuzzyFilter: FilterFn<any> = (row, columnId, value, addMeta) => {
   const itemRank = rankItem(row.getValue(columnId), value)
@@ -180,95 +84,66 @@ const DebouncedInput = ({
 
 const columnHelper = createColumnHelper<BusWithActionsType>()
 
-const BusListTable = ({ busData }: { busData?: BusType[] }) => {
+const BusListTable = () => {
   const [rowSelection, setRowSelection] = useState({})
-  const [data, setData] = useState<BusType[]>(busData || busDataStatic)
   const [currentPage, setCurrentPage] = useState(1)
   const [pageSize, setPageSize] = useState(10)
   const [searchQuery, setSearchQuery] = useState('')
-  const [dialogoEliminarOpen, setDialogoEliminarOpen] = useState(false)
-  const [busAEliminar, setBusAEliminar] = useState<BusType | null>(null)
-  const [detailModalOpen, setDetailModalOpen] = useState(false)
-  const [selectedBus, setSelectedBus] = useState<any>(null)
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
+  const [selectedBus, setSelectedBus] = useState<Bus | null>(null)
 
+  const { data: buses, isLoading, error } = useBuses()
+  const deleteMutation = useDeleteBus()
+  const { showSuccess, showError } = useSnackbar()
+  const { canCreate, canUpdate, canDelete } = usePermissions().getCRUDPermissions('BUS')
   const router = useRouter()
 
+  const [data, setData] = useState<Bus[]>([])
+
   useEffect(() => {
-    if (busData) {
-      setData(busData)
+    if (buses) {
+      setData(buses)
     }
-  }, [busData])
+  }, [buses])
 
   const handleCrearNuevo = () => {
     router.push('/buses/add')
   }
 
-  const handleImprimir = () => {
-    window.print()
+  const handleOpenDeleteDialog = (bus: Bus) => {
+    setSelectedBus(bus)
+    setDeleteDialogOpen(true)
   }
 
-  const handleAbrirDialogoEliminar = (bus: BusType) => {
-    setBusAEliminar(bus)
-    setDialogoEliminarOpen(true)
+  const handleCloseDeleteDialog = () => {
+    setDeleteDialogOpen(false)
+    setSelectedBus(null)
   }
 
-  const handleCerrarDialogoEliminar = () => {
-    setDialogoEliminarOpen(false)
-    setBusAEliminar(null)
-  }
+  const handleConfirmDelete = async () => {
+    if (!selectedBus) return
 
-  const handleConfirmarEliminacion = async () => {
-    if (busAEliminar?.id) {
-      try {
-        console.log('Eliminando bus:', busAEliminar.id)
-        setData(prevData => prevData.filter(bus => bus.id !== busAEliminar.id))
-        handleCerrarDialogoEliminar()
-      } catch (error) {
-        console.error('Error eliminando bus:', error)
-        alert('Error al eliminar el bus')
-      }
+    try {
+      await deleteMutation.mutateAsync(selectedBus.id)
+      showSuccess('Bus eliminado correctamente')
+      handleCloseDeleteDialog()
+    } catch (error: any) {
+      console.error('Error al eliminar bus:', error)
+      showError(error?.response?.data?.message || 'Error al eliminar el bus')
     }
   }
 
-  const handleViewDetails = (bus: BusType) => {
-    const busDataForModal = {
-      placa: bus.placa,
-      marca: bus.marca,
-      modelo: bus.modelo,
-      year: '2020',
-      tipo: bus.tipo,
-      tipoPiso: 'dos' as 'uno' | 'dos',
-      cantidadFilasPiso1: '5',
-      cantidadAsientosPiso1: '4',
-      cantidadFilasPiso2: '8',
-      cantidadAsientosPiso2: '5',
-      layoutPiso1: Array(5)
-        .fill(null)
-        .map(() =>
-          Array(4)
-            .fill(null)
-            .map((_, i) => ({
-              type: i === 1 ? ('aisle' as const) : ('seat' as const),
-              seatNumber: i === 1 ? undefined : `${Math.floor(Math.random() * 40) + 1}`
-            }))
-        ),
-      layoutPiso2: Array(8)
-        .fill(null)
-        .map(() =>
-          Array(5)
-            .fill(null)
-            .map((_, i) => ({
-              type: i === 2 ? ('aisle' as const) : ('seat' as const),
-              seatNumber: i === 2 ? undefined : `${Math.floor(Math.random() * 40) + 1}`
-            }))
-        ),
-      imagenInterior: bus.imagenInterior,
-      imagenExterior: bus.imagenExterior,
-      precioGlobal: '150'
+  const getEquipmentIcons = (equipment: string[]) => {
+    const iconMap: Record<string, { icon: string; label: string; color: string }> = {
+      wifi: { icon: 'tabler-wifi', label: 'WiFi', color: 'primary.main' },
+      usb_charger: { icon: 'tabler-usb', label: 'USB', color: 'success.main' },
+      air_conditioning: { icon: 'tabler-air-conditioning', label: 'A/C', color: 'info.main' },
+      bathroom: { icon: 'tabler-bath', label: 'Baño', color: 'warning.main' },
+      tv: { icon: 'tabler-device-tv', label: 'TV', color: 'secondary.main' },
+      reclining_seats: { icon: 'tabler-armchair', label: 'Reclinable', color: 'error.main' }
     }
 
-    setSelectedBus(busDataForModal)
-    setDetailModalOpen(true)
+    return equipment.map(item => iconMap[item]).filter(Boolean)
   }
 
   const columns = useMemo<ColumnDef<BusWithActionsType, any>[]>(
@@ -299,180 +174,157 @@ const BusListTable = ({ busData }: { busData?: BusType[] }) => {
         header: 'Acciones',
         cell: ({ row }) => (
           <div className='flex items-center gap-2'>
-            <IconButton onClick={() => handleViewDetails(row.original)}>
-              <i className='tabler-eye' style={{ fontSize: '18px' }} />
-            </IconButton>
-            <IconButton
-              component={Link}
-              href={`/buses/edit/${row.original.id}`}
-              size='small'
-              sx={{
-                color: 'primary.main',
-                '&:hover': { backgroundColor: 'primary.light', color: 'white' }
-              }}
-            >
-              <i className='tabler-edit' style={{ fontSize: '18px' }} />
-            </IconButton>
-            <IconButton
-              size='small'
-              onClick={() => handleAbrirDialogoEliminar(row.original)}
-              sx={{
-                color: 'error.main',
-                '&:hover': { backgroundColor: 'error.light', color: 'white' }
-              }}
-            >
-              <i className='tabler-trash' style={{ fontSize: '18px' }} />
-            </IconButton>
+            <Tooltip title='Ver detalles'>
+              <IconButton
+                size='small'
+                component={Link}
+                href={`/buses/${row.original.id}`}
+                sx={{
+                  color: 'info.main',
+                  '&:hover': { backgroundColor: 'info.light', color: 'white' }
+                }}
+              >
+                <i className='tabler-eye' style={{ fontSize: '18px' }} />
+              </IconButton>
+            </Tooltip>
+            {canUpdate && (
+              <Tooltip title='Editar'>
+                <IconButton
+                  component={Link}
+                  href={`/buses/edit/${row.original.id}`}
+                  size='small'
+                  sx={{
+                    color: 'primary.main',
+                    '&:hover': { backgroundColor: 'primary.light', color: 'white' }
+                  }}
+                >
+                  <i className='tabler-edit' style={{ fontSize: '18px' }} />
+                </IconButton>
+              </Tooltip>
+            )}
+            {canDelete && (
+              <Tooltip title='Eliminar'>
+                <IconButton
+                  size='small'
+                  onClick={() => handleOpenDeleteDialog(row.original)}
+                  sx={{
+                    color: 'error.main',
+                    '&:hover': { backgroundColor: 'error.light', color: 'white' }
+                  }}
+                >
+                  <i className='tabler-trash' style={{ fontSize: '18px' }} />
+                </IconButton>
+              </Tooltip>
+            )}
           </div>
         ),
         enableSorting: false
       }),
-      columnHelper.accessor('nro', {
-        header: 'NRO',
+      columnHelper.accessor('name', {
+        header: 'Nombre',
+        cell: ({ row }) => (
+          <div className='flex items-center gap-2'>
+            <i className='tabler-bus' style={{ fontSize: '20px', color: 'var(--mui-palette-primary-main)' }} />
+            <Typography className='font-medium' color='text.primary'>
+              {row.original.name}
+            </Typography>
+          </div>
+        )
+      }),
+      columnHelper.accessor('plaque', {
+        header: 'Placa',
+        cell: ({ row }) => (
+          <Chip label={row.original.plaque} color='primary' variant='tonal' size='small' sx={{ fontWeight: 600 }} />
+        )
+      }),
+      columnHelper.accessor('busType', {
+        header: 'Tipo de Bus',
         cell: ({ row }) => (
           <Typography className='font-medium' color='text.primary'>
-            {row.original.nro}
-          </Typography>
-        ),
-        size: 60
-      }),
-      columnHelper.accessor('placa', {
-        header: 'PLACA',
-        cell: ({ row }) => (
-          <Chip label={row.original.placa} color='primary' variant='tonal' size='small' sx={{ fontWeight: 600 }} />
-        )
-      }),
-      columnHelper.accessor('marca', {
-        header: 'MARCA',
-        cell: ({ row }) => (
-          <Typography className='font-medium' color='text.primary'>
-            {row.original.marca}
+            {row.original.busType.name}
           </Typography>
         )
       }),
-      columnHelper.accessor('modelo', {
-        header: 'MODELO',
+      columnHelper.accessor('decks', {
+        header: 'Pisos',
         cell: ({ row }) => (
-          <Typography variant='body2' color='text.secondary'>
-            {row.original.modelo}
-          </Typography>
+          <Chip
+            label={row.original.decks ? 'Dos Pisos' : 'Un Piso'}
+            color={row.original.decks ? 'success' : 'default'}
+            variant='tonal'
+            size='small'
+            icon={<i className={row.original.decks ? 'tabler-stack-2' : 'tabler-layers-difference'} />}
+          />
         )
       }),
-      columnHelper.accessor('tipo', {
-        header: 'TIPO',
+      {
+        id: 'deckInfo',
+        header: 'Información de Pisos',
+        cell: ({ row }) => (
+          <div className='flex flex-col gap-1'>
+            {row.original.busType.decks.map((deck, index) => (
+              <Chip
+                key={index}
+                label={`Piso ${deck.deck}: ${deck.deckType} (${deck.seats.filter(s => s.type === 'seat').length} asientos)`}
+                size='small'
+                variant='outlined'
+                color={index === 0 ? 'primary' : 'secondary'}
+              />
+            ))}
+          </div>
+        )
+      },
+      columnHelper.accessor('equipment', {
+        header: 'Equipamiento',
         cell: ({ row }) => {
-          const colorMap = {
-            Leito: 'success',
-            'Semi-Leito': 'info',
-            Ejecutivo: 'warning',
-            Cama: 'error'
-          } as const
+          const icons = getEquipmentIcons(row.original.equipment)
 
-          return <Chip label={row.original.tipo} color={colorMap[row.original.tipo]} variant='tonal' size='small' />
+          return (
+            <div className='flex gap-1 flex-wrap'>
+              {icons.map((item, index) => (
+                <Tooltip key={index} title={item.label}>
+                  <Box
+                    sx={{
+                      width: 32,
+                      height: 32,
+                      borderRadius: 1,
+                      backgroundColor: 'action.hover',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      border: '1px solid',
+                      borderColor: 'divider'
+                    }}
+                  >
+                    <i className={item.icon} style={{ fontSize: '18px', color: `var(--mui-palette-${item.color})` }} />
+                  </Box>
+                </Tooltip>
+              ))}
+            </div>
+          )
         }
       }),
-      columnHelper.accessor('asientosPiso1', {
-        header: 'ASIENTOS PISO 1',
+      columnHelper.accessor('owner', {
+        header: 'Propietario',
         cell: ({ row }) => (
-          <div className='flex items-center gap-2'>
-            <Box
-              sx={{
-                width: 32,
-                height: 32,
-                borderRadius: '50%',
-                backgroundColor: 'primary.main',
-                color: 'white',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                fontWeight: 600,
-                fontSize: '14px'
-              }}
-            >
-              {row.original.asientosPiso1}
-            </Box>
+          <div className='flex flex-col gap-1'>
+            <div className='flex items-center gap-1'>
+              <i className='tabler-user' style={{ fontSize: '16px', color: 'var(--mui-palette-text-secondary)' }} />
+              <Typography className='font-medium' color='text.primary' variant='body2'>
+                {row.original.owner.name}
+              </Typography>
+            </div>
+            <Typography variant='caption' color='text.secondary'>
+              CI: {row.original.owner.ci}
+            </Typography>
+            <Typography variant='caption' color='text.secondary'>
+              {row.original.owner.phone}
+            </Typography>
           </div>
-        ),
-        size: 140
-      }),
-      columnHelper.accessor('asientosPiso2', {
-        header: 'ASIENTOS PISO 2',
-        cell: ({ row }) => (
-          <div className='flex items-center gap-2'>
-            <Box
-              sx={{
-                width: 32,
-                height: 32,
-                borderRadius: '50%',
-                backgroundColor: 'secondary.main',
-                color: 'white',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                fontWeight: 600,
-                fontSize: '14px'
-              }}
-            >
-              {row.original.asientosPiso2}
-            </Box>
-          </div>
-        ),
-        size: 140
-      }),
-      columnHelper.accessor('imagenInterior', {
-        header: 'IMAGEN INTERIOR',
-        cell: ({ row }) => (
-          <Box
-            sx={{
-              width: 120,
-              height: 70,
-              borderRadius: 2,
-              overflow: 'hidden',
-              border: '2px solid',
-              borderColor: 'divider',
-              backgroundColor: 'action.hover',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center'
-            }}
-          >
-            <img
-              src={row.original.imagenInterior}
-              alt='Interior del bus'
-              style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-            />
-          </Box>
-        ),
-        size: 140
-      }),
-      columnHelper.accessor('imagenExterior', {
-        header: 'IMAGEN EXTERIOR',
-        cell: ({ row }) => (
-          <Box
-            sx={{
-              width: 120,
-              height: 70,
-              borderRadius: 2,
-              overflow: 'hidden',
-              border: '2px solid',
-              borderColor: 'divider',
-              backgroundColor: 'action.hover',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center'
-            }}
-          >
-            <img
-              src={row.original.imagenExterior}
-              alt='Exterior del bus'
-              style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-            />
-          </Box>
-        ),
-        size: 140
+        )
       })
     ],
-    []
+    [canUpdate, canDelete]
   )
 
   const table = useReactTable({
@@ -482,10 +334,13 @@ const BusListTable = ({ busData }: { busData?: BusType[] }) => {
       fuzzy: fuzzyFilter
     },
     state: {
-      rowSelection
+      rowSelection,
+      globalFilter: searchQuery
     },
     enableRowSelection: true,
+    globalFilterFn: fuzzyFilter,
     onRowSelectionChange: setRowSelection,
+    onGlobalFilterChange: setSearchQuery,
     getCoreRowModel: getCoreRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
     getSortedRowModel: getSortedRowModel(),
@@ -495,12 +350,43 @@ const BusListTable = ({ busData }: { busData?: BusType[] }) => {
     getFacetedMinMaxValues: getFacetedMinMaxValues()
   })
 
-  const totalRecords = data.length
+  const totalRecords = table.getFilteredRowModel().rows.length
+
+  if (isLoading) {
+    return (
+      <Box display='flex' justifyContent='center' alignItems='center' minHeight='400px'>
+        <CircularProgress />
+      </Box>
+    )
+  }
+
+  if (error) {
+    return <Alert severity='error'>Error al cargar los buses. Por favor, intenta nuevamente.</Alert>
+  }
 
   return (
-    <>
+    <Box>
       <Card>
         <div className='flex flex-wrap justify-between gap-4 p-6'>
+          <div className='flex flex-col gap-2'>
+            <Typography variant='h4'>Lista de Buses</Typography>
+          </div>
+
+          {canCreate && (
+            <div className='flex max-sm:flex-col items-start sm:items-center gap-4 max-sm:is-full'>
+              <Button
+                variant='contained'
+                color='primary'
+                onClick={handleCrearNuevo}
+                startIcon={<i className='tabler-plus' />}
+              >
+                Crear Nuevo
+              </Button>
+            </div>
+          )}
+        </div>
+
+        <div className='flex flex-wrap justify-between gap-4 px-6 pb-6'>
           <div className='flex flex-wrap gap-4 items-center'>
             <DebouncedInput
               value={searchQuery}
@@ -508,7 +394,7 @@ const BusListTable = ({ busData }: { busData?: BusType[] }) => {
                 setSearchQuery(String(value))
                 setCurrentPage(1)
               }}
-              placeholder='Buscar Bus (Placa, Marca, Modelo)...'
+              placeholder='Buscar Bus (Nombre, Placa)...'
               className='max-sm:is-full min-w-[300px] flex-1 max-w-md'
             />
           </div>
@@ -527,22 +413,6 @@ const BusListTable = ({ busData }: { busData?: BusType[] }) => {
               <MenuItem value='15'>15</MenuItem>
               <MenuItem value='25'>25</MenuItem>
             </CustomTextField>
-            <Button
-              variant='contained'
-              color='success'
-              onClick={handleImprimir}
-              startIcon={<i className='tabler-printer' />}
-            >
-              Imprimir
-            </Button>
-            <Button
-              variant='contained'
-              color='primary'
-              onClick={handleCrearNuevo}
-              startIcon={<i className='tabler-plus' />}
-            >
-              Crear Nuevo
-            </Button>
           </div>
         </div>
 
@@ -584,13 +454,16 @@ const BusListTable = ({ busData }: { busData?: BusType[] }) => {
               </tbody>
             ) : (
               <tbody>
-                {table.getRowModel().rows.map(row => (
-                  <tr key={row.id} className={classnames({ selected: row.getIsSelected() })}>
-                    {row.getVisibleCells().map(cell => (
-                      <td key={cell.id}>{flexRender(cell.column.columnDef.cell, cell.getContext())}</td>
-                    ))}
-                  </tr>
-                ))}
+                {table
+                  .getRowModel()
+                  .rows.slice((currentPage - 1) * pageSize, currentPage * pageSize)
+                  .map(row => (
+                    <tr key={row.id} className={classnames({ selected: row.getIsSelected() })}>
+                      {row.getVisibleCells().map(cell => (
+                        <td key={cell.id}>{flexRender(cell.column.columnDef.cell, cell.getContext())}</td>
+                      ))}
+                    </tr>
+                  ))}
               </tbody>
             )}
           </table>
@@ -619,44 +492,16 @@ const BusListTable = ({ busData }: { busData?: BusType[] }) => {
           page={currentPage - 1}
           onPageChange={() => {}}
         />
-
-        <Dialog
-          open={dialogoEliminarOpen}
-          onClose={handleCerrarDialogoEliminar}
-          aria-labelledby='alert-dialog-title'
-          aria-describedby='alert-dialog-description'
-        >
-          <DialogTitle id='alert-dialog-title'>¿Eliminar bus permanentemente?</DialogTitle>
-          <DialogContent>
-            <DialogContentText id='alert-dialog-description'>
-              {busAEliminar && (
-                <>
-                  Estás a punto de eliminar el bus con placa <strong>&quot;{busAEliminar.placa}&quot;</strong>.
-                  <br />
-                  <br />
-                  Esta acción no se puede deshacer y el bus será eliminado permanentemente del sistema.
-                </>
-              )}
-            </DialogContentText>
-          </DialogContent>
-          <DialogActions className='dialog-actions-dense'>
-            <Button onClick={handleCerrarDialogoEliminar} color='secondary'>
-              Cancelar
-            </Button>
-            <Button
-              onClick={handleConfirmarEliminacion}
-              color='error'
-              variant='contained'
-              startIcon={<i className='tabler-trash' />}
-            >
-              Eliminar Bus
-            </Button>
-          </DialogActions>
-        </Dialog>
       </Card>
 
-      <BusDetailModal open={detailModalOpen} onClose={() => setDetailModalOpen(false)} busData={selectedBus} />
-    </>
+      <DeleteBusDialog
+        open={deleteDialogOpen}
+        onClose={handleCloseDeleteDialog}
+        onConfirm={handleConfirmDelete}
+        bus={selectedBus}
+        isLoading={deleteMutation.isPending}
+      />
+    </Box>
   )
 }
 
