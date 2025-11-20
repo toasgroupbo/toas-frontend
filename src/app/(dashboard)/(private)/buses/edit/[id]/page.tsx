@@ -1,10 +1,9 @@
-// Component Imports
 import Grid from '@mui/material/Grid2'
 import { Typography } from '@mui/material'
 
-import AddBuses from '@/views/Dashboard/buses/add/AddBuses'
+import EditBuses from '@/views/Dashboard/buses/add/AddBuses'
 
-const AddBusesPage = () => {
+const EditBusPage = () => {
   return (
     <Grid container spacing={6}>
       <Grid size={{ xs: 12 }}>
@@ -12,14 +11,14 @@ const AddBusesPage = () => {
           Buses
         </Typography>
         <Typography sx={{ paddingLeft: '20px' }}>
-          Complete la información para <code>registrar un nuevo bus</code>.
+          Actualiza la <code>información del bus</code>.
         </Typography>
       </Grid>
       <Grid size={{ xs: 12 }}>
-        <AddBuses />
+        <EditBuses />
       </Grid>
     </Grid>
   )
 }
 
-export default AddBusesPage
+export default EditBusPage

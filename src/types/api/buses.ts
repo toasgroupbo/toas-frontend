@@ -3,27 +3,26 @@ export enum BusEquipment {
   USB_CHARGER = 'usb_charger',
   AIR_CONDITIONING = 'air_conditioning',
   BATHROOM = 'bathroom',
-  TV = 'tv',
-  RECLINING_SEATS = 'reclining_seats'
+  TV = 'tv'
 }
 
 export enum DeckType {
   LEITO = 'LEITO',
   SEMICAMA = 'SEMICAMA',
   CAMA = 'CAMA',
-  EJECUTIVO = 'EJECUTIVO'
+  MIXTO = 'MIXTO'
 }
 
 export enum SeatType {
   SEAT = 'seat',
   AISLE = 'aisle',
-  EMPTY = 'empty'
+  SPACE = 'space'
 }
 
 export interface Seat {
   row: number
   column: number
-  seatNumber: string
+  seatNumber?: string
   type: SeatType
 }
 
@@ -33,8 +32,12 @@ export interface Deck {
   seats: Seat[]
 }
 
+export interface BusTypeDto {
+  name: string
+  decks: Deck[]
+}
+
 export interface BusType {
-  id: string
   name: string
   decks: Deck[]
 }
@@ -51,25 +54,34 @@ export interface Bus {
   name: string
   plaque: string
   equipment: BusEquipment[]
-  decks: boolean
-  owner: Owner
+  interior_image: string
+  exterior_image: string
+  brand: string
+  model: string
   busType: BusType
+  owner: Owner
 }
 
 export interface CreateBusDto {
   name: string
   plaque: string
   equipment: BusEquipment[]
-  decks: boolean
-  ownerId: string
-  busTypeId: string
+  interior_image: string
+  exterior_image: string
+  brand: string
+  model: string
+  busType: BusTypeDto
+  owner: string
 }
 
 export interface UpdateBusDto {
   name?: string
   plaque?: string
   equipment?: BusEquipment[]
-  decks?: boolean
-  ownerId?: string
-  busTypeId?: string
+  interior_image?: string
+  exterior_image?: string
+  brand?: string
+  model?: string
+  busType?: BusTypeDto
+  owner?: string
 }

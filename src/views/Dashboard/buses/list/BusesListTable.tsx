@@ -139,8 +139,7 @@ const BusListTable = () => {
       usb_charger: { icon: 'tabler-usb', label: 'USB', color: 'success.main' },
       air_conditioning: { icon: 'tabler-air-conditioning', label: 'A/C', color: 'info.main' },
       bathroom: { icon: 'tabler-bath', label: 'Baño', color: 'warning.main' },
-      tv: { icon: 'tabler-device-tv', label: 'TV', color: 'secondary.main' },
-      reclining_seats: { icon: 'tabler-armchair', label: 'Reclinable', color: 'error.main' }
+      tv: { icon: 'tabler-device-tv', label: 'TV', color: 'secondary.main' }
     }
 
     return equipment.map(item => iconMap[item]).filter(Boolean)
@@ -231,6 +230,77 @@ const BusListTable = () => {
           </div>
         )
       }),
+      columnHelper.accessor('interior_image', {
+        header: 'Imagen Interior',
+        cell: ({ row }) => {
+          const imageUrl = row.original.interior_image.startsWith('http')
+            ? row.original.interior_image
+            : `${process.env.NEXT_PUBLIC_API_URL}${row.original.interior_image}`
+
+          return (
+            <Box
+              sx={{
+                width: 120,
+                height: 60,
+                borderRadius: 1,
+                overflow: 'hidden',
+                border: '1px solid',
+                borderColor: 'divider'
+              }}
+            >
+              <img
+                src={imageUrl}
+                alt={`Interior ${row.original.name}`}
+                style={{
+                  width: '100%',
+                  height: '100%',
+                  objectFit: 'cover'
+                }}
+                onError={e => {
+                  e.currentTarget.src = '/images/placeholder-bus.jpg'
+                }}
+              />
+            </Box>
+          )
+        },
+        size: 100
+      }),
+
+      columnHelper.accessor('exterior_image', {
+        header: 'Imagen Exterior',
+        cell: ({ row }) => {
+          const imageUrl = row.original.exterior_image.startsWith('http')
+            ? row.original.exterior_image
+            : `${process.env.NEXT_PUBLIC_API_URL}${row.original.exterior_image}`
+
+          return (
+            <Box
+              sx={{
+                width: 120,
+                height: 60,
+                borderRadius: 1,
+                overflow: 'hidden',
+                border: '1px solid',
+                borderColor: 'divider'
+              }}
+            >
+              <img
+                src={imageUrl}
+                alt={`Exterior ${row.original.name}`}
+                style={{
+                  width: '100%',
+                  height: '100%',
+                  objectFit: 'cover'
+                }}
+                onError={e => {
+                  e.currentTarget.src = '/images/placeholder-bus.jpg'
+                }}
+              />
+            </Box>
+          )
+        },
+        size: 100
+      }),
       columnHelper.accessor('plaque', {
         header: 'Placa',
         cell: ({ row }) => (
@@ -245,16 +315,20 @@ const BusListTable = () => {
           </Typography>
         )
       }),
-      columnHelper.accessor('decks', {
-        header: 'Pisos',
+      columnHelper.accessor('brand', {
+        header: 'Marca',
         cell: ({ row }) => (
-          <Chip
-            label={row.original.decks ? 'Dos Pisos' : 'Un Piso'}
-            color={row.original.decks ? 'success' : 'default'}
-            variant='tonal'
-            size='small'
-            icon={<i className={row.original.decks ? 'tabler-stack-2' : 'tabler-layers-difference'} />}
-          />
+          <Typography className='font-medium' color='text.primary'>
+            {row.original.brand}
+          </Typography>
+        )
+      }),
+      columnHelper.accessor('model', {
+        header: 'Modelo',
+        cell: ({ row }) => (
+          <Typography className='font-medium' color='text.primary'>
+            {row.original.model}
+          </Typography>
         )
       }),
       {
