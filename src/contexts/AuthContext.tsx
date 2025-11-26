@@ -174,9 +174,8 @@ export const AuthProvider = ({ children }: ChildrenType) => {
     setActingAsCompanyState(null)
     clearAuthData()
     localStorage.removeItem(ACTING_AS_COMPANY_KEY)
-    router.push('/login')
-    setTimeout(() => setIsTransitioning(false), 100)
-  }, [router])
+    window.location.href = '/login'
+  }, [])
 
   const updateUser = useCallback((userData: Partial<User>) => {
     setUser(prevUser => {
