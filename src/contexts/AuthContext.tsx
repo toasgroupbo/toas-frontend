@@ -16,6 +16,7 @@ interface AuthContextType {
   updateUser: (userData: Partial<User>) => void
   isAuthenticated: boolean
   isLoading: boolean
+  isTransitioning: boolean
   hasRole: (role: string) => boolean
   hasPermission: (resource: string, permission: string) => boolean
   userRole: string
@@ -76,6 +77,7 @@ export const AuthProvider = ({ children }: ChildrenType) => {
   const [user, setUser] = useState<User | null>(null)
   const [token, setToken] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(true)
+  const [isTransitioning, setIsTransitioning] = useState(false)
   const [actingAsCompany, setActingAsCompanyState] = useState<Company | null>(null)
   const router = useRouter()
 
@@ -166,12 +168,14 @@ export const AuthProvider = ({ children }: ChildrenType) => {
   )
 
   const logout = useCallback(() => {
+    setIsTransitioning(true)
     setUser(null)
     setToken(null)
     setActingAsCompanyState(null)
     clearAuthData()
     localStorage.removeItem(ACTING_AS_COMPANY_KEY)
     router.push('/login')
+    setTimeout(() => setIsTransitioning(false), 100)
   }, [router])
 
   const updateUser = useCallback((userData: Partial<User>) => {
@@ -187,6 +191,7 @@ export const AuthProvider = ({ children }: ChildrenType) => {
   }, [])
 
   const setActingAsCompany = useCallback((company: Company | null) => {
+    setIsTransitioning(true)
     setActingAsCompanyState(company)
 
     if (company) {
@@ -194,6 +199,8 @@ export const AuthProvider = ({ children }: ChildrenType) => {
     } else {
       localStorage.removeItem(ACTING_AS_COMPANY_KEY)
     }
+
+    window.location.href = '/home'
   }, [])
 
   const clearImpersonation = useCallback(() => {
@@ -244,6 +251,7 @@ export const AuthProvider = ({ children }: ChildrenType) => {
       updateUser,
       isAuthenticated,
       isLoading,
+      isTransitioning,
       hasRole,
       hasPermission,
       userRole,
@@ -268,6 +276,7 @@ export const AuthProvider = ({ children }: ChildrenType) => {
       updateUser,
       isAuthenticated,
       isLoading,
+      isTransitioning,
       hasRole,
       hasPermission,
       userRole,

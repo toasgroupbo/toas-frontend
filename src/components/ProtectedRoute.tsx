@@ -129,8 +129,17 @@ const hasPermissionForRoute = (
 }
 
 const ProtectedRoute = ({ children, publicRoutes = ['/login', '/'] }: ProtectedRouteProps) => {
-  const { isAuthenticated, isLoading, user, userRole, isSuperAdmin, isCompanyAdmin, hasCompany, isImpersonating } =
-    useAuth()
+  const {
+    isAuthenticated,
+    isLoading,
+    isTransitioning,
+    user,
+    userRole,
+    isSuperAdmin,
+    isCompanyAdmin,
+    hasCompany,
+    isImpersonating
+  } = useAuth()
 
   const router = useRouter()
   const pathname = usePathname()
@@ -196,12 +205,12 @@ const ProtectedRoute = ({ children, publicRoutes = ['/login', '/'] }: ProtectedR
     isImpersonating
   ])
 
-  if (isLoading) {
+  if (isLoading || isTransitioning) {
     return (
       <Box display='flex' flexDirection='column' justifyContent='center' alignItems='center' minHeight='100vh' gap={2}>
         <CircularProgress size={40} />
         <Typography variant='body2' color='text.secondary'>
-          Cargando...
+          {isTransitioning ? 'Procesando...' : 'Cargando...'}
         </Typography>
       </Box>
     )

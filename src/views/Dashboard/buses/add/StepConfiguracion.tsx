@@ -48,7 +48,24 @@ interface StepConfiguracionProps {
   handleEditSeatNumber: (deckIndex: number, rowIndex: number, colIndex: number, newNumber: string) => void
 }
 
-const DECK_TYPES = ['LEITO', 'SEMICAMA', 'CAMA', 'MIXTO'] as const
+const DECK_TYPES = ['LEITO', 'SEMICAMA', 'CAMA', 'MIXTO', 'suit_cama'] as const
+
+const getDeckTypeLabel = (deckType: string): string => {
+  switch (deckType) {
+    case 'LEITO':
+      return 'Leito'
+    case 'SEMICAMA':
+      return 'Semicama'
+    case 'CAMA':
+      return 'Cama'
+    case 'MIXTO':
+      return 'Mixto'
+    case 'suit_cama':
+      return 'Suit Cama'
+    default:
+      return deckType
+  }
+}
 
 const SEAT_TOOLS = [
   { type: SeatType.SEAT, label: 'Asiento', icon: 'tabler-armchair', color: '#4CAF50' },
@@ -333,7 +350,7 @@ const StepConfiguracion = ({
                     >
                       {DECK_TYPES.map(type => (
                         <MenuItem key={type} value={type}>
-                          {type}
+                          {getDeckTypeLabel(type)}
                         </MenuItem>
                       ))}
                     </CustomTextField>
