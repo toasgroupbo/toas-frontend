@@ -25,6 +25,10 @@ import Button from '@mui/material/Button'
 import { useSettings } from '@core/hooks/useSettings'
 import { useAuth } from '@/contexts/AuthContext'
 import { useLogout } from '@/hooks/useLogout'
+import { useUpdateUser, useChangePassword } from '@/hooks/useUsers'
+import { useSnackbar } from '@/contexts/SnackbarContext'
+import SuperAdminProfileDialog from '@/views/Dashboard/usuarios/components/SuperAdminProfileDialog'
+import type { UpdateUserDto } from '@/types/api/users'
 
 // Styled component for badge content
 const BadgeContentSpan = styled('span')({
@@ -39,6 +43,7 @@ const BadgeContentSpan = styled('span')({
 const UserDropdown = () => {
   // States
   const [open, setOpen] = useState(false)
+  const [profileDialogOpen, setProfileDialogOpen] = useState(false)
 
   // Refs
   const anchorRef = useRef<HTMLDivElement>(null)
@@ -46,8 +51,11 @@ const UserDropdown = () => {
   // Hooks
   const router = useRouter()
   const { settings } = useSettings()
-  const { user } = useAuth()
+  const { user, isSuperAdmin, updateUser } = useAuth()
   const { logout } = useLogout()
+  const updateMutation = useUpdateUser()
+  const changePasswordMutation = useChangePassword()
+  const { showSuccess, showError } = useSnackbar()
 
   const handleDropdownOpen = () => {
     !open ? setOpen(true) : setOpen(false)
@@ -68,6 +76,46 @@ const UserDropdown = () => {
   const handleUserLogout = async () => {
     setOpen(false)
     logout()
+  }
+
+  const handleOpenProfileDialog = () => {
+    setOpen(false)
+    setProfileDialogOpen(true)
+  }
+
+  const handleUpdateProfile = async (data: UpdateUserDto) => {
+    if (!user) return
+
+    try {
+      await updateMutation.mutateAsync({ id: user.id, data })
+
+      // Actualizar el usuario en el contexto de autenticación
+      updateUser({
+        email: data.email,
+        fullName: data.fullName,
+        ci: data.ci,
+        phone: data.phone
+      })
+
+      setProfileDialogOpen(false)
+      showSuccess('Perfil actualizado correctamente')
+    } catch (error: any) {
+      console.error('Error al actualizar perfil:', error)
+      showError(error?.response?.data?.message || 'Error al actualizar perfil')
+    }
+  }
+
+  const handleChangePassword = async (password: string) => {
+    if (!user) return
+
+    try {
+      await changePasswordMutation.mutateAsync({ id: user.id, password })
+      setProfileDialogOpen(false)
+      showSuccess('Contraseña cambiada correctamente')
+    } catch (error: any) {
+      console.error('Error al cambiar contraseña:', error)
+      showError(error?.response?.data?.message || 'Error al cambiar contraseña')
+    }
   }
 
   const getInitials = (name: string) => {
@@ -162,10 +210,12 @@ const UserDropdown = () => {
 
                   <Divider className='mlb-1' />
 
-                  <MenuItem className='mli-2 gap-3' onClick={e => handleDropdownClose(e)}>
-                    <i className='tabler-user' />
-                    <Typography color='text.primary'>Mi Perfil</Typography>
-                  </MenuItem>
+                  {isSuperAdmin && (
+                    <MenuItem className='mli-2 gap-3' onClick={handleOpenProfileDialog}>
+                      <i className='tabler-user-edit' />
+                      <Typography color='text.primary'>Editar Perfil</Typography>
+                    </MenuItem>
+                  )}
 
                   <div className='flex items-center plb-2 pli-3'>
                     <Button
@@ -186,6 +236,18 @@ const UserDropdown = () => {
           </Fade>
         )}
       </Popper>
+
+      {/* Modal de perfil para super admin */}
+      {isSuperAdmin && (
+        <SuperAdminProfileDialog
+          open={profileDialogOpen}
+          onClose={() => setProfileDialogOpen(false)}
+          user={user}
+          onUpdateProfile={handleUpdateProfile}
+          onChangePassword={handleChangePassword}
+          isLoading={updateMutation.isPending || changePasswordMutation.isPending}
+        />
+      )}
     </>
   )
 }

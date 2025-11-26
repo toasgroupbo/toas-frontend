@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 
 import Dialog from '@mui/material/Dialog'
 import DialogTitle from '@mui/material/DialogTitle'
@@ -13,7 +13,6 @@ import Box from '@mui/material/Box'
 import Grid from '@mui/material/Grid2'
 import MenuItem from '@mui/material/MenuItem'
 import InputAdornment from '@mui/material/InputAdornment'
-import Alert from '@mui/material/Alert'
 import CircularProgress from '@mui/material/CircularProgress'
 import { useForm, Controller } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
@@ -69,7 +68,7 @@ const CreateUserDialog = ({ open, onClose, onSubmit, isLoading, user, mode = 'cr
   const { data: roles, isLoading: rolesLoading } = useRoles()
 
   const isEditMode = mode === 'edit'
-  const isStaticRole = user?.rol?.isStatic ?? false
+  const isStaticRole = useMemo(() => user?.rol?.isStatic ?? false, [user])
 
   const {
     register,
@@ -157,7 +156,7 @@ const CreateUserDialog = ({ open, onClose, onSubmit, isLoading, user, mode = 'cr
                 placeholder='Juan Pérez'
                 {...register('fullName')}
                 error={!!errors.fullName}
-                helperText={errors.fullName?.message}
+                helperText={errors.fullName?.message as string}
                 disabled={isLoading}
                 InputProps={{
                   startAdornment: (
@@ -177,7 +176,7 @@ const CreateUserDialog = ({ open, onClose, onSubmit, isLoading, user, mode = 'cr
                 placeholder='usuario@gmail.com'
                 {...register('email')}
                 error={!!errors.email}
-                helperText={errors.email?.message}
+                helperText={errors.email?.message as string}
                 disabled={isLoading}
                 InputProps={{
                   startAdornment: (
@@ -198,7 +197,7 @@ const CreateUserDialog = ({ open, onClose, onSubmit, isLoading, user, mode = 'cr
                   placeholder='••••••••'
                   {...register('password')}
                   error={!!(errors as any).password}
-                  helperText={(errors as any).password?.message}
+                  helperText={(errors as any).password?.message as string}
                   disabled={isLoading}
                   InputProps={{
                     startAdornment: (
@@ -226,7 +225,7 @@ const CreateUserDialog = ({ open, onClose, onSubmit, isLoading, user, mode = 'cr
                 placeholder='11726358'
                 {...register('ci')}
                 error={!!errors.ci}
-                helperText={errors.ci?.message}
+                helperText={errors.ci?.message as string}
                 disabled={isLoading}
                 InputProps={{
                   startAdornment: (
@@ -246,7 +245,7 @@ const CreateUserDialog = ({ open, onClose, onSubmit, isLoading, user, mode = 'cr
                 placeholder='76565243'
                 {...register('phone')}
                 error={!!errors.phone}
-                helperText={errors.phone?.message}
+                helperText={errors.phone?.message as string}
                 disabled={isLoading}
                 InputProps={{
                   startAdornment: (
@@ -270,7 +269,7 @@ const CreateUserDialog = ({ open, onClose, onSubmit, isLoading, user, mode = 'cr
                     {...field}
                     onChange={e => field.onChange(Number(e.target.value))}
                     error={!!errors.rol}
-                    helperText={errors.rol?.message}
+                    helperText={errors.rol?.message as string}
                     disabled={isLoading || rolesLoading || (isEditMode && isStaticRole)}
                     InputProps={{
                       startAdornment: (

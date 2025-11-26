@@ -37,6 +37,7 @@ import tableStyles from '@core/styles/table.module.css'
 import { useUsers, useCreateUser, useUpdateUser, useDeleteUser, useChangePassword } from '@/hooks/useUsers'
 import type { User, CreateUserDto, UpdateUserDto } from '@/types/api/users'
 import CreateUserDialog from '@/views/Dashboard/usuarios/components/CreateUserDialog'
+import EditCompanyAdminDialog from '@/views/Dashboard/usuarios/components/EditCompanyAdminDialog'
 import ChangePasswordDialog from '@/views/Dashboard/usuarios/components/ChangePasswordDialog'
 import DeleteUserDialog from '@/views/Dashboard/usuarios/components/DeleteUserDialog'
 import { useSnackbar } from '@/contexts/SnackbarContext'
@@ -102,6 +103,7 @@ const UsersTable = () => {
   const [searchQuery, setSearchQuery] = useState('')
   const [createDialogOpen, setCreateDialogOpen] = useState(false)
   const [editDialogOpen, setEditDialogOpen] = useState(false)
+  const [editCompanyAdminDialogOpen, setEditCompanyAdminDialogOpen] = useState(false)
   const [passwordDialogOpen, setPasswordDialogOpen] = useState(false)
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
   const [selectedUser, setSelectedUser] = useState<User | null>(null)
@@ -135,7 +137,13 @@ const UsersTable = () => {
 
   const handleEditUser = (user: User) => {
     setSelectedUser(user)
-    setEditDialogOpen(true)
+
+    // If user is Company Admin, use dedicated dialog
+    if (user.rol?.name === 'COMPANY_ADMIN') {
+      setEditCompanyAdminDialogOpen(true)
+    } else {
+      setEditDialogOpen(true)
+    }
   }
 
   const handleUpdateUser = async (data: CreateUserDto | UpdateUserDto) => {
@@ -149,6 +157,20 @@ const UsersTable = () => {
     } catch (error: any) {
       console.error('Error al actualizar usuario:', error)
       showError(error?.response?.data?.message || 'Error al actualizar usuario')
+    }
+  }
+
+  const handleUpdateCompanyAdmin = async (data: UpdateUserDto) => {
+    if (!selectedUser) return
+
+    try {
+      await updateMutation.mutateAsync({ id: selectedUser.id, data })
+      setEditCompanyAdminDialogOpen(false)
+      setSelectedUser(null)
+      showSuccess('Admin de Empresa actualizado correctamente')
+    } catch (error: any) {
+      console.error('Error al actualizar admin de empresa:', error)
+      showError(error?.response?.data?.message || 'Error al actualizar admin de empresa')
     }
   }
 
@@ -216,31 +238,40 @@ const UsersTable = () => {
       },
       columnHelper.accessor('actions', {
         header: 'Acciones',
-        cell: ({ row }) => (
-          <div className='flex items-center gap-1'>
-            {canUpdate && (
-              <Tooltip title='Editar'>
-                <IconButton size='small' onClick={() => handleEditUser(row.original)} color='primary'>
-                  <i className='tabler-edit' />
-                </IconButton>
-              </Tooltip>
-            )}
-            {canUpdate && (
-              <Tooltip title='Cambiar Contraseña'>
-                <IconButton size='small' onClick={() => handleChangePassword(row.original)} color='warning'>
-                  <i className='tabler-key' />
-                </IconButton>
-              </Tooltip>
-            )}
-            {canDelete && (
-              <Tooltip title='Eliminar'>
-                <IconButton size='small' onClick={() => handleDeleteUser(row.original)} color='error'>
-                  <i className='tabler-trash' />
-                </IconButton>
-              </Tooltip>
-            )}
-          </div>
-        ),
+        cell: ({ row }) => {
+          const isSuperAdmin = row.original.rol?.name === 'SUPER_ADMIN'
+          const isCompanyAdmin = row.original.rol?.name === 'COMPANY_ADMIN'
+          const cannotDelete = isSuperAdmin || isCompanyAdmin
+
+          return (
+            <div className='flex items-center gap-1'>
+              {!isSuperAdmin && canUpdate && (
+                <Tooltip title='Editar'>
+                  <IconButton size='small' onClick={() => handleEditUser(row.original)} color='primary'>
+                    <i className='tabler-edit' />
+                  </IconButton>
+                </Tooltip>
+              )}
+              {!isSuperAdmin && canUpdate && (
+                <Tooltip title='Cambiar Contraseña'>
+                  <IconButton size='small' onClick={() => handleChangePassword(row.original)} color='warning'>
+                    <i className='tabler-key' />
+                  </IconButton>
+                </Tooltip>
+              )}
+              {!cannotDelete && canDelete && (
+                <Tooltip title='Eliminar'>
+                  <IconButton size='small' onClick={() => handleDeleteUser(row.original)} color='error'>
+                    <i className='tabler-trash' />
+                  </IconButton>
+                </Tooltip>
+              )}
+              {isSuperAdmin && (
+                <Chip label='Sin acciones' size='small' variant='outlined' color='default' />
+              )}
+            </div>
+          )
+        },
         enableSorting: false
       }),
       columnHelper.accessor('fullName', {
@@ -535,6 +566,17 @@ const UsersTable = () => {
         isLoading={updateMutation.isPending}
         user={selectedUser}
         mode='edit'
+      />
+
+      <EditCompanyAdminDialog
+        open={editCompanyAdminDialogOpen}
+        onClose={() => {
+          setEditCompanyAdminDialogOpen(false)
+          setSelectedUser(null)
+        }}
+        onSubmit={handleUpdateCompanyAdmin}
+        isLoading={updateMutation.isPending}
+        user={selectedUser}
       />
 
       <ChangePasswordDialog

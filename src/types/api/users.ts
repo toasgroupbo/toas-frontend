@@ -39,5 +39,5 @@ export interface UpdateUserDto {
   fullName: string
   ci: string
   phone: string
-  rol: number
+  rol?: number
 }

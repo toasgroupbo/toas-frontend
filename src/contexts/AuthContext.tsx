@@ -13,6 +13,7 @@ interface AuthContextType {
   token: string | null
   login: (userData: User, token: string) => void
   logout: () => void
+  updateUser: (userData: Partial<User>) => void
   isAuthenticated: boolean
   isLoading: boolean
   hasRole: (role: string) => boolean
@@ -173,6 +174,18 @@ export const AuthProvider = ({ children }: ChildrenType) => {
     router.push('/login')
   }, [router])
 
+  const updateUser = useCallback((userData: Partial<User>) => {
+    setUser(prevUser => {
+      if (!prevUser) return null
+
+      const updatedUser = { ...prevUser, ...userData }
+
+      localStorage.setItem(USER_KEY, JSON.stringify(updatedUser))
+
+      return updatedUser
+    })
+  }, [])
+
   const setActingAsCompany = useCallback((company: Company | null) => {
     setActingAsCompanyState(company)
 
@@ -228,6 +241,7 @@ export const AuthProvider = ({ children }: ChildrenType) => {
       token,
       login,
       logout,
+      updateUser,
       isAuthenticated,
       isLoading,
       hasRole,
@@ -251,6 +265,7 @@ export const AuthProvider = ({ children }: ChildrenType) => {
       token,
       login,
       logout,
+      updateUser,
       isAuthenticated,
       isLoading,
       hasRole,
