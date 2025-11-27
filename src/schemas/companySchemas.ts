@@ -31,28 +31,63 @@ export const createCompanySchema = z.object({
   })
 })
 
-export const updateCompanySchema = z.object({
-  name: z.string().min(3, 'El nombre debe tener al menos 3 caracteres').optional(),
-  logo: z.string().optional(),
-  commission: z
-    .number()
-    .min(0, 'La comisión debe ser mayor o igual a 0')
-    .max(100, 'La comisión no puede ser mayor a 100')
-    .optional(),
-  hours_before_closing: z
-    .number()
-    .min(1, 'Debe ser al menos 1 hora')
-    .max(72, 'No puede ser mayor a 72 horas')
-    .optional(),
-  bankAccount: z.object({
-    bank: z.enum(BANCOS_MUTABLE, {
-      message: 'Seleccione un banco'
+export const updateCompanySchema = z
+  .object({
+    name: z.string().min(3, 'El nombre debe tener al menos 3 caracteres').optional(),
+    logo: z.string().optional(),
+    commission: z
+      .number()
+      .min(0, 'La comisión debe ser mayor o igual a 0')
+      .max(100, 'La comisión no puede ser mayor a 100')
+      .optional(),
+    hours_before_closing: z
+      .number()
+      .min(1, 'Debe ser al menos 1 hora')
+      .max(72, 'No puede ser mayor a 72 horas')
+      .optional(),
+    bankAccount: z.object({
+      bank: z.enum(BANCOS_MUTABLE, {
+        message: 'Seleccione un banco'
+      }),
+      typeAccount: z.enum(TIPOS_CUENTA_VALUES, {
+        message: 'Seleccione un tipo de cuenta'
+      }),
+      account: z.string().min(8, 'El número de cuenta debe tener al menos 8 dígitos')
     }),
-    typeAccount: z.enum(TIPOS_CUENTA_VALUES, {
-      message: 'Seleccione un tipo de cuenta'
+    admin: z.object({
+      email: z.string().email('Email inválido'),
+      fullName: z.string().min(3, 'El nombre completo es requerido'),
+      ci: z.string().min(5, 'El CI debe tener al menos 5 dígitos'),
+      phone: z.string().min(8, 'El teléfono debe tener al menos 8 dígitos')
     }),
-    account: z.string().min(8, 'El número de cuenta debe tener al menos 8 dígitos')
+    newPassword: z.string().optional(),
+    confirmPassword: z.string().optional()
   })
-})
+  .refine(
+    data => {
+      if (data.newPassword || data.confirmPassword) {
+        return data.newPassword === data.confirmPassword
+      }
+
+      return true
+    },
+    {
+      message: 'Las contraseñas no coinciden',
+      path: ['confirmPassword']
+    }
+  )
+  .refine(
+    data => {
+      if (data.newPassword && data.newPassword.length < 6) {
+        return false
+      }
+
+      return true
+    },
+    {
+      message: 'La contraseña debe tener al menos 6 caracteres',
+      path: ['newPassword']
+    }
+  )
 export type CreateCompanyFormData = z.infer<typeof createCompanySchema>
 export type UpdateCompanyFormData = z.infer<typeof updateCompanySchema>

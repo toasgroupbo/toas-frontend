@@ -242,17 +242,18 @@ const UsersTable = () => {
           const isSuperAdmin = row.original.rol?.name === 'SUPER_ADMIN'
           const isCompanyAdmin = row.original.rol?.name === 'COMPANY_ADMIN'
           const cannotDelete = isSuperAdmin || isCompanyAdmin
+          const noActions = isSuperAdmin || isCompanyAdmin
 
           return (
             <div className='flex items-center gap-1'>
-              {!isSuperAdmin && canUpdate && (
+              {!noActions && canUpdate && (
                 <Tooltip title='Editar'>
                   <IconButton size='small' onClick={() => handleEditUser(row.original)} color='primary'>
                     <i className='tabler-edit' />
                   </IconButton>
                 </Tooltip>
               )}
-              {!isSuperAdmin && canUpdate && (
+              {!noActions && canUpdate && (
                 <Tooltip title='Cambiar Contraseña'>
                   <IconButton size='small' onClick={() => handleChangePassword(row.original)} color='warning'>
                     <i className='tabler-key' />
@@ -266,7 +267,7 @@ const UsersTable = () => {
                   </IconButton>
                 </Tooltip>
               )}
-              {isSuperAdmin && (
+              {noActions && (
                 <Chip label='Sin acciones' size='small' variant='outlined' color='default' />
               )}
             </div>

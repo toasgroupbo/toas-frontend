@@ -17,10 +17,12 @@ import InputAdornment from '@mui/material/InputAdornment'
 import { useForm, Controller } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import MenuItem from '@mui/material/MenuItem'
+import { useQueryClient } from '@tanstack/react-query'
 
 import CustomTextField from '@core/components/mui/TextField'
 import { useUploadImage } from '@/hooks/useUploadImage'
 import { updateCompanySchema, type UpdateCompanyFormData } from '@/schemas/companySchemas'
+import { api } from '@/libs/axios'
 
 import { BANCOS_BOLIVIA, TIPOS_CUENTA, type Company } from '@/types/api/company'
 
@@ -37,7 +39,10 @@ const UpdateCompanyDialog = ({ open, onClose, onSubmit, isLoading, company }: Up
   const [logoFile, setLogoFile] = useState<File | null>(null)
   const [uploadError, setUploadError] = useState<string>('')
   const [isUploading, setIsUploading] = useState(false)
+  const [showPassword, setShowPassword] = useState(false)
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false)
 
+  const queryClient = useQueryClient()
   const uploadImageMutation = useUploadImage()
 
   const {
@@ -58,7 +63,15 @@ const UpdateCompanyDialog = ({ open, onClose, onSubmit, isLoading, company }: Up
         bank: '',
         typeAccount: 'caja_ahorro',
         account: ''
-      }
+      },
+      admin: {
+        email: '',
+        fullName: '',
+        ci: '',
+        phone: ''
+      },
+      newPassword: '',
+      confirmPassword: ''
     }
   })
 
@@ -73,7 +86,15 @@ const UpdateCompanyDialog = ({ open, onClose, onSubmit, isLoading, company }: Up
           bank: company.bankAccount.bank,
           typeAccount: company.bankAccount.typeAccount,
           account: company.bankAccount.account
-        }
+        },
+        admin: {
+          email: company.admin.email,
+          fullName: company.admin.fullName,
+          ci: company.admin.ci,
+          phone: company.admin.phone
+        },
+        newPassword: '',
+        confirmPassword: ''
       })
 
       const logoUrl = company.logo.startsWith('http')
@@ -156,6 +177,13 @@ const UpdateCompanyDialog = ({ open, onClose, onSubmit, isLoading, company }: Up
       return
     }
 
+    if (!company.admin?.id) {
+      setUploadError('Error: ID de administrador no disponible')
+      console.error('❌ Admin ID is missing:', company.admin)
+
+      return
+    }
+
     try {
       setIsUploading(true)
       setUploadError('')
@@ -187,7 +215,28 @@ const UpdateCompanyDialog = ({ open, onClose, onSubmit, isLoading, company }: Up
         account: data.bankAccount.account
       }
 
+      // Actualizar datos del administrador
+      const adminData = {
+        email: data.admin.email,
+        fullName: data.admin.fullName,
+        ci: data.admin.ci,
+        phone: data.admin.phone
+      }
+
+      // Actualizar empresa y cuenta bancaria
       await onSubmit(company.id, company.bankAccount.id, companyData, bankAccountData)
+
+      // Actualizar datos del administrador (PATCH /api/users/:id)
+      await api.patch(`/api/users/${company.admin.id}`, adminData)
+
+      // Si hay nueva contraseña, actualizar contraseña (PUT /api/users/:id)
+      if (data.newPassword && data.newPassword.trim() !== '') {
+        await api.put(`/api/users/${company.admin.id}`, { password: data.newPassword })
+      }
+
+      // Invalidar queries para refrescar datos
+      queryClient.invalidateQueries({ queryKey: ['companies'] })
+      queryClient.invalidateQueries({ queryKey: ['users'] })
 
       setIsUploading(false)
     } catch (error) {
@@ -459,6 +508,151 @@ const UpdateCompanyDialog = ({ open, onClose, onSubmit, isLoading, company }: Up
                   startAdornment: (
                     <InputAdornment position='start'>
                       <i className='tabler-credit-card' />
+                    </InputAdornment>
+                  )
+                }}
+              />
+            </Grid>
+
+            {/* Datos del Administrador */}
+            <Grid size={12}>
+              <Typography variant='h6' sx={{ mt: 2, mb: 1 }}>
+                Datos del Administrador
+              </Typography>
+            </Grid>
+
+            <Grid size={{ xs: 12, sm: 6 }}>
+              <CustomTextField
+                fullWidth
+                label='Nombre Completo *'
+                placeholder='Juan Pérez'
+                {...register('admin.fullName')}
+                error={!!errors.admin?.fullName}
+                helperText={errors.admin?.fullName?.message}
+                disabled={isProcessing}
+                InputProps={{
+                  startAdornment: (
+                    <InputAdornment position='start'>
+                      <i className='tabler-user' />
+                    </InputAdornment>
+                  )
+                }}
+              />
+            </Grid>
+
+            <Grid size={{ xs: 12, sm: 6 }}>
+              <CustomTextField
+                fullWidth
+                label='CI *'
+                placeholder='1234567'
+                {...register('admin.ci')}
+                error={!!errors.admin?.ci}
+                helperText={errors.admin?.ci?.message}
+                disabled={isProcessing}
+                InputProps={{
+                  startAdornment: (
+                    <InputAdornment position='start'>
+                      <i className='tabler-id' />
+                    </InputAdornment>
+                  )
+                }}
+              />
+            </Grid>
+
+            <Grid size={{ xs: 12, sm: 6 }}>
+              <CustomTextField
+                fullWidth
+                label='Email *'
+                type='email'
+                placeholder='admin@empresa.com'
+                {...register('admin.email')}
+                error={!!errors.admin?.email}
+                helperText={errors.admin?.email?.message}
+                disabled={isProcessing}
+                InputProps={{
+                  startAdornment: (
+                    <InputAdornment position='start'>
+                      <i className='tabler-mail' />
+                    </InputAdornment>
+                  )
+                }}
+              />
+            </Grid>
+
+            <Grid size={{ xs: 12, sm: 6 }}>
+              <CustomTextField
+                fullWidth
+                label='Teléfono *'
+                placeholder='76565243'
+                {...register('admin.phone')}
+                error={!!errors.admin?.phone}
+                helperText={errors.admin?.phone?.message}
+                disabled={isProcessing}
+                InputProps={{
+                  startAdornment: (
+                    <InputAdornment position='start'>
+                      <i className='tabler-phone' />
+                    </InputAdornment>
+                  )
+                }}
+              />
+            </Grid>
+
+            {/* Cambiar Contraseña */}
+            <Grid size={12}>
+              <Typography variant='h6' sx={{ mt: 2, mb: 1 }}>
+                Cambiar Contraseña (Opcional)
+              </Typography>
+            </Grid>
+
+            <Grid size={{ xs: 12, sm: 6 }}>
+              <CustomTextField
+                fullWidth
+                type={showPassword ? 'text' : 'password'}
+                label='Nueva Contraseña'
+                placeholder='••••••••'
+                {...register('newPassword')}
+                error={!!errors.newPassword}
+                helperText={errors.newPassword?.message}
+                disabled={isProcessing}
+                InputProps={{
+                  startAdornment: (
+                    <InputAdornment position='start'>
+                      <i className='tabler-lock' />
+                    </InputAdornment>
+                  ),
+                  endAdornment: (
+                    <InputAdornment position='end'>
+                      <IconButton onClick={() => setShowPassword(!showPassword)} edge='end'>
+                        <i className={showPassword ? 'tabler-eye-off' : 'tabler-eye'} />
+                      </IconButton>
+                    </InputAdornment>
+                  )
+                }}
+              />
+            </Grid>
+
+            <Grid size={{ xs: 12, sm: 6 }}>
+              <CustomTextField
+                fullWidth
+                type={showConfirmPassword ? 'text' : 'password'}
+                label='Repetir Contraseña'
+                placeholder='••••••••'
+                {...register('confirmPassword')}
+                error={!!errors.confirmPassword}
+                helperText={errors.confirmPassword?.message}
+                disabled={isProcessing}
+                InputProps={{
+                  startAdornment: (
+                    <InputAdornment position='start'>
+                      <i className='tabler-lock' />
+                    </InputAdornment>
+                  ),
+                  endAdornment: (
+                    <InputAdornment position='end'>
+                      <IconButton onClick={() => setShowConfirmPassword(!showConfirmPassword)} edge='end'>
+                        <i className={showConfirmPassword ? 'tabler-eye-off' : 'tabler-eye'} />
+                      </IconButton>
                     </InputAdornment>
                   )
                 }}
