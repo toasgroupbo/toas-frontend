@@ -4,10 +4,17 @@ import { useMutation } from '@tanstack/react-query'
 
 const uploadImage = async (file: File): Promise<string> => {
   return new Promise((resolve, reject) => {
-    const allowedTypes = ['image/png', 'image/jpeg', 'image/jpg', 'image/webp', 'image/gif', 'image/svg+xml']
+    const allowedTypes = ['image/png', 'image/jpeg', 'image/jpg', 'image/webp']
+    const maxSizeInBytes = 5 * 1024 * 1024 // 5MB
 
     if (!allowedTypes.includes(file.type)) {
-      reject(new Error(`Tipo de archivo no permitido. Use PNG, JPG, WebP, GIF o SVG.`))
+      reject(new Error(`Tipo de archivo no permitido. Use PNG, JPG, JPEG o WebP.`))
+
+      return
+    }
+
+    if (file.size > maxSizeInBytes) {
+      reject(new Error(`La imagen no debe superar los 5MB. Tamaño actual: ${(file.size / 1024 / 1024).toFixed(2)}MB`))
 
       return
     }

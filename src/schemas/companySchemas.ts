@@ -14,8 +14,12 @@ export const createCompanySchema = z.object({
     .max(100, 'La comisión no puede ser mayor a 100'),
   hours_before_closing: z.number().min(1, 'Debe ser al menos 1 hora').max(72, 'No puede ser mayor a 72 horas'),
   bankAccount: z.object({
-    bank: z.enum(BANCOS_MUTABLE),
-    typeAccount: z.enum(TIPOS_CUENTA_VALUES),
+    bank: z.enum(BANCOS_MUTABLE, {
+      message: 'Seleccione un banco'
+    }),
+    typeAccount: z.enum(TIPOS_CUENTA_VALUES, {
+      message: 'Seleccione un tipo de cuenta'
+    }),
     account: z.string().min(8, 'El número de cuenta debe tener al menos 8 dígitos')
   }),
   manager: z.object({
@@ -41,8 +45,12 @@ export const updateCompanySchema = z.object({
     .max(72, 'No puede ser mayor a 72 horas')
     .optional(),
   bankAccount: z.object({
-    bank: z.enum(BANCOS_MUTABLE),
-    typeAccount: z.enum(TIPOS_CUENTA_VALUES),
+    bank: z.enum(BANCOS_MUTABLE, {
+      message: 'Seleccione un banco'
+    }),
+    typeAccount: z.enum(TIPOS_CUENTA_VALUES, {
+      message: 'Seleccione un tipo de cuenta'
+    }),
     account: z.string().min(8, 'El número de cuenta debe tener al menos 8 dígitos')
   })
 })

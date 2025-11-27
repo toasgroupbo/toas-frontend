@@ -101,13 +101,13 @@ const updateCashierOffice = async ({ id, office }: { id: string; office: string 
 
 const deleteCashier = async (id: string): Promise<void> => {
   const actingAsCompany = localStorage.getItem('acting_as_company')
-  let url = `/api/cashiers/${id}`
+  let url = `/api/users/${id}`
 
   if (actingAsCompany) {
     try {
       const company = JSON.parse(actingAsCompany)
 
-      url = `/api/cashiers/${id}?companyUUID=${company.id}`
+      url = `/api/users/${id}?companyUUID=${company.id}`
     } catch (error) {
       console.error('Error parsing acting_as_company:', error)
     }

@@ -288,13 +288,13 @@ const UpdateCompanyDialog = ({ open, onClose, onSubmit, isLoading, company }: Up
                       Haga clic o arrastre una imagen aquí
                     </Typography>
                     <Typography variant='caption' color='text.disabled' sx={{ mt: 0.5 }}>
-                      PNG, JPG, GIF hasta 5MB
+                      JPG, JPEG, PNG, WEBP hasta 5MB
                     </Typography>
                   </>
                 )}
                 <input
                   type='file'
-                  accept='image/*'
+                  accept='image/png,image/jpeg,image/jpg,image/webp'
                   onChange={handleLogoChange}
                   disabled={isProcessing}
                   style={{

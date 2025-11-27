@@ -244,11 +244,14 @@ const StepDatosGenerales = ({
                   <Typography variant='body2' color='text.secondary'>
                     Haga clic para seleccionar imagen
                   </Typography>
+                  <Typography variant='caption' color='text.disabled' sx={{ mt: 0.5 }}>
+                    JPG, JPEG, PNG, WEBP hasta 5MB
+                  </Typography>
                 </>
               )}
               <input
                 type='file'
-                accept='image/png,image/jpeg,image/jpg,image/webp,image/gif,image/svg+xml'
+                accept='image/png,image/jpeg,image/jpg,image/webp'
                 onChange={handleInteriorImageChange}
                 className='absolute inset-0 opacity-0 cursor-pointer'
               />
@@ -309,11 +312,14 @@ const StepDatosGenerales = ({
                   <Typography variant='body2' color='text.secondary'>
                     Haga clic para seleccionar imagen
                   </Typography>
+                  <Typography variant='caption' color='text.disabled' sx={{ mt: 0.5 }}>
+                    JPG, JPEG, PNG, WEBP hasta 5MB
+                  </Typography>
                 </>
               )}
               <input
                 type='file'
-                accept='image/png,image/jpeg,image/jpg,image/webp,image/gif,image/svg+xml'
+                accept='image/png,image/jpeg,image/jpg,image/webp'
                 onChange={handleExteriorImageChange}
                 className='absolute inset-0 opacity-0 cursor-pointer'
               />

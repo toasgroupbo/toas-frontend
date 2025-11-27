@@ -200,11 +200,14 @@ const CreateCompanyDialog = ({ open, onClose, onSubmit, isLoading }: CreateCompa
                     <Typography variant='body2' color='text.secondary' sx={{ mt: 1 }}>
                       Haga clic para seleccionar un logo
                     </Typography>
+                    <Typography variant='caption' color='text.disabled' sx={{ mt: 0.5 }}>
+                      JPG, JPEG, PNG, WEBP hasta 5MB
+                    </Typography>
                   </>
                 )}
                 <input
                   type='file'
-                  accept='image/png,image/jpeg,image/jpg,image/webp,image/gif,image/svg+xml'
+                  accept='image/png,image/jpeg,image/jpg,image/webp'
                   onChange={e => {
                     handleLogoChange(e)
                     setValue('logo', 'temp')
