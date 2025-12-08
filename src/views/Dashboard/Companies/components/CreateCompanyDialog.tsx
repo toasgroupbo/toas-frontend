@@ -38,6 +38,7 @@ const CreateCompanyDialog = ({ open, onClose, onSubmit, isLoading }: CreateCompa
   const [logoPreview, setLogoPreview] = useState<string>('')
   const [logoFile, setLogoFile] = useState<File | null>(null)
   const [showPassword, setShowPassword] = useState(false)
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false)
 
   const uploadImageMutation = useUploadImage()
 
@@ -63,6 +64,7 @@ const CreateCompanyDialog = ({ open, onClose, onSubmit, isLoading }: CreateCompa
       manager: {
         email: '',
         password: '',
+        confirmPassword: '',
         fullName: '',
         ci: '',
         phone: ''
@@ -107,9 +109,13 @@ const CreateCompanyDialog = ({ open, onClose, onSubmit, isLoading }: CreateCompa
         logoUrl = await uploadImageMutation.mutateAsync(logoFile)
       }
 
+      const { manager, ...rest } = data
+      const { confirmPassword, ...managerData } = manager
+
       const formattedData: CreateCompanyDto = {
-        ...data,
-        logo: logoUrl
+        ...rest,
+        logo: logoUrl,
+        manager: managerData
       }
 
       onSubmit(formattedData)
@@ -146,7 +152,7 @@ const CreateCompanyDialog = ({ open, onClose, onSubmit, isLoading }: CreateCompa
           <Grid container spacing={4}>
             {/* Logo */}
             <Grid size={12}>
-              <Typography variant='subtitle2' sx={{ mb: 2 }}>
+              <Typography variant='subtitle2' sx={{ mb: 2, color: errors.logo ? 'error.main' : 'inherit' }}>
                 Logo de la Empresa
               </Typography>
               <Box
@@ -476,7 +482,7 @@ const CreateCompanyDialog = ({ open, onClose, onSubmit, isLoading }: CreateCompa
               />
             </Grid>
 
-            <Grid size={12}>
+            <Grid size={{ xs: 12, sm: 6 }}>
               <CustomTextField
                 fullWidth
                 type={showPassword ? 'text' : 'password'}
@@ -496,6 +502,33 @@ const CreateCompanyDialog = ({ open, onClose, onSubmit, isLoading }: CreateCompa
                     <InputAdornment position='end'>
                       <IconButton onClick={() => setShowPassword(!showPassword)} edge='end'>
                         <i className={showPassword ? 'tabler-eye-off' : 'tabler-eye'} />
+                      </IconButton>
+                    </InputAdornment>
+                  )
+                }}
+              />
+            </Grid>
+
+            <Grid size={{ xs: 12, sm: 6 }}>
+              <CustomTextField
+                fullWidth
+                type={showConfirmPassword ? 'text' : 'password'}
+                label='Confirmar Contraseña *'
+                placeholder='••••••••'
+                {...register('manager.confirmPassword')}
+                error={!!errors.manager?.confirmPassword}
+                helperText={errors.manager?.confirmPassword?.message}
+                disabled={isLoading}
+                InputProps={{
+                  startAdornment: (
+                    <InputAdornment position='start'>
+                      <i className='tabler-lock-check' />
+                    </InputAdornment>
+                  ),
+                  endAdornment: (
+                    <InputAdornment position='end'>
+                      <IconButton onClick={() => setShowConfirmPassword(!showConfirmPassword)} edge='end'>
+                        <i className={showConfirmPassword ? 'tabler-eye-off' : 'tabler-eye'} />
                       </IconButton>
                     </InputAdornment>
                   )
