@@ -269,12 +269,16 @@ const EmpresaListTable = () => {
           return (
             <Box
               sx={{
-                width: 60,
-                height: 40,
+                width: 80,
+                height: 50,
                 borderRadius: 1,
                 overflow: 'hidden',
                 border: '1px solid',
-                borderColor: 'divider'
+                borderColor: 'divider',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                bgcolor: 'background.paper'
               }}
             >
               <img
@@ -283,7 +287,7 @@ const EmpresaListTable = () => {
                 style={{
                   width: '100%',
                   height: '100%',
-                  objectFit: 'cover'
+                  objectFit: 'contain'
                 }}
                 onError={e => {
                   e.currentTarget.src = '/images/placeholder-empresa.jpg'
@@ -292,7 +296,7 @@ const EmpresaListTable = () => {
             </Box>
           )
         },
-        size: 80
+        size: 100
       }),
       columnHelper.accessor('name', {
         header: 'Empresa',

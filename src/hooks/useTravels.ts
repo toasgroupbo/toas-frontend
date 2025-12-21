@@ -14,7 +14,7 @@ const fetchTravels = async (): Promise<Travel[]> => {
     try {
       const company = JSON.parse(actingAsCompany)
 
-      url = `/api/travels?companyUUID=${company.id}`
+      url = `/api/travels?companyId=${company.id}`
     } catch (error) {
       console.error('Error parsing acting_as_company:', error)
     }
@@ -33,7 +33,7 @@ const fetchTravelById = async (id: string): Promise<Travel> => {
     try {
       const company = JSON.parse(actingAsCompany)
 
-      url = `/api/travels/${id}?companyUUID=${company.id}`
+      url = `/api/travels/${id}?companyId=${company.id}`
     } catch (error) {
       console.error('Error parsing acting_as_company:', error)
     }
@@ -52,7 +52,7 @@ const createTravel = async (data: CreateTravelDto): Promise<Travel> => {
     try {
       const company = JSON.parse(actingAsCompany)
 
-      url = `/api/travels?companyUUID=${company.id}`
+      url = `/api/travels?companyId=${company.id}`
     } catch (error) {
       console.error('Error parsing acting_as_company:', error)
     }
@@ -71,7 +71,7 @@ const deleteTravel = async (id: string): Promise<void> => {
     try {
       const company = JSON.parse(actingAsCompany)
 
-      url = `/api/travels/${id}?companyUUID=${company.id}`
+      url = `/api/travels/${id}?companyId=${company.id}`
     } catch (error) {
       console.error('Error parsing acting_as_company:', error)
     }
@@ -81,12 +81,12 @@ const deleteTravel = async (id: string): Promise<void> => {
 }
 
 export const useTravels = () => {
-  const { companyUUID, hasCompany, isImpersonating } = useAuth()
+  const { companyId, hasCompany, isImpersonating } = useAuth()
 
   const shouldFetch = hasCompany || isImpersonating
 
   return useQuery({
-    queryKey: ['travels', companyUUID],
+    queryKey: ['travels', companyId],
     queryFn: fetchTravels,
     enabled: shouldFetch
   })

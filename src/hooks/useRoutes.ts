@@ -14,7 +14,7 @@ const fetchRoutes = async (): Promise<Route[]> => {
     try {
       const company = JSON.parse(actingAsCompany)
 
-      url = `/api/routes?companyUUID=${company.id}`
+      url = `/api/routes?companyId=${company.id}`
     } catch (error) {
       console.error('Error parsing acting_as_company:', error)
     }
@@ -33,7 +33,7 @@ const fetchRouteById = async (id: string): Promise<Route> => {
     try {
       const company = JSON.parse(actingAsCompany)
 
-      url = `/api/routes/${id}?companyUUID=${company.id}`
+      url = `/api/routes/${id}?companyId=${company.id}`
     } catch (error) {
       console.error('Error parsing acting_as_company:', error)
     }
@@ -45,7 +45,7 @@ const fetchRouteById = async (id: string): Promise<Route> => {
 }
 
 const createRoute = async (data: CreateRouteDto): Promise<Route> => {
-  // POST no lleva companyUUID según tu especificación
+  // POST no lleva companyId según tu especificación
   const response = await api.post<Route>('/api/routes', data)
 
   return response.data
@@ -59,7 +59,7 @@ const updateRoute = async ({ id, data }: { id: string; data: UpdateRouteDto }): 
     try {
       const company = JSON.parse(actingAsCompany)
 
-      url = `/api/routes/${id}?companyUUID=${company.id}`
+      url = `/api/routes/${id}?companyId=${company.id}`
     } catch (error) {
       console.error('Error parsing acting_as_company:', error)
     }
@@ -78,7 +78,7 @@ const deleteRoute = async (id: string): Promise<void> => {
     try {
       const company = JSON.parse(actingAsCompany)
 
-      url = `/api/routes/${id}?companyUUID=${company.id}`
+      url = `/api/routes/${id}?companyId=${company.id}`
     } catch (error) {
       console.error('Error parsing acting_as_company:', error)
     }
@@ -89,12 +89,12 @@ const deleteRoute = async (id: string): Promise<void> => {
 
 // Hooks
 export const useRoutes = () => {
-  const { companyUUID, hasCompany, isImpersonating } = useAuth()
+  const { companyId, hasCompany, isImpersonating } = useAuth()
 
   const shouldFetch = hasCompany || isImpersonating
 
   return useQuery({
-    queryKey: ['routes', companyUUID],
+    queryKey: ['routes', companyId],
     queryFn: fetchRoutes,
     enabled: shouldFetch
   })

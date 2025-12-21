@@ -21,7 +21,7 @@ api.interceptors.request.use(
       try {
         const company = JSON.parse(actingAsCompany)
 
-        config.headers['companyUUID'] = company.id
+        config.headers['companyId'] = company.id
       } catch (error) {
         console.error('Error parsing acting_as_company:', error)
       }

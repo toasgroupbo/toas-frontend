@@ -32,7 +32,7 @@ interface AuthContextType {
   clearImpersonation: () => void
   isImpersonating: boolean
   canImpersonate: boolean
-  companyUUID: string | null
+  companyId: string | null
 }
 
 const TOKEN_KEY = 'auth_token'
@@ -239,7 +239,7 @@ export const AuthProvider = ({ children }: ChildrenType) => {
 
   const canImpersonate = userRole === 'SUPER_ADMIN' || userRole === 'SUPERADMIN' || isCustomRole
 
-  const companyUUID = actingAsCompany?.id || user?.companyId || null
+  const companyId = actingAsCompany?.id || user?.companyId || null
 
   const value = useMemo(
     () => ({
@@ -265,7 +265,7 @@ export const AuthProvider = ({ children }: ChildrenType) => {
       clearImpersonation,
       isImpersonating,
       canImpersonate,
-      companyUUID
+      companyId
     }),
     [
       user,
@@ -289,7 +289,7 @@ export const AuthProvider = ({ children }: ChildrenType) => {
       clearImpersonation,
       isImpersonating,
       canImpersonate,
-      companyUUID
+      companyId
     ]
   )
 

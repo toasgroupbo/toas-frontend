@@ -14,7 +14,7 @@ const fetchBuses = async (): Promise<Bus[]> => {
     try {
       const company = JSON.parse(actingAsCompany)
 
-      url = `/api/buses?companyUUID=${company.id}`
+      url = `/api/buses?companyId=${company.id}`
     } catch (error) {
       console.error('Error parsing acting_as_company:', error)
     }
@@ -33,7 +33,7 @@ const fetchBusById = async (id: string): Promise<Bus> => {
     try {
       const company = JSON.parse(actingAsCompany)
 
-      url = `/api/buses/${id}?companyUUID=${company.id}`
+      url = `/api/buses/${id}?companyId=${company.id}`
     } catch (error) {
       console.error('Error parsing acting_as_company:', error)
     }
@@ -52,7 +52,7 @@ const createBus = async (data: CreateBusDto): Promise<Bus> => {
     try {
       const company = JSON.parse(actingAsCompany)
 
-      url = `/api/buses?companyUUID=${company.id}`
+      url = `/api/buses?companyId=${company.id}`
     } catch (error) {
       console.error('Error parsing acting_as_company:', error)
     }
@@ -71,7 +71,7 @@ const updateBus = async ({ id, data }: { id: string; data: UpdateBusDto }): Prom
     try {
       const company = JSON.parse(actingAsCompany)
 
-      url = `/api/buses/${id}?companyUUID=${company.id}`
+      url = `/api/buses/${id}?companyId=${company.id}`
     } catch (error) {
       console.error('Error parsing acting_as_company:', error)
     }
@@ -90,7 +90,7 @@ const deleteBus = async (id: string): Promise<void> => {
     try {
       const company = JSON.parse(actingAsCompany)
 
-      url = `/api/buses/${id}?companyUUID=${company.id}`
+      url = `/api/buses/${id}?companyId=${company.id}`
     } catch (error) {
       console.error('Error parsing acting_as_company:', error)
     }
@@ -101,12 +101,12 @@ const deleteBus = async (id: string): Promise<void> => {
 
 // Hooks
 export const useBuses = () => {
-  const { companyUUID, hasCompany, isImpersonating } = useAuth()
+  const { companyId, hasCompany, isImpersonating } = useAuth()
 
   const shouldFetch = hasCompany || isImpersonating
 
   return useQuery({
-    queryKey: ['buses', companyUUID],
+    queryKey: ['buses', companyId],
     queryFn: fetchBuses,
     enabled: shouldFetch
   })

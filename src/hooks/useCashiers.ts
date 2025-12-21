@@ -14,7 +14,7 @@ const fetchCashiers = async (): Promise<Cashier[]> => {
     try {
       const company = JSON.parse(actingAsCompany)
 
-      url = `/api/cashiers?companyUUID=${company.id}`
+      url = `/api/cashiers?companyId=${company.id}`
     } catch (error) {
       console.error('Error parsing acting_as_company:', error)
     }
@@ -33,7 +33,7 @@ const fetchCashierById = async (id: string): Promise<Cashier> => {
     try {
       const company = JSON.parse(actingAsCompany)
 
-      url = `/api/cashiers/${id}?companyUUID=${company.id}`
+      url = `/api/cashiers/${id}?companyId=${company.id}`
     } catch (error) {
       console.error('Error parsing acting_as_company:', error)
     }
@@ -52,7 +52,7 @@ const createCashier = async (data: CreateCashierDto): Promise<Cashier> => {
     try {
       const company = JSON.parse(actingAsCompany)
 
-      url = `/api/cashiers?companyUUID=${company.id}`
+      url = `/api/cashiers?companyId=${company.id}`
     } catch (error) {
       console.error('Error parsing acting_as_company:', error)
     }
@@ -71,7 +71,7 @@ const updateCashier = async ({ id, data }: { id: string; data: UpdateCashierDto 
     try {
       const company = JSON.parse(actingAsCompany)
 
-      url = `/api/users/${id}?companyUUID=${company.id}`
+      url = `/api/users/${id}?companyId=${company.id}`
     } catch (error) {
       console.error('Error parsing acting_as_company:', error)
     }
@@ -90,7 +90,7 @@ const updateCashierOffice = async ({ id, office }: { id: string; office: string 
     try {
       const company = JSON.parse(actingAsCompany)
 
-      url = `/api/cashiers/office/${id}?companyUUID=${company.id}`
+      url = `/api/cashiers/office/${id}?companyId=${company.id}`
     } catch (error) {
       console.error('Error parsing acting_as_company:', error)
     }
@@ -107,7 +107,7 @@ const deleteCashier = async (id: string): Promise<void> => {
     try {
       const company = JSON.parse(actingAsCompany)
 
-      url = `/api/users/${id}?companyUUID=${company.id}`
+      url = `/api/users/${id}?companyId=${company.id}`
     } catch (error) {
       console.error('Error parsing acting_as_company:', error)
     }
@@ -124,7 +124,7 @@ const changePassword = async ({ id, password }: { id: string; password: string }
     try {
       const company = JSON.parse(actingAsCompany)
 
-      url = `/api/users/${id}?companyUUID=${company.id}`
+      url = `/api/users/${id}?companyId=${company.id}`
     } catch (error) {
       console.error('Error parsing acting_as_company:', error)
     }
@@ -135,12 +135,12 @@ const changePassword = async ({ id, password }: { id: string; password: string }
 
 // Hooks
 export const useCashiers = () => {
-  const { companyUUID, hasCompany, isImpersonating } = useAuth()
+  const { companyId, hasCompany, isImpersonating } = useAuth()
 
   const shouldFetch = hasCompany || isImpersonating
 
   return useQuery({
-    queryKey: ['cashiers', companyUUID],
+    queryKey: ['cashiers', companyId],
     queryFn: fetchCashiers,
     enabled: shouldFetch
   })

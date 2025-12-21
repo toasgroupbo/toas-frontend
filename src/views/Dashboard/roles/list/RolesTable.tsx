@@ -41,6 +41,18 @@ import tableStyles from '@core/styles/table.module.css'
 import { usePermissions } from '@/hooks/usePermissions'
 import RoleDialog from '../components/RolesDialog'
 
+const getRoleDisplayName = (roleName: string): string => {
+  const roleNames: Record<string, string> = {
+    SUPER_ADMIN: 'Super Administrador',
+    COMPANY_ADMIN: 'Administrador de Empresa',
+    OFFICE_ADMIN: 'Administrador de Oficina',
+    CASHIER: 'Cajero',
+    CUSTOMER: 'Cliente'
+  }
+
+  return roleNames[roleName] || roleName
+}
+
 type RoleWithActionsType = Role & {
   actions?: string
 }
@@ -220,7 +232,7 @@ const RolesPage = () => {
         cell: ({ row }) => (
           <Box display='flex' alignItems='center' gap={2}>
             <Typography className='font-medium' color='text.primary'>
-              {row.original.name}
+              {getRoleDisplayName(row.original.name)}
             </Typography>
             {row.original.isStatic && <Chip label='Estático' size='small' color='primary' variant='tonal' />}
           </Box>

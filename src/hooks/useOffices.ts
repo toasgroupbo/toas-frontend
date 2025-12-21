@@ -14,7 +14,7 @@ const fetchOffices = async (): Promise<Office[]> => {
     try {
       const company = JSON.parse(actingAsCompany)
 
-      url = `/api/offices?companyUUID=${company.id}`
+      url = `/api/offices?companyId=${company.id}`
     } catch (error) {
       console.error('Error parsing acting_as_company:', error)
     }
@@ -33,7 +33,7 @@ const fetchOfficeById = async (id: string): Promise<Office> => {
     try {
       const company = JSON.parse(actingAsCompany)
 
-      url = `/api/offices/${id}?companyUUID=${company.id}`
+      url = `/api/offices/${id}?companyId=${company.id}`
     } catch (error) {
       console.error('Error parsing acting_as_company:', error)
     }
@@ -52,7 +52,7 @@ const createOffice = async (data: CreateOfficeDto): Promise<Office> => {
     try {
       const company = JSON.parse(actingAsCompany)
 
-      url = `/api/offices?companyUUID=${company.id}`
+      url = `/api/offices?companyId=${company.id}`
     } catch (error) {
       console.error('Error parsing acting_as_company:', error)
     }
@@ -71,7 +71,7 @@ const updateOffice = async ({ id, data }: { id: string; data: UpdateOfficeDto })
     try {
       const company = JSON.parse(actingAsCompany)
 
-      url = `/api/offices/${id}?companyUUID=${company.id}`
+      url = `/api/offices/${id}?companyId=${company.id}`
     } catch (error) {
       console.error('Error parsing acting_as_company:', error)
     }
@@ -90,7 +90,7 @@ const deleteOffice = async (id: string): Promise<void> => {
     try {
       const company = JSON.parse(actingAsCompany)
 
-      url = `/api/offices/${id}?companyUUID=${company.id}`
+      url = `/api/offices/${id}?companyId=${company.id}`
     } catch (error) {
       console.error('Error parsing acting_as_company:', error)
     }
@@ -101,12 +101,12 @@ const deleteOffice = async (id: string): Promise<void> => {
 
 // Hooks
 export const useOffices = () => {
-  const { companyUUID, hasCompany, isImpersonating } = useAuth()
+  const { companyId, hasCompany, isImpersonating } = useAuth()
 
   const shouldFetch = hasCompany || isImpersonating
 
   return useQuery({
-    queryKey: ['offices', companyUUID],
+    queryKey: ['offices', companyId],
     queryFn: fetchOffices,
     enabled: shouldFetch
   })

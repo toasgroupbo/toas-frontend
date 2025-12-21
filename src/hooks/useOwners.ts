@@ -14,7 +14,7 @@ const fetchOwners = async (): Promise<Owner[]> => {
     try {
       const company = JSON.parse(actingAsCompany)
 
-      url = `/api/owners?companyUUID=${company.id}`
+      url = `/api/owners?companyId=${company.id}`
     } catch (error) {
       console.error('Error parsing acting_as_company:', error)
     }
@@ -33,7 +33,7 @@ const fetchOwnerById = async (id: string): Promise<Owner> => {
     try {
       const company = JSON.parse(actingAsCompany)
 
-      url = `/api/owners/${id}?companyUUID=${company.id}`
+      url = `/api/owners/${id}?companyId=${company.id}`
     } catch (error) {
       console.error('Error parsing acting_as_company:', error)
     }
@@ -52,7 +52,7 @@ const createOwner = async (data: CreateOwnerDto): Promise<Owner> => {
     try {
       const company = JSON.parse(actingAsCompany)
 
-      url = `/api/owners?companyUUID=${company.id}`
+      url = `/api/owners?companyId=${company.id}`
     } catch (error) {
       console.error('Error parsing acting_as_company:', error)
     }
@@ -71,7 +71,7 @@ const updateOwner = async ({ id, data }: { id: string; data: UpdateOwnerDto }): 
     try {
       const company = JSON.parse(actingAsCompany)
 
-      url = `/api/owners/${id}?companyUUID=${company.id}`
+      url = `/api/owners/${id}?companyId=${company.id}`
     } catch (error) {
       console.error('Error parsing acting_as_company:', error)
     }
@@ -96,7 +96,7 @@ const updateBankAccount = async ({
     try {
       const company = JSON.parse(actingAsCompany)
 
-      url = `/api/bank-accounts/${bankAccountId}?companyUUID=${company.id}`
+      url = `/api/bank-accounts/${bankAccountId}?companyId=${company.id}`
     } catch (error) {
       console.error('Error parsing acting_as_company:', error)
     }
@@ -113,7 +113,7 @@ const deleteOwner = async (id: string): Promise<void> => {
     try {
       const company = JSON.parse(actingAsCompany)
 
-      url = `/api/owners/${id}?companyUUID=${company.id}`
+      url = `/api/owners/${id}?companyId=${company.id}`
     } catch (error) {
       console.error('Error parsing acting_as_company:', error)
     }
@@ -123,12 +123,12 @@ const deleteOwner = async (id: string): Promise<void> => {
 }
 
 export const useOwners = () => {
-  const { companyUUID, hasCompany, isImpersonating } = useAuth()
+  const { companyId, hasCompany, isImpersonating } = useAuth()
 
   const shouldFetch = hasCompany || isImpersonating
 
   return useQuery({
-    queryKey: ['owners', companyUUID],
+    queryKey: ['owners', companyId],
     queryFn: fetchOwners,
     enabled: shouldFetch
   })
