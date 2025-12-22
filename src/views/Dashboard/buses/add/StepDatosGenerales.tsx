@@ -42,10 +42,11 @@ interface StepDatosGeneralesProps {
 
 const EQUIPMENT_OPTIONS: { value: BusEquipment; label: string; icon: string }[] = [
   { value: BusEquipment.WIFI, label: 'WiFi', icon: 'tabler-wifi' },
-  { value: BusEquipment.USB_CHARGER, label: 'Cargador USB', icon: 'tabler-usb' },
+  { value: BusEquipment.TV, label: 'TV', icon: 'tabler-device-tv' },
   { value: BusEquipment.AIR_CONDITIONING, label: 'Aire Acondicionado', icon: 'tabler-air-conditioning' },
-  { value: BusEquipment.BATHROOM, label: 'Baño', icon: 'tabler-bath' },
-  { value: BusEquipment.TV, label: 'TV', icon: 'tabler-device-tv' }
+  { value: BusEquipment.BATHROOM, label: 'Baño', icon: 'tabler-toilet-paper' },
+  { value: BusEquipment.USB_CHARGER, label: 'Cargador USB', icon: 'tabler-usb' },
+  { value: BusEquipment.TABLET, label: 'Tablet', icon: 'tabler-device-tablet' }
 ]
 
 const StepDatosGenerales = ({

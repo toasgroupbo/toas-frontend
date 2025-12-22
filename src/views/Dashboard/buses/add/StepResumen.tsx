@@ -42,11 +42,29 @@ interface StepResumenProps {
 
 const EQUIPMENT_OPTIONS: { value: BusEquipment; label: string; icon: string }[] = [
   { value: BusEquipment.WIFI, label: 'WiFi', icon: 'tabler-wifi' },
-  { value: BusEquipment.USB_CHARGER, label: 'Cargador USB', icon: 'tabler-usb' },
+  { value: BusEquipment.TV, label: 'TV', icon: 'tabler-device-tv' },
   { value: BusEquipment.AIR_CONDITIONING, label: 'Aire Acondicionado', icon: 'tabler-air-conditioning' },
-  { value: BusEquipment.BATHROOM, label: 'Baño', icon: 'tabler-bath' },
-  { value: BusEquipment.TV, label: 'TV', icon: 'tabler-device-tv' }
+  { value: BusEquipment.BATHROOM, label: 'Baño', icon: 'tabler-toilet-paper' },
+  { value: BusEquipment.USB_CHARGER, label: 'Cargador USB', icon: 'tabler-usb' },
+  { value: BusEquipment.TABLET, label: 'Tablet', icon: 'tabler-device-tablet' }
 ]
+
+const getDeckTypeLabel = (deckType: string): string => {
+  switch (deckType) {
+    case 'LEITO':
+      return 'Leito'
+    case 'SEMICAMA':
+      return 'Semicama'
+    case 'CAMA':
+      return 'Cama'
+    case 'MIXTO':
+      return 'Mixto'
+    case 'suit_cama':
+      return 'Suit Cama'
+    default:
+      return deckType
+  }
+}
 
 const StepResumen = ({
   name,
@@ -189,7 +207,7 @@ const StepResumen = ({
                         <TableCell>Piso {deck.deck}</TableCell>
                         <TableCell>
                           <Chip
-                            label={deck.deckType}
+                            label={getDeckTypeLabel(deck.deckType)}
                             color={index === 0 ? 'primary' : 'secondary'}
                             size='small'
                             className='font-medium'

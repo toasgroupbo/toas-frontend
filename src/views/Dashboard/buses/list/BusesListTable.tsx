@@ -55,6 +55,23 @@ const fuzzyFilter: FilterFn<any> = (row, columnId, value, addMeta) => {
   return itemRank.passed
 }
 
+const getDeckTypeLabel = (deckType: string): string => {
+  switch (deckType) {
+    case 'LEITO':
+      return 'Leito'
+    case 'SEMICAMA':
+      return 'Semicama'
+    case 'CAMA':
+      return 'Cama'
+    case 'MIXTO':
+      return 'Mixto'
+    case 'suit_cama':
+      return 'Suit Cama'
+    default:
+      return deckType
+  }
+}
+
 const DebouncedInput = ({
   value: initialValue,
   onChange,
@@ -136,10 +153,11 @@ const BusListTable = () => {
   const getEquipmentIcons = (equipment: string[]) => {
     const iconMap: Record<string, { icon: string; label: string; color: string }> = {
       wifi: { icon: 'tabler-wifi', label: 'WiFi', color: 'primary.main' },
-      usb_charger: { icon: 'tabler-usb', label: 'USB', color: 'success.main' },
+      tv: { icon: 'tabler-device-tv', label: 'TV', color: 'secondary.main' },
       air_conditioning: { icon: 'tabler-air-conditioning', label: 'A/C', color: 'info.main' },
-      bathroom: { icon: 'tabler-bath', label: 'Baño', color: 'warning.main' },
-      tv: { icon: 'tabler-device-tv', label: 'TV', color: 'secondary.main' }
+      bathroom: { icon: 'tabler-toilet-paper', label: 'Baño', color: 'warning.main' },
+      usb_charger: { icon: 'tabler-usb', label: 'USB', color: 'success.main' },
+      tablet: { icon: 'tabler-device-tablet', label: 'Tablet', color: 'error.main' }
     }
 
     return equipment.map(item => iconMap[item]).filter(Boolean)
@@ -339,7 +357,7 @@ const BusListTable = () => {
             {row.original.busType.decks.map((deck, index) => (
               <Chip
                 key={index}
-                label={`Piso ${deck.deck}: ${deck.deckType} (${deck.seats.filter(s => s.type === 'seat').length} asientos)`}
+                label={`Piso ${deck.deck}: ${getDeckTypeLabel(deck.deckType)} (${deck.seats.filter(s => s.type === 'seat').length} asientos)`}
                 size='small'
                 variant='outlined'
                 color={index === 0 ? 'primary' : 'secondary'}

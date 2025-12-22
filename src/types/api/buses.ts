@@ -3,7 +3,8 @@ export enum BusEquipment {
   USB_CHARGER = 'usb_charger',
   AIR_CONDITIONING = 'air_conditioning',
   BATHROOM = 'bathroom',
-  TV = 'tv'
+  TV = 'tv',
+  TABLET = 'tablet'
 }
 
 export enum DeckType {
@@ -72,7 +73,7 @@ export interface CreateBusDto {
   brand: string
   model: string
   busType: BusTypeDto
-  owner: string
+  ownerId: string
 }
 
 export interface UpdateBusDto {
@@ -84,5 +85,5 @@ export interface UpdateBusDto {
   brand?: string
   model?: string
   busType?: BusTypeDto
-  owner?: string
+  ownerId?: string
 }
