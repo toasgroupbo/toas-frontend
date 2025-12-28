@@ -1,7 +1,12 @@
 export interface RouteOffice {
-  id: string
-  name: string
-  place: string
+  id: number
+  city: string
+  url_gps: string
+  createdAt?: string
+  place?: {
+    id: number
+    name: string
+  }
 }
 
 export interface Route {
@@ -13,13 +18,13 @@ export interface Route {
 }
 
 export interface CreateRouteDto {
-  officeOriginUUID: string
-  officeDestinationUUID: string
+  officeOriginId: number
+  officeDestinationId: number
   pass_by: string[]
 }
 
 export interface UpdateRouteDto {
-  officeOriginUUID?: string
-  officeDestinationUUID?: string
+  officeOriginId?: number
+  officeDestinationId?: number
   pass_by?: string[]
 }

@@ -25,7 +25,7 @@ const fetchCashiers = async (): Promise<Cashier[]> => {
   return response.data
 }
 
-const fetchCashierById = async (id: string): Promise<Cashier> => {
+const fetchCashierById = async (id: number): Promise<Cashier> => {
   const actingAsCompany = localStorage.getItem('acting_as_company')
   let url = `/api/cashiers/${id}`
 
@@ -63,7 +63,7 @@ const createCashier = async (data: CreateCashierDto): Promise<Cashier> => {
   return response.data
 }
 
-const updateCashier = async ({ id, data }: { id: string; data: UpdateCashierDto }): Promise<Cashier> => {
+const updateCashier = async ({ id, data }: { id: number; data: UpdateCashierDto }): Promise<Cashier> => {
   const actingAsCompany = localStorage.getItem('acting_as_company')
   let url = `/api/users/${id}`
 
@@ -82,7 +82,7 @@ const updateCashier = async ({ id, data }: { id: string; data: UpdateCashierDto 
   return response.data
 }
 
-const updateCashierOffice = async ({ id, office }: { id: string; office: string }): Promise<void> => {
+const updateCashierOffice = async ({ id, officeId }: { id: number; officeId: number }): Promise<void> => {
   const actingAsCompany = localStorage.getItem('acting_as_company')
   let url = `/api/cashiers/office/${id}`
 
@@ -96,10 +96,10 @@ const updateCashierOffice = async ({ id, office }: { id: string; office: string 
     }
   }
 
-  await api.put(url, { NewOfficeUUID: office })
+  await api.put(url, { officeId: officeId })
 }
 
-const deleteCashier = async (id: string): Promise<void> => {
+const deleteCashier = async (id: number): Promise<void> => {
   const actingAsCompany = localStorage.getItem('acting_as_company')
   let url = `/api/users/${id}`
 
@@ -116,7 +116,7 @@ const deleteCashier = async (id: string): Promise<void> => {
   await api.delete(url)
 }
 
-const changePassword = async ({ id, password }: { id: string; password: string }): Promise<void> => {
+const changePassword = async ({ id, password }: { id: number; password: string }): Promise<void> => {
   const actingAsCompany = localStorage.getItem('acting_as_company')
   let url = `/api/users/${id}`
 
@@ -146,7 +146,7 @@ export const useCashiers = () => {
   })
 }
 
-export const useCashierById = (id: string | undefined) => {
+export const useCashierById = (id: number | undefined) => {
   return useQuery({
     queryKey: ['cashier', id],
     queryFn: () => fetchCashierById(id!),
@@ -175,17 +175,17 @@ export const useUpdateCashier = () => {
       officeData,
       originalOffice
     }: {
-      cashierId: string
+      cashierId: number
       cashierData: UpdateCashierDto
-      officeData: string
-      originalOffice?: string
+      officeData: number
+      originalOffice?: number
     }) => {
       await updateCashier({ id: cashierId, data: cashierData })
 
       const officeChanged = !originalOffice || originalOffice !== officeData
 
       if (officeChanged && officeData) {
-        await updateCashierOffice({ id: cashierId, office: officeData })
+        await updateCashierOffice({ id: cashierId, officeId: officeData })
       }
     },
     onSuccess: (_, variables) => {

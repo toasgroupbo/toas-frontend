@@ -1,28 +1,37 @@
 import type { Company } from './company'
-import type { Office } from './offices'
 
 export interface Permission {
   id: number
   resourse: string
   permissions: string[]
+  createdAt: string
 }
 
 export interface CashierRole {
   id: number
   name: string
   isStatic: boolean
+  createdAt: string
   permissions: Permission[]
 }
 
+export interface CashierOffice {
+  id: number
+  url_gps: string
+  city: string
+  createdAt: string
+}
+
 export interface Cashier {
-  id: string
+  id: number
   email: string
   fullName: string
   ci: string
   phone: string
+  createdAt: string
   rol: CashierRole | null
   company: Company | null
-  office: Office | null
+  office: CashierOffice | null
 }
 
 export interface CreateCashierDto {
@@ -31,7 +40,7 @@ export interface CreateCashierDto {
   fullName: string
   ci: string
   phone: string
-  office: string
+  officeId: number
 }
 
 export interface UpdateCashierDto {
@@ -42,5 +51,5 @@ export interface UpdateCashierDto {
 }
 
 export interface UpdateCashierOfficeDto {
-  office: string
+  officeId: number
 }

@@ -3,8 +3,14 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 
 import { api } from '@/libs/axios'
-import type { Office, CreateOfficeDto, UpdateOfficeDto } from '@/types/api/offices'
+import type { Office, CreateOfficeDto, UpdateOfficeDto, Place } from '@/types/api/offices'
 import { useAuth } from '@/contexts/AuthContext'
+
+const fetchPlaces = async (): Promise<Place[]> => {
+  const response = await api.get<Place[]>('/api/places')
+
+  return response.data
+}
 
 const fetchOffices = async (): Promise<Office[]> => {
   const actingAsCompany = localStorage.getItem('acting_as_company')
@@ -25,7 +31,7 @@ const fetchOffices = async (): Promise<Office[]> => {
   return response.data
 }
 
-const fetchOfficeById = async (id: string): Promise<Office> => {
+const fetchOfficeById = async (id: number): Promise<Office> => {
   const actingAsCompany = localStorage.getItem('acting_as_company')
   let url = `/api/offices/${id}`
 
@@ -63,7 +69,7 @@ const createOffice = async (data: CreateOfficeDto): Promise<Office> => {
   return response.data
 }
 
-const updateOffice = async ({ id, data }: { id: string; data: UpdateOfficeDto }): Promise<Office> => {
+const updateOffice = async ({ id, data }: { id: number; data: UpdateOfficeDto }): Promise<Office> => {
   const actingAsCompany = localStorage.getItem('acting_as_company')
   let url = `/api/offices/${id}`
 
@@ -82,7 +88,7 @@ const updateOffice = async ({ id, data }: { id: string; data: UpdateOfficeDto })
   return response.data
 }
 
-const deleteOffice = async (id: string): Promise<void> => {
+const deleteOffice = async (id: number): Promise<void> => {
   const actingAsCompany = localStorage.getItem('acting_as_company')
   let url = `/api/offices/${id}`
 
@@ -100,6 +106,13 @@ const deleteOffice = async (id: string): Promise<void> => {
 }
 
 // Hooks
+export const usePlaces = () => {
+  return useQuery({
+    queryKey: ['places'],
+    queryFn: fetchPlaces
+  })
+}
+
 export const useOffices = () => {
   const { companyId, hasCompany, isImpersonating } = useAuth()
 
@@ -112,7 +125,7 @@ export const useOffices = () => {
   })
 }
 
-export const useOfficeById = (id: string | undefined) => {
+export const useOfficeById = (id: number | undefined) => {
   return useQuery({
     queryKey: ['office', id],
     queryFn: () => fetchOfficeById(id!),

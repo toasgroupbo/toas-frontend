@@ -56,7 +56,7 @@ const DeleteOfficeDialog = ({ open, onClose, onConfirm, office, isLoading = fals
               <i className='tabler-building' style={{ fontSize: '24px', color: 'var(--mui-palette-primary-main)' }} />
               <div>
                 <Typography variant='subtitle1' fontWeight='bold'>
-                  {office.name}
+                  {office.city}
                 </Typography>
                 <div className='flex items-center gap-1 mt-1'>
                   <i
@@ -64,7 +64,7 @@ const DeleteOfficeDialog = ({ open, onClose, onConfirm, office, isLoading = fals
                     style={{ fontSize: '16px', color: 'var(--mui-palette-text-secondary)' }}
                   />
                   <Typography variant='body2' color='text.secondary'>
-                    {office.place}
+                    {office.place.name}
                   </Typography>
                 </div>
               </div>

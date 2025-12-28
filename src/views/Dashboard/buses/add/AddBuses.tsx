@@ -334,7 +334,7 @@ const AddBuses = () => {
           name: busTypeName,
           decks: builtDecks
         },
-        ownerId: String(owner)
+        ownerId: parseInt(owner, 10)
       }
 
       if (isEditMode && busId) {

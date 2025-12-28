@@ -87,7 +87,7 @@ const DeleteTravelDialog = ({ open, onClose, onConfirm, travel, isLoading = fals
                   <div className='flex items-center gap-1'>
                     <i className='tabler-flag' style={{ fontSize: '16px', color: 'var(--mui-palette-success-main)' }} />
                     <Typography variant='body2' fontWeight='medium'>
-                      {travel.route.officeOrigin.place}
+                      {travel.route.officeOrigin.city}
                     </Typography>
                   </div>
                   <i className='tabler-arrow-right' style={{ fontSize: '16px' }} />
@@ -97,7 +97,7 @@ const DeleteTravelDialog = ({ open, onClose, onConfirm, travel, isLoading = fals
                       style={{ fontSize: '16px', color: 'var(--mui-palette-error-main)' }}
                     />
                     <Typography variant='body2' fontWeight='medium'>
-                      {travel.route.officeDestination.place}
+                      {travel.route.officeDestination.city}
                     </Typography>
                   </div>
                 </Box>

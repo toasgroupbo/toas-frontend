@@ -236,7 +236,7 @@ const TravelsTable = () => {
               <div className='flex items-center gap-1'>
                 <i className='tabler-flag' style={{ fontSize: '16px', color: 'var(--mui-palette-success-main)' }} />
                 <Typography variant='caption' fontWeight='medium'>
-                  {row.original.route.officeOrigin.place}
+                  {row.original.route.officeOrigin.city}
                 </Typography>
               </div>
               <i className='tabler-arrow-right' style={{ fontSize: '16px' }} />
@@ -246,7 +246,7 @@ const TravelsTable = () => {
                   style={{ fontSize: '16px', color: 'var(--mui-palette-error-main)' }}
                 />
                 <Typography variant='caption' fontWeight='medium'>
-                  {row.original.route.officeDestination.place}
+                  {row.original.route.officeDestination.city}
                 </Typography>
               </div>
             </Box>
@@ -295,15 +295,15 @@ const TravelsTable = () => {
           />
         )
       }),
-      columnHelper.accessor('isActive', {
+      columnHelper.accessor('travel_status', {
         header: 'Estado',
         cell: ({ row }) => (
           <Chip
-            label={row.original.isActive ? 'Activo' : 'Inactivo'}
-            color={row.original.isActive ? 'success' : 'default'}
+            label={row.original.travel_status === 'active' ? 'Activo' : 'Inactivo'}
+            color={row.original.travel_status === 'active' ? 'success' : 'default'}
             variant='tonal'
             size='small'
-            icon={<i className={row.original.isActive ? 'tabler-check' : 'tabler-x'} style={{ fontSize: '14px' }} />}
+            icon={<i className={row.original.travel_status === 'active' ? 'tabler-check' : 'tabler-x'} style={{ fontSize: '14px' }} />}
           />
         )
       })

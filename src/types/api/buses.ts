@@ -73,7 +73,7 @@ export interface CreateBusDto {
   brand: string
   model: string
   busType: BusTypeDto
-  ownerId: string
+  ownerId: number
 }
 
 export interface UpdateBusDto {
@@ -85,5 +85,5 @@ export interface UpdateBusDto {
   brand?: string
   model?: string
   busType?: BusTypeDto
-  ownerId?: string
+  ownerId?: number
 }

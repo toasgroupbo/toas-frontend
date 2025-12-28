@@ -116,7 +116,7 @@ const CashiersTable = () => {
     }
   }, [cashiers])
 
-  const handleCreateCashier = async (data: CreateCashierDto | UpdateCashierDto, officeId: string) => {
+  const handleCreateCashier = async (data: CreateCashierDto | UpdateCashierDto, officeId: number) => {
     try {
       await createMutation.mutateAsync(data as CreateCashierDto)
       setCreateDialogOpen(false)
@@ -132,7 +132,7 @@ const CashiersTable = () => {
     setEditDialogOpen(true)
   }
 
-  const handleUpdateCashier = async (data: CreateCashierDto | UpdateCashierDto, officeId: string) => {
+  const handleUpdateCashier = async (data: CreateCashierDto | UpdateCashierDto, officeId: number) => {
     if (!selectedCashier) return
 
     try {
@@ -296,14 +296,9 @@ const CashiersTable = () => {
           row.original.office ? (
             <div className='flex items-center gap-2'>
               <i className='tabler-building' style={{ fontSize: '18px', color: 'var(--mui-palette-primary-main)' }} />
-              <div className='flex flex-col'>
-                <Typography variant='body2' fontWeight='medium'>
-                  {row.original.office.name}
-                </Typography>
-                <Typography variant='caption' color='text.secondary'>
-                  {row.original.office.place}
-                </Typography>
-              </div>
+              <Typography variant='body2' fontWeight='medium'>
+                {row.original.office.city}
+              </Typography>
             </div>
           ) : (
             <Chip label='Sin Oficina' color='default' variant='outlined' size='small' />

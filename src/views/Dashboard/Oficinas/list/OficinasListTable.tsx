@@ -228,26 +228,46 @@ const OfficesListTable = () => {
         ),
         enableSorting: false
       }),
-      columnHelper.accessor('name', {
-        header: 'Nombre',
+      columnHelper.accessor('city', {
+        header: 'Ciudad',
         cell: ({ row }) => (
           <div className='flex items-center gap-2'>
             <i className='tabler-building' style={{ fontSize: '20px', color: 'var(--mui-palette-primary-main)' }} />
             <Typography className='font-medium' color='text.primary'>
-              {row.original.name}
+              {row.original.city}
             </Typography>
           </div>
         )
       }),
       columnHelper.accessor('place', {
-        header: 'Ubicación',
+        header: 'Lugar',
         cell: ({ row }) => (
           <div className='flex items-center gap-2'>
             <i className='tabler-map-pin' style={{ fontSize: '18px', color: 'var(--mui-palette-secondary-main)' }} />
             <Typography variant='body2' color='text.primary'>
-              {row.original.place}
+              {row.original.place.name}
             </Typography>
           </div>
+        )
+      }),
+      columnHelper.accessor('url_gps', {
+        header: 'URL GPS',
+        cell: ({ row }) => (
+          <Tooltip title='Ver en mapa'>
+            <IconButton
+              component='a'
+              href={row.original.url_gps}
+              target='_blank'
+              rel='noopener noreferrer'
+              size='small'
+              sx={{
+                color: 'info.main',
+                '&:hover': { backgroundColor: 'info.light' }
+              }}
+            >
+              <i className='tabler-map-2' style={{ fontSize: '18px' }} />
+            </IconButton>
+          </Tooltip>
         )
       }),
       columnHelper.accessor('createdAt', {

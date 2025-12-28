@@ -1,17 +1,27 @@
-export enum OfficePlaces {
+export enum BoliviaCities {
   SANTA_CRUZ = 'Santa Cruz de la Sierra',
-  MONTERO = 'Montero',
-  WARNES = 'Warnes',
-  COTOCA = 'Cotoca',
-  LA_GUARDIA = 'La Guardia',
-  EL_TORNO = 'El Torno',
-  MINEROS = 'Mineros'
+  COCHABAMBA = 'Cochabamba',
+  CHUQUISACA = 'Chuquisaca',
+  LA_PAZ = 'La Paz',
+  POTOSI = 'Potosi',
+  TARIJA = 'Tarija',
+  PANDO = 'Pando',
+  ORURO = 'Oruro',
+  BENI = 'Beni'
+}
+
+export interface Place {
+  id: number
+  name: string
+  createdAt?: string
+  updatedAt?: string
 }
 
 export interface Office {
-  id: string
-  name: string
-  place: OfficePlaces
+  id: number
+  url_gps: string
+  city: string
+  place: Place
   createdAt?: string
   deletedAt?: string | null
   company?: {
@@ -20,11 +30,13 @@ export interface Office {
 }
 
 export interface CreateOfficeDto {
-  name: string
-  place: string
+  url_gps: string
+  city: string
+  placeId: number
 }
 
 export interface UpdateOfficeDto {
-  name?: string
-  place?: string
+  url_gps?: string
+  city?: string
+  placeId?: number
 }

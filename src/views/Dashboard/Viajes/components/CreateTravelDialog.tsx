@@ -29,8 +29,8 @@ interface CreateTravelDialogProps {
 }
 
 interface FormData {
-  busUUID: string
-  routeUUID: string
+  busId: number | ''
+  routeId: number | ''
   price_deck_1: string
   price_deck_2: string
   departure_time: string
@@ -49,8 +49,8 @@ const CreateTravelDialog = ({ open, onClose, onSubmit, isLoading = false }: Crea
     formState: { errors }
   } = useForm<FormData>({
     defaultValues: {
-      busUUID: '',
-      routeUUID: '',
+      busId: '',
+      routeId: '',
       price_deck_1: '',
       price_deck_2: '',
       departure_time: '',
@@ -67,7 +67,14 @@ const CreateTravelDialog = ({ open, onClose, onSubmit, isLoading = false }: Crea
   }, [open, reset])
 
   const handleFormSubmit = async (data: FormData) => {
-    await onSubmit(data)
+    // Asegurar que busId y routeId sean números válidos
+    const payload: CreateTravelDto = {
+      ...data,
+      busId: typeof data.busId === 'number' ? data.busId : Number(data.busId),
+      routeId: typeof data.routeId === 'number' ? data.routeId : Number(data.routeId)
+    }
+
+    await onSubmit(payload)
   }
 
   const handleClose = () => {
@@ -94,7 +101,7 @@ const CreateTravelDialog = ({ open, onClose, onSubmit, isLoading = false }: Crea
           <Grid container spacing={4}>
             <Grid item xs={12} sm={6}>
               <Controller
-                name='busUUID'
+                name='busId'
                 control={control}
                 rules={{
                   required: 'El bus es requerido'
@@ -105,9 +112,10 @@ const CreateTravelDialog = ({ open, onClose, onSubmit, isLoading = false }: Crea
                     select
                     fullWidth
                     label='Bus'
-                    error={!!errors.busUUID}
-                    helperText={errors.busUUID?.message}
+                    error={!!errors.busId}
+                    helperText={errors.busId?.message}
                     disabled={isLoading || busesLoading}
+                    onChange={e => field.onChange(Number(e.target.value))}
                     InputProps={{
                       startAdornment: (
                         <InputAdornment position='start'>
@@ -123,7 +131,7 @@ const CreateTravelDialog = ({ open, onClose, onSubmit, isLoading = false }: Crea
                       </MenuItem>
                     ) : buses && buses.length > 0 ? (
                       buses.map(bus => (
-                        <MenuItem key={bus.id} value={bus.id}>
+                        <MenuItem key={bus.id} value={Number(bus.id)}>
                           <div className='flex items-center gap-2'>
                             <i className='tabler-bus' style={{ fontSize: '18px' }} />
                             <div className='flex flex-col'>
@@ -145,7 +153,7 @@ const CreateTravelDialog = ({ open, onClose, onSubmit, isLoading = false }: Crea
 
             <Grid item xs={12} sm={6}>
               <Controller
-                name='routeUUID'
+                name='routeId'
                 control={control}
                 rules={{
                   required: 'La ruta es requerida'
@@ -156,9 +164,10 @@ const CreateTravelDialog = ({ open, onClose, onSubmit, isLoading = false }: Crea
                     select
                     fullWidth
                     label='Ruta'
-                    error={!!errors.routeUUID}
-                    helperText={errors.routeUUID?.message}
+                    error={!!errors.routeId}
+                    helperText={errors.routeId?.message}
                     disabled={isLoading || routesLoading}
+                    onChange={e => field.onChange(Number(e.target.value))}
                     InputProps={{
                       startAdornment: (
                         <InputAdornment position='start'>
@@ -174,19 +183,19 @@ const CreateTravelDialog = ({ open, onClose, onSubmit, isLoading = false }: Crea
                       </MenuItem>
                     ) : routes && routes.length > 0 ? (
                       routes.map(route => (
-                        <MenuItem key={route.id} value={route.id}>
+                        <MenuItem key={route.id} value={Number(route.id)}>
                           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                             <i
                               className='tabler-flag'
                               style={{ fontSize: '14px', color: 'var(--mui-palette-success-main)' }}
                             />
-                            <Typography variant='body2'>{route.officeOrigin.place}</Typography>
+                            <Typography variant='body2'>{route.officeOrigin.city}</Typography>
                             <i className='tabler-arrow-right' style={{ fontSize: '14px' }} />
                             <i
                               className='tabler-flag-filled'
                               style={{ fontSize: '14px', color: 'var(--mui-palette-error-main)' }}
                             />
-                            <Typography variant='body2'>{route.officeDestination.place}</Typography>
+                            <Typography variant='body2'>{route.officeDestination.city}</Typography>
                           </Box>
                         </MenuItem>
                       ))

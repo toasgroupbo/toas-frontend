@@ -251,11 +251,13 @@ const RoutesTable = () => {
             </Box>
             <div className='flex flex-col'>
               <Typography className='font-medium' color='text.primary' variant='body2'>
-                {row.original.officeOrigin.name}
+                {row.original.officeOrigin.city}
               </Typography>
-              <Typography variant='caption' color='text.secondary'>
-                {row.original.officeOrigin.place}
-              </Typography>
+              {row.original.officeOrigin.place && (
+                <Typography variant='caption' color='text.secondary'>
+                  {row.original.officeOrigin.place.name}
+                </Typography>
+              )}
             </div>
           </div>
         )
@@ -280,11 +282,13 @@ const RoutesTable = () => {
             </Box>
             <div className='flex flex-col'>
               <Typography className='font-medium' color='text.primary' variant='body2'>
-                {row.original.officeDestination.name}
+                {row.original.officeDestination.city}
               </Typography>
-              <Typography variant='caption' color='text.secondary'>
-                {row.original.officeDestination.place}
-              </Typography>
+              {row.original.officeDestination.place && (
+                <Typography variant='caption' color='text.secondary'>
+                  {row.original.officeDestination.place.name}
+                </Typography>
+              )}
             </div>
           </div>
         )

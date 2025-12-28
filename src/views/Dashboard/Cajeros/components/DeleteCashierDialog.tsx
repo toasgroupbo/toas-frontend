@@ -97,7 +97,7 @@ const DeleteCashierDialog = ({ open, onClose, onConfirm, cashier, isLoading = fa
                     style={{ fontSize: '16px', color: 'var(--mui-palette-text-secondary)' }}
                   />
                   <Typography variant='body2' color='text.secondary'>
-                    {cashier.office.name} - {cashier.office.place}
+                    {cashier.office.city}
                   </Typography>
                 </div>
               )}

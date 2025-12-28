@@ -21,7 +21,7 @@ import { useOffices } from '@/hooks/useOffices'
 interface CreateCashierDialogProps {
   open: boolean
   onClose: () => void
-  onSubmit: (data: CreateCashierDto | UpdateCashierDto, officeId: string) => Promise<void>
+  onSubmit: (data: CreateCashierDto | UpdateCashierDto, officeId: number) => Promise<void>
   cashier?: Cashier | null
   mode: 'create' | 'edit'
   isLoading?: boolean
@@ -30,10 +30,11 @@ interface CreateCashierDialogProps {
 interface FormData {
   email: string
   password?: string
+  confirmPassword?: string
   fullName: string
   ci: string
   phone: string
-  office: string
+  officeId: number | ''
 }
 
 const CreateCashierDialog = ({
@@ -50,15 +51,17 @@ const CreateCashierDialog = ({
     control,
     handleSubmit,
     reset,
+    watch,
     formState: { errors }
   } = useForm<FormData>({
     defaultValues: {
       email: '',
       password: '',
+      confirmPassword: '',
       fullName: '',
       ci: '',
       phone: '',
-      office: ''
+      officeId: ''
     }
   })
 
@@ -69,22 +72,26 @@ const CreateCashierDialog = ({
         fullName: cashier.fullName,
         ci: cashier.ci,
         phone: cashier.phone,
-        office: cashier.office?.id || '',
-        password: ''
+        officeId: cashier.office?.id || '',
+        password: '',
+        confirmPassword: ''
       })
     } else {
       reset({
         email: '',
         password: '',
+        confirmPassword: '',
         fullName: '',
         ci: '',
         phone: '',
-        office: ''
+        officeId: ''
       })
     }
   }, [cashier, mode, reset, open])
 
   const handleFormSubmit = async (data: FormData) => {
+    const officeId = typeof data.officeId === 'number' ? data.officeId : Number(data.officeId)
+
     if (mode === 'create') {
       const createData: CreateCashierDto = {
         email: data.email,
@@ -92,10 +99,10 @@ const CreateCashierDialog = ({
         fullName: data.fullName,
         ci: data.ci,
         phone: data.phone,
-        office: data.office
+        officeId: officeId
       }
 
-      await onSubmit(createData, data.office)
+      await onSubmit(createData, officeId)
     } else {
       const updateData: UpdateCashierDto = {
         email: data.email,
@@ -104,7 +111,7 @@ const CreateCashierDialog = ({
         phone: data.phone
       }
 
-      await onSubmit(updateData, data.office)
+      await onSubmit(updateData, officeId)
     }
   }
 
@@ -260,43 +267,75 @@ const CreateCashierDialog = ({
             </Grid>
 
             {mode === 'create' && (
-              <Grid item xs={12}>
-                <Controller
-                  name='password'
-                  control={control}
-                  rules={{
-                    required: mode === 'create' ? 'La contraseña es requerida' : false,
-                    minLength: {
-                      value: 6,
-                      message: 'La contraseña debe tener al menos 6 caracteres'
-                    }
-                  }}
-                  render={({ field }) => (
-                    <CustomTextField
-                      {...field}
-                      fullWidth
-                      type='password'
-                      label='Contraseña'
-                      placeholder='Mínimo 6 caracteres'
-                      error={!!errors.password}
-                      helperText={errors.password?.message}
-                      disabled={isLoading}
-                      InputProps={{
-                        startAdornment: (
-                          <InputAdornment position='start'>
-                            <i className='tabler-lock' />
-                          </InputAdornment>
-                        )
-                      }}
-                    />
-                  )}
-                />
-              </Grid>
+              <>
+                <Grid item xs={12} sm={6}>
+                  <Controller
+                    name='password'
+                    control={control}
+                    rules={{
+                      required: mode === 'create' ? 'La contraseña es requerida' : false,
+                      minLength: {
+                        value: 6,
+                        message: 'La contraseña debe tener al menos 6 caracteres'
+                      }
+                    }}
+                    render={({ field }) => (
+                      <CustomTextField
+                        {...field}
+                        fullWidth
+                        type='password'
+                        label='Contraseña'
+                        placeholder='Mínimo 6 caracteres'
+                        error={!!errors.password}
+                        helperText={errors.password?.message}
+                        disabled={isLoading}
+                        InputProps={{
+                          startAdornment: (
+                            <InputAdornment position='start'>
+                              <i className='tabler-lock' />
+                            </InputAdornment>
+                          )
+                        }}
+                      />
+                    )}
+                  />
+                </Grid>
+
+                <Grid item xs={12} sm={6}>
+                  <Controller
+                    name='confirmPassword'
+                    control={control}
+                    rules={{
+                      required: mode === 'create' ? 'Debe confirmar la contraseña' : false,
+                      validate: value => value === watch('password') || 'Las contraseñas no coinciden'
+                    }}
+                    render={({ field }) => (
+                      <CustomTextField
+                        {...field}
+                        fullWidth
+                        type='password'
+                        label='Repetir Contraseña'
+                        placeholder='Confirme su contraseña'
+                        error={!!errors.confirmPassword}
+                        helperText={errors.confirmPassword?.message}
+                        disabled={isLoading}
+                        InputProps={{
+                          startAdornment: (
+                            <InputAdornment position='start'>
+                              <i className='tabler-lock' />
+                            </InputAdornment>
+                          )
+                        }}
+                      />
+                    )}
+                  />
+                </Grid>
+              </>
             )}
 
             <Grid item xs={12}>
               <Controller
-                name='office'
+                name='officeId'
                 control={control}
                 rules={{
                   required: 'La oficina es requerida'
@@ -307,9 +346,10 @@ const CreateCashierDialog = ({
                     select
                     fullWidth
                     label='Oficina'
-                    error={!!errors.office}
-                    helperText={errors.office?.message}
+                    error={!!errors.officeId}
+                    helperText={errors.officeId?.message}
                     disabled={isLoading || officesLoading}
+                    onChange={e => field.onChange(Number(e.target.value))}
                     InputProps={{
                       startAdornment: (
                         <InputAdornment position='start'>
@@ -325,13 +365,13 @@ const CreateCashierDialog = ({
                       </MenuItem>
                     ) : offices && offices.length > 0 ? (
                       offices.map(office => (
-                        <MenuItem key={office.id} value={office.id}>
+                        <MenuItem key={office.id} value={Number(office.id)}>
                           <div className='flex items-center gap-2'>
                             <i className='tabler-building' style={{ fontSize: '18px' }} />
                             <div className='flex flex-col'>
-                              <span>{office.name}</span>
+                              <span>{office.city}</span>
                               <span style={{ fontSize: '12px', color: 'var(--mui-palette-text-secondary)' }}>
-                                {office.place}
+                                {office.place.name}
                               </span>
                             </div>
                           </div>

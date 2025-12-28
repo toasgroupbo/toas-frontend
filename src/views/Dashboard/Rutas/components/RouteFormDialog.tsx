@@ -31,8 +31,8 @@ interface RouteFormDialogProps {
 }
 
 interface FormData {
-  officeOriginUUID: string
-  officeDestinationUUID: string
+  officeOriginId: number
+  officeDestinationId: number
   pass_by: string[]
 }
 
@@ -56,8 +56,8 @@ const RouteFormDialog = ({
     formState: { errors }
   } = useForm<FormData>({
     defaultValues: {
-      officeOriginUUID: '',
-      officeDestinationUUID: '',
+      officeOriginId: 0,
+      officeDestinationId: 0,
       pass_by: []
     }
   })
@@ -67,14 +67,14 @@ const RouteFormDialog = ({
   useEffect(() => {
     if (route && isEditMode) {
       reset({
-        officeOriginUUID: route.officeOrigin.id,
-        officeDestinationUUID: route.officeDestination.id,
+        officeOriginId: route.officeOrigin.id,
+        officeDestinationId: route.officeDestination.id,
         pass_by: route.pass_by || []
       })
     } else {
       reset({
-        officeOriginUUID: '',
-        officeDestinationUUID: '',
+        officeOriginId: 0,
+        officeDestinationId: 0,
         pass_by: []
       })
     }
@@ -134,7 +134,7 @@ const RouteFormDialog = ({
           <Grid container spacing={4}>
             <Grid item xs={12} sm={6}>
               <Controller
-                name='officeOriginUUID'
+                name='officeOriginId'
                 control={control}
                 rules={{
                   required: 'La oficina de origen es requerida'
@@ -145,8 +145,8 @@ const RouteFormDialog = ({
                     select
                     fullWidth
                     label='Oficina de Origen'
-                    error={!!errors.officeOriginUUID}
-                    helperText={errors.officeOriginUUID?.message}
+                    error={!!errors.officeOriginId}
+                    helperText={errors.officeOriginId?.message}
                     disabled={isLoading || officesLoading}
                     InputProps={{
                       startAdornment: (
@@ -167,9 +167,9 @@ const RouteFormDialog = ({
                           <div className='flex items-center gap-2'>
                             <i className='tabler-building' style={{ fontSize: '18px' }} />
                             <div className='flex flex-col'>
-                              <span>{office.name}</span>
+                              <span>{office.city}</span>
                               <span style={{ fontSize: '12px', color: 'var(--mui-palette-text-secondary)' }}>
-                                {office.place}
+                                {office.place.name}
                               </span>
                             </div>
                           </div>
@@ -185,11 +185,11 @@ const RouteFormDialog = ({
 
             <Grid item xs={12} sm={6}>
               <Controller
-                name='officeDestinationUUID'
+                name='officeDestinationId'
                 control={control}
                 rules={{
                   required: 'La oficina de destino es requerida',
-                  validate: value => value !== watch('officeOriginUUID') || 'El destino no puede ser igual al origen'
+                  validate: value => value !== watch('officeOriginId') || 'El destino no puede ser igual al origen'
                 }}
                 render={({ field }) => (
                   <CustomTextField
@@ -197,8 +197,8 @@ const RouteFormDialog = ({
                     select
                     fullWidth
                     label='Oficina de Destino'
-                    error={!!errors.officeDestinationUUID}
-                    helperText={errors.officeDestinationUUID?.message}
+                    error={!!errors.officeDestinationId}
+                    helperText={errors.officeDestinationId?.message}
                     disabled={isLoading || officesLoading}
                     InputProps={{
                       startAdornment: (
@@ -219,9 +219,9 @@ const RouteFormDialog = ({
                           <div className='flex items-center gap-2'>
                             <i className='tabler-building' style={{ fontSize: '18px' }} />
                             <div className='flex flex-col'>
-                              <span>{office.name}</span>
+                              <span>{office.city}</span>
                               <span style={{ fontSize: '12px', color: 'var(--mui-palette-text-secondary)' }}>
-                                {office.place}
+                                {office.place.name}
                               </span>
                             </div>
                           </div>

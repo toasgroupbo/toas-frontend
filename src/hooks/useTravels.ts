@@ -63,7 +63,7 @@ const createTravel = async (data: CreateTravelDto): Promise<Travel> => {
   return response.data
 }
 
-const deleteTravel = async (id: string): Promise<void> => {
+const deleteTravel = async (id: number): Promise<void> => {
   const actingAsCompany = localStorage.getItem('acting_as_company')
   let url = `/api/travels/${id}`
 
