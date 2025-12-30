@@ -59,10 +59,10 @@ export const filterMenuByRole = (
         return adminOnlyMenus.includes(item.label)
       }
 
-      if (userRole === 'CAJERO') {
-        const cajeroMenus = ['OPERACIONES', 'Arqueo de Caja', 'Salidas']
+      if (userRole === 'CASHIER') {
+        const cashierMenus = ['OPERACIONES', 'Venta de Tickets', 'Arqueo de Caja', 'Salidas']
 
-        return cajeroMenus.includes(item.label)
+        return cashierMenus.includes(item.label)
       }
 
       if (userRole === 'ADMIN_EMPRESA' || userRole === 'COMPANY_ADMIN') {
@@ -73,9 +73,6 @@ export const filterMenuByRole = (
           'Dueños',
           'Cajeros',
           'Oficinas',
-          'OPERACIONES',
-          'Arqueo de Caja',
-          'Salidas',
           'Viajes'
         ]
 
@@ -96,7 +93,7 @@ export const filterMenuByRole = (
         OWNER: 'Dueños',
         CASHIER: 'Cajeros',
         TRAVEL: 'Salidas',
-        TICKET: 'Arqueo de Caja',
+        TICKET: 'Venta de Tickets',
         OFFICE: 'Oficinas',
         TRIP: 'Viajes'
       }
@@ -116,6 +113,7 @@ export const filterMenuByRole = (
         'Dueños',
         'Cajeros',
         'OPERACIONES',
+        'Venta de Tickets',
         'Arqueo de Caja',
         'Salidas',
         'Oficinas',

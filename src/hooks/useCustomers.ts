@@ -21,9 +21,10 @@ const fetchCustomers = async (params: CustomersQueryParams): Promise<CustomersRe
   return response.data
 }
 
-export const useCustomers = (params: CustomersQueryParams) => {
+export const useCustomers = (params: CustomersQueryParams, enabled: boolean = true) => {
   return useQuery<CustomersResponse>({
     queryKey: ['customers', params],
-    queryFn: () => fetchCustomers(params)
+    queryFn: () => fetchCustomers(params),
+    enabled
   })
 }

@@ -121,6 +121,15 @@ const verticalMenuData = (): VerticalMenuDataType[] => [
     label: 'OPERACIONES'
   },
   {
+    label: 'Venta de Tickets',
+    icon: 'tabler-ticket',
+    href: '/tickets/list',
+    permission: {
+      resource: 'TICKET',
+      action: 'READ'
+    }
+  },
+  {
     label: 'Arqueo de Caja',
     icon: 'tabler-calculator',
     href: '/arqueo/list'

@@ -31,13 +31,14 @@ const ROUTE_RESOURCE_MAP: Record<string, { resource: string; permission: string 
   '/duenos/list': { resource: 'OWNER', permission: 'READ' },
   '/cajeros/list': { resource: 'CASHIER', permission: 'READ' },
 
+  '/tickets/list': { resource: 'TICKET', permission: 'READ' },
   '/arqueo/list': { resource: 'TICKET', permission: 'READ' },
   '/salidas/list': { resource: 'TRAVEL', permission: 'READ' },
   '/oficinas/list': { resource: 'OFFICE', permission: 'READ' },
   '/viajes/list': { resource: 'TRIP', permission: 'READ' }
 }
 
-const COMPANY_ROUTES = ['/buses', '/rutas', '/duenos', '/cajeros', '/arqueo', '/salidas', '/oficinas', '/viajes']
+const COMPANY_ROUTES = ['/buses', '/rutas', '/duenos', '/cajeros', '/tickets', '/arqueo', '/salidas', '/oficinas', '/viajes']
 
 const STATIC_ROLE_PERMISSIONS: Record<string, string[]> = {
   SUPER_ADMIN: ['*'],
@@ -52,9 +53,9 @@ const STATIC_ROLE_PERMISSIONS: Record<string, string[]> = {
     'oficinas',
     'viajes'
   ],
-  ADMIN_EMPRESA: ['/home', '/buses', '/rutas', '/duenos', '/cajeros', '/arqueo', '/salidas', 'oficinas', 'viajes'],
-  COMPANY_ADMIN: ['/home', '/buses', '/rutas', '/duenos', '/cajeros', '/arqueo', '/salidas', 'oficinas', 'viajes'],
-  CAJERO: ['/home', '/arqueo', '/salidas']
+  ADMIN_EMPRESA: ['/home', '/buses', '/rutas', '/duenos', '/cajeros', 'oficinas', 'viajes'],
+  COMPANY_ADMIN: ['/home', '/buses', '/rutas', '/duenos', '/cajeros', 'oficinas', 'viajes'],
+  CASHIER: ['/home', '/arqueo', '/salidas', '/tickets']
 }
 
 const hasPermissionForRoute = (
@@ -86,10 +87,10 @@ const hasPermissionForRoute = (
       return allowedRoutes.some(route => pathname === route || pathname.startsWith(route + '/'))
     }
 
-    if (userRole === 'CAJERO') {
+    if (userRole === 'CASHIER') {
       if (!hasCompany) return false
 
-      const allowedRoutes = STATIC_ROLE_PERMISSIONS.CAJERO
+      const allowedRoutes = STATIC_ROLE_PERMISSIONS.CASHIER
 
       return allowedRoutes.some(route => pathname === route || pathname.startsWith(route + '/'))
     }
@@ -167,8 +168,8 @@ const ProtectedRoute = ({ children, publicRoutes = ['/login', '/'] }: ProtectedR
           router.push('/home')
         } else if (isCompanyAdmin && hasCompany) {
           router.push('/home')
-        } else if (userRole === 'CAJERO') {
-          router.push('/arqueo/list')
+        } else if (userRole === 'CASHIER') {
+          router.push('/tickets/list')
         } else {
           router.push('/home')
         }

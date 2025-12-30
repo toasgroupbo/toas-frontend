@@ -33,8 +33,8 @@ interface FormData {
   routeId: number | ''
   price_deck_1: string
   price_deck_2: string
-  departure_time: string
-  arrival_time: string
+  departure_date: string
+  departure_hour: string
 }
 
 const CreateTravelDialog = ({ open, onClose, onSubmit, isLoading = false }: CreateTravelDialogProps) => {
@@ -45,7 +45,6 @@ const CreateTravelDialog = ({ open, onClose, onSubmit, isLoading = false }: Crea
     control,
     handleSubmit,
     reset,
-    watch,
     formState: { errors }
   } = useForm<FormData>({
     defaultValues: {
@@ -53,12 +52,10 @@ const CreateTravelDialog = ({ open, onClose, onSubmit, isLoading = false }: Crea
       routeId: '',
       price_deck_1: '',
       price_deck_2: '',
-      departure_time: '',
-      arrival_time: ''
+      departure_date: '',
+      departure_hour: ''
     }
   })
-
-  const departureTime = watch('departure_time')
 
   useEffect(() => {
     if (!open) {
@@ -67,11 +64,17 @@ const CreateTravelDialog = ({ open, onClose, onSubmit, isLoading = false }: Crea
   }, [open, reset])
 
   const handleFormSubmit = async (data: FormData) => {
+    // Combinar fecha y hora en formato ISO
+    const departureDateTime = `${data.departure_date}T${data.departure_hour}:00`
+
     // Asegurar que busId y routeId sean números válidos
     const payload: CreateTravelDto = {
-      ...data,
       busId: typeof data.busId === 'number' ? data.busId : Number(data.busId),
-      routeId: typeof data.routeId === 'number' ? data.routeId : Number(data.routeId)
+      routeId: typeof data.routeId === 'number' ? data.routeId : Number(data.routeId),
+      price_deck_1: data.price_deck_1,
+      price_deck_2: data.price_deck_2 || data.price_deck_1, // Si está vacío, usar el mismo precio del piso 1
+      departure_time: departureDateTime,
+      arrival_time: departureDateTime // Usar el mismo valor por ahora
     }
 
     await onSubmit(payload)
@@ -249,14 +252,16 @@ const CreateTravelDialog = ({ open, onClose, onSubmit, isLoading = false }: Crea
                 name='price_deck_2'
                 control={control}
                 rules={{
-                  required: 'El precio de piso 2 es requerido',
                   pattern: {
                     value: /^\d+(\.\d{1,2})?$/,
                     message: 'Ingrese un precio válido'
                   },
-                  min: {
-                    value: 0.01,
-                    message: 'El precio debe ser mayor a 0'
+                  validate: value => {
+                    if (value && parseFloat(value) < 0.01) {
+                      return 'El precio debe ser mayor a 0'
+                    }
+
+                    return true
                   }
                 }}
                 render={({ field }) => (
@@ -264,10 +269,10 @@ const CreateTravelDialog = ({ open, onClose, onSubmit, isLoading = false }: Crea
                     {...field}
                     fullWidth
                     type='number'
-                    label='Precio Piso 2'
+                    label='Precio Piso 2 (Opcional)'
                     placeholder='0.00'
                     error={!!errors.price_deck_2}
-                    helperText={errors.price_deck_2?.message}
+                    helperText={errors.price_deck_2?.message || 'Dejar vacío si el bus no tiene segundo piso'}
                     disabled={isLoading}
                     InputProps={{
                       startAdornment: (
@@ -283,7 +288,38 @@ const CreateTravelDialog = ({ open, onClose, onSubmit, isLoading = false }: Crea
 
             <Grid item xs={12} sm={6}>
               <Controller
-                name='departure_time'
+                name='departure_date'
+                control={control}
+                rules={{
+                  required: 'La fecha de salida es requerida'
+                }}
+                render={({ field }) => (
+                  <CustomTextField
+                    {...field}
+                    fullWidth
+                    type='date'
+                    label='Fecha de Salida'
+                    error={!!errors.departure_date}
+                    helperText={errors.departure_date?.message}
+                    disabled={isLoading}
+                    InputLabelProps={{
+                      shrink: true
+                    }}
+                    InputProps={{
+                      startAdornment: (
+                        <InputAdornment position='start'>
+                          <i className='tabler-calendar' />
+                        </InputAdornment>
+                      )
+                    }}
+                  />
+                )}
+              />
+            </Grid>
+
+            <Grid item xs={12} sm={6}>
+              <Controller
+                name='departure_hour'
                 control={control}
                 rules={{
                   required: 'La hora de salida es requerida'
@@ -292,10 +328,10 @@ const CreateTravelDialog = ({ open, onClose, onSubmit, isLoading = false }: Crea
                   <CustomTextField
                     {...field}
                     fullWidth
-                    type='datetime-local'
+                    type='time'
                     label='Hora de Salida'
-                    error={!!errors.departure_time}
-                    helperText={errors.departure_time?.message}
+                    error={!!errors.departure_hour}
+                    helperText={errors.departure_hour?.message}
                     disabled={isLoading}
                     InputLabelProps={{
                       shrink: true
@@ -307,41 +343,8 @@ const CreateTravelDialog = ({ open, onClose, onSubmit, isLoading = false }: Crea
                         </InputAdornment>
                       )
                     }}
-                  />
-                )}
-              />
-            </Grid>
-
-            <Grid item xs={12} sm={6}>
-              <Controller
-                name='arrival_time'
-                control={control}
-                rules={{
-                  required: 'La hora de llegada es requerida',
-                  validate: value => {
-                    if (!departureTime) return true
-
-                    return new Date(value) > new Date(departureTime) || 'La llegada debe ser posterior a la salida'
-                  }
-                }}
-                render={({ field }) => (
-                  <CustomTextField
-                    {...field}
-                    fullWidth
-                    type='datetime-local'
-                    label='Hora de Llegada'
-                    error={!!errors.arrival_time}
-                    helperText={errors.arrival_time?.message}
-                    disabled={isLoading}
-                    InputLabelProps={{
-                      shrink: true
-                    }}
-                    InputProps={{
-                      startAdornment: (
-                        <InputAdornment position='start'>
-                          <i className='tabler-clock-check' />
-                        </InputAdornment>
-                      )
+                    inputProps={{
+                      step: 300 // 5 minutos
                     }}
                   />
                 )}

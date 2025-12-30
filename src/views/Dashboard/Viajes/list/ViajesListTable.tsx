@@ -262,15 +262,6 @@ const TravelsTable = () => {
           </div>
         )
       }),
-      columnHelper.accessor('arrival_time', {
-        header: 'Llegada',
-        cell: ({ row }) => (
-          <div className='flex items-center gap-1'>
-            <i className='tabler-clock-check' style={{ fontSize: '16px', color: 'var(--mui-palette-success-main)' }} />
-            <Typography variant='body2'>{formatDateTime(row.original.arrival_time)}</Typography>
-          </div>
-        )
-      }),
       columnHelper.accessor('price_deck_1', {
         header: 'Precio Piso 1',
         cell: ({ row }) => (

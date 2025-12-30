@@ -84,19 +84,19 @@ const updateCashier = async ({ id, data }: { id: number; data: UpdateCashierDto 
 
 const updateCashierOffice = async ({ id, officeId }: { id: number; officeId: number }): Promise<void> => {
   const actingAsCompany = localStorage.getItem('acting_as_company')
-  let url = `/api/cashiers/office/${id}`
+  let url = `/api/cashiers/${id}/office`
 
   if (actingAsCompany) {
     try {
       const company = JSON.parse(actingAsCompany)
 
-      url = `/api/cashiers/office/${id}?companyId=${company.id}`
+      url = `/api/cashiers/${id}/office?companyId=${company.id}`
     } catch (error) {
       console.error('Error parsing acting_as_company:', error)
     }
   }
 
-  await api.put(url, { officeId: officeId })
+  await api.patch(url, { NewOfficeId: officeId })
 }
 
 const deleteCashier = async (id: number): Promise<void> => {
