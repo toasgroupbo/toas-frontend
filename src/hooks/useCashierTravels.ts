@@ -7,7 +7,7 @@ import type { Travel } from '@/types/api/travels'
 import { useAuth } from '@/contexts/AuthContext'
 
 const fetchCashierTravels = async (): Promise<Travel[]> => {
-  const response = await api.get<Travel[]>('/api/travels/for-cashier')
+  const response = await api.get<Travel[]>('/api/travels/for-cashier/all')
 
   return response.data
 }

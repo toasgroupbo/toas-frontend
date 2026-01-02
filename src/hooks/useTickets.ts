@@ -7,94 +7,29 @@ import type { Ticket, CreateTicketDto, TicketsResponse } from '@/types/api/ticke
 import { useAuth } from '@/contexts/AuthContext'
 
 const fetchTickets = async (): Promise<Ticket[]> => {
-  const actingAsCompany = localStorage.getItem('acting_as_company')
-  let url = '/api/tickets'
-
-  if (actingAsCompany) {
-    try {
-      const company = JSON.parse(actingAsCompany)
-
-      url = `/api/tickets?companyId=${company.id}`
-    } catch (error) {
-      console.error('Error parsing acting_as_company:', error)
-    }
-  }
-
-  const response = await api.get<Ticket[]>(url)
+  const response = await api.get<Ticket[]>('/api/tickets')
 
   return response.data
 }
 
 const fetchTicketById = async (id: number): Promise<Ticket> => {
-  const actingAsCompany = localStorage.getItem('acting_as_company')
-  let url = `/api/tickets/${id}`
-
-  if (actingAsCompany) {
-    try {
-      const company = JSON.parse(actingAsCompany)
-
-      url = `/api/tickets/${id}?companyId=${company.id}`
-    } catch (error) {
-      console.error('Error parsing acting_as_company:', error)
-    }
-  }
-
-  const response = await api.get<Ticket>(url)
+  const response = await api.get<Ticket>(`/api/tickets/${id}`)
 
   return response.data
 }
 
 const createTicket = async (data: CreateTicketDto): Promise<Ticket> => {
-  const actingAsCompany = localStorage.getItem('acting_as_company')
-  let url = '/api/tickets/in-office'
-
-  if (actingAsCompany) {
-    try {
-      const company = JSON.parse(actingAsCompany)
-
-      url = `/api/tickets/in-office?companyId=${company.id}`
-    } catch (error) {
-      console.error('Error parsing acting_as_company:', error)
-    }
-  }
-
-  const response = await api.post<Ticket>(url, data)
+  const response = await api.post<Ticket>('/api/tickets/for-cashier', data)
 
   return response.data
 }
 
 const confirmTicket = async (id: number): Promise<void> => {
-  const actingAsCompany = localStorage.getItem('acting_as_company')
-  let url = `/api/tickets/confirm/${id}`
-
-  if (actingAsCompany) {
-    try {
-      const company = JSON.parse(actingAsCompany)
-
-      url = `/api/tickets/confirm/${id}?companyId=${company.id}`
-    } catch (error) {
-      console.error('Error parsing acting_as_company:', error)
-    }
-  }
-
-  await api.post(url)
+  await api.post(`/api/tickets/for-cashier/confirm/${id}`)
 }
 
 const cancelTicket = async (id: number): Promise<void> => {
-  const actingAsCompany = localStorage.getItem('acting_as_company')
-  let url = `/api/tickets/cancel/${id}`
-
-  if (actingAsCompany) {
-    try {
-      const company = JSON.parse(actingAsCompany)
-
-      url = `/api/tickets/cancel/${id}?companyId=${company.id}`
-    } catch (error) {
-      console.error('Error parsing acting_as_company:', error)
-    }
-  }
-
-  await api.post(url)
+  await api.post(`/api/tickets/for-cashier/cancel/${id}`)
 }
 
 // Hooks
