@@ -23,22 +23,9 @@ const TravelsForSale = () => {
       return []
     }
 
-    // Obtener fecha/hora actual en Bolivia (UTC-4)
-    const now = new Date()
-    const boliviaOffset = -4 * 60 // UTC-4 en minutos
-    const localOffset = now.getTimezoneOffset() // Offset local en minutos
-    const boliviaTime = new Date(now.getTime() + (localOffset + boliviaOffset) * 60 * 1000)
-
     return travels.filter(travel => {
       // Solo viajes con estado activo
-      if (travel.travel_status !== 'active') {
-        return false
-      }
-
-      // Verificar que el viaje no haya partido aún
-      const departureTime = new Date(travel.departure_time)
-
-      return departureTime > boliviaTime
+      return travel.travel_status === 'active'
     })
   }
 

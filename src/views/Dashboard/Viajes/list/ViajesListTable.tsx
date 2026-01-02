@@ -148,7 +148,8 @@ const TravelsTable = () => {
   }
 
   const formatDateTime = (dateString: string) => {
-    const date = new Date(dateString)
+    const dateWithoutZ = dateString.replace('Z', '')
+    const date = new Date(dateWithoutZ)
 
     return date.toLocaleString('es-ES', {
       year: 'numeric',
