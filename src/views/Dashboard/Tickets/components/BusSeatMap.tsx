@@ -55,11 +55,21 @@ const BusSeatMap = ({ seats, deck, deckPrice, selectedSeats, onSeatToggle, total
       return 'primary.main'
     }
 
-    if (seat.status === 'AVAILABLE' || seat.status === 'available' || seat.status === 'libre') {
+    const status = seat.status.toLowerCase()
+
+    if (status === 'available' || status === 'libre') {
       return 'success.light'
     }
 
-    return 'error.light'
+    if (status === 'reserved' || status === 'reservado') {
+      return 'warning.light'
+    }
+
+    if (status === 'sold' || status === 'vendido') {
+      return 'error.light'
+    }
+
+    return 'grey.400'
   }
 
   const getSeatBorderColor = (seat: TravelSeat) => {
@@ -69,15 +79,65 @@ const BusSeatMap = ({ seats, deck, deckPrice, selectedSeats, onSeatToggle, total
       return 'primary.main'
     }
 
-    if (seat.status === 'AVAILABLE' || seat.status === 'available' || seat.status === 'libre') {
+    const status = seat.status.toLowerCase()
+
+    if (status === 'available' || status === 'libre') {
       return 'success.main'
     }
 
-    return 'error.main'
+    if (status === 'reserved' || status === 'reservado') {
+      return 'warning.main'
+    }
+
+    if (status === 'sold' || status === 'vendido') {
+      return 'error.main'
+    }
+
+    return 'grey.600'
+  }
+
+  const getSeatIconColor = (seat: TravelSeat, isSelected: boolean) => {
+    if (isSelected) return '#fff'
+
+    const status = seat.status.toLowerCase()
+
+    if (status === 'available' || status === 'libre') {
+      return '#2e7d32'
+    }
+
+    if (status === 'reserved' || status === 'reservado') {
+      return '#ed6c02'
+    }
+
+    if (status === 'sold' || status === 'vendido') {
+      return '#d32f2f'
+    }
+
+    return '#757575'
+  }
+
+  const getSeatStatusText = (seat: TravelSeat) => {
+    const status = seat.status.toLowerCase()
+
+    if (status === 'available' || status === 'libre') {
+      return 'Disponible'
+    }
+
+    if (status === 'reserved' || status === 'reservado') {
+      return 'Reservado'
+    }
+
+    if (status === 'sold' || status === 'vendido') {
+      return 'Vendido'
+    }
+
+    return 'No disponible'
   }
 
   const isSeatAvailable = (seat: TravelSeat) => {
-    return seat.status === 'AVAILABLE' || seat.status === 'available' || seat.status === 'libre'
+    const status = seat.status.toLowerCase()
+
+    return status === 'available' || status === 'libre'
   }
 
   return (
@@ -254,7 +314,7 @@ const BusSeatMap = ({ seats, deck, deckPrice, selectedSeats, onSeatToggle, total
                           Precio: Bs. {displayPrice}
                         </Typography>
                         <Typography variant='caption' display='block' sx={{ color: 'inherit' }}>
-                          Estado: {isAvailable ? 'Disponible' : 'Ocupado'}
+                          Estado: {getSeatStatusText(seat)}
                         </Typography>
                       </Box>
                     }
@@ -301,14 +361,14 @@ const BusSeatMap = ({ seats, deck, deckPrice, selectedSeats, onSeatToggle, total
                         className='tabler-armchair'
                         style={{
                           fontSize: `${seatSize * 0.4}px`,
-                          color: isSelected ? '#fff' : isAvailable ? '#2e7d32' : '#d32f2f'
+                          color: getSeatIconColor(seat, isSelected)
                         }}
                       />
                       <Typography
                         variant='caption'
                         fontWeight={600}
                         sx={{
-                          color: isSelected ? '#fff' : isAvailable ? '#2e7d32' : '#d32f2f',
+                          color: getSeatIconColor(seat, isSelected),
                           fontSize: `${seatSize * 0.18}px`
                         }}
                       >
@@ -363,13 +423,26 @@ const BusSeatMap = ({ seats, deck, deckPrice, selectedSeats, onSeatToggle, total
               sx={{
                 width: 20,
                 height: 20,
+                bgcolor: 'warning.light',
+                border: '2px solid',
+                borderColor: 'warning.main',
+                borderRadius: 1
+              }}
+            />
+            <Typography variant='caption'>Reservado</Typography>
+          </Box>
+          <Box display='flex' alignItems='center' gap={0.5}>
+            <Box
+              sx={{
+                width: 20,
+                height: 20,
                 bgcolor: 'error.light',
                 border: '2px solid',
                 borderColor: 'error.main',
                 borderRadius: 1
               }}
             />
-            <Typography variant='caption'>Ocupado</Typography>
+            <Typography variant='caption'>Vendido</Typography>
           </Box>
         </Box>
       </Paper>

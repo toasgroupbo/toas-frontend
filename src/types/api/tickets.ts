@@ -21,6 +21,7 @@ export interface Ticket {
 }
 
 export interface TicketSeat {
+  id?: number
   seatNumber: string
   price: string
   deck?: number

@@ -14,11 +14,13 @@ import Dialog from '@mui/material/Dialog'
 import DialogTitle from '@mui/material/DialogTitle'
 import DialogContent from '@mui/material/DialogContent'
 import DialogActions from '@mui/material/DialogActions'
-import CircularProgress from '@mui/material/CircularProgress'
 
 import type { Travel } from '@/types/api/travels'
 import SellTicketDialog from '../components/SellTicketDialog'
+import AssignPassengersDialog from '../components/AssignPassengersDialog'
+import type { SeatAssignment } from '../components/AssignPassengersDialog'
 import { useCreateTicket, useConfirmTicket, useCancelTicket } from '@/hooks/useTickets'
+import { useAssignPassenger } from '@/hooks/usePassengers'
 import type { CreateTicketDto, Ticket } from '@/types/api/tickets'
 
 interface TravelsForSaleCardProps {
@@ -27,12 +29,15 @@ interface TravelsForSaleCardProps {
 
 const TravelsForSaleCard = ({ travel }: TravelsForSaleCardProps) => {
   const [openDialog, setOpenDialog] = useState(false)
-  const [openConfirmDialog, setOpenConfirmDialog] = useState(false)
+  const [openAssignDialog, setOpenAssignDialog] = useState(false)
   const [openSuccessDialog, setOpenSuccessDialog] = useState(false)
+  const [openImagesDialog, setOpenImagesDialog] = useState(false)
   const [pendingTicket, setPendingTicket] = useState<Ticket | null>(null)
+  const [isProcessingPayment, setIsProcessingPayment] = useState(false)
   const createTicketMutation = useCreateTicket()
   const confirmTicketMutation = useConfirmTicket()
   const cancelTicketMutation = useCancelTicket()
+  const assignPassengerMutation = useAssignPassenger()
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString)
@@ -56,44 +61,105 @@ const TravelsForSaleCard = ({ travel }: TravelsForSaleCardProps) => {
 
   const handleSellTicket = async (data: CreateTicketDto) => {
     try {
-      // Crear el ticket (queda en estado pendiente/reservado)
       const createdTicket = await createTicketMutation.mutateAsync(data)
 
-      setPendingTicket(createdTicket)
+      // Enriquecer los seats del ticket con información de travelSeats (deck)
+      const travelSeats = (createdTicket as any).travelSeats || []
+
+      const enrichedSeats = createdTicket.seats.map(seat => {
+        const travelSeat = travelSeats.find((ts: any) => ts.id === seat.id)
+
+        return {
+          ...seat,
+          deck: travelSeat?.deck
+        }
+      })
+
+      const enrichedTicket = {
+        ...createdTicket,
+        seats: enrichedSeats
+      }
+
+      setPendingTicket(enrichedTicket)
       setOpenDialog(false)
-      setOpenConfirmDialog(true)
+      setOpenAssignDialog(true)
     } catch (error) {
       console.error('Error creating ticket:', error)
     }
   }
 
-  const handleConfirmSale = async () => {
+  const handlePayCash = async (assignments: SeatAssignment[]) => {
     if (!pendingTicket) return
 
     try {
-      // Confirmar el ticket
+      setIsProcessingPayment(true)
+
+      for (const assignment of assignments) {
+        await assignPassengerMutation.mutateAsync({
+          ticketId: pendingTicket.id,
+          seatId: assignment.seatId,
+          passengerId: assignment.passengerId,
+          customerId: assignment.customerId
+        })
+      }
+
       await confirmTicketMutation.mutateAsync(pendingTicket.id)
 
-      setOpenConfirmDialog(false)
+      setOpenAssignDialog(false)
       setPendingTicket(null)
       setOpenSuccessDialog(true)
     } catch (error) {
-      console.error('Error confirming ticket:', error)
+      console.error('Error processing cash payment:', error)
+    } finally {
+      setIsProcessingPayment(false)
     }
   }
 
-  const handleCancelSale = async () => {
+  const handlePayQR = async (assignments: SeatAssignment[]) => {
     if (!pendingTicket) return
 
     try {
-      // Cancelar el ticket (libera los asientos)
+      setIsProcessingPayment(true)
+
+      for (const assignment of assignments) {
+        await assignPassengerMutation.mutateAsync({
+          ticketId: pendingTicket.id,
+          seatId: assignment.seatId,
+          passengerId: assignment.passengerId,
+          customerId: assignment.customerId
+        })
+      }
+
+      await confirmTicketMutation.mutateAsync(pendingTicket.id)
+
+      setOpenAssignDialog(false)
+      setPendingTicket(null)
+      setOpenSuccessDialog(true)
+    } catch (error) {
+      console.error('Error processing QR payment:', error)
+    } finally {
+      setIsProcessingPayment(false)
+    }
+  }
+
+  const handleCancelAssignment = async () => {
+    if (!pendingTicket) return
+
+    try {
       await cancelTicketMutation.mutateAsync(pendingTicket.id)
 
-      setOpenConfirmDialog(false)
+      setOpenAssignDialog(false)
       setPendingTicket(null)
     } catch (error) {
       console.error('Error canceling ticket:', error)
     }
+  }
+
+  const getImageUrl = (imagePath: string | undefined) => {
+    if (!imagePath) return null
+    const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000'
+
+    return `${baseUrl}${imagePath}`
   }
 
   return (
@@ -133,7 +199,10 @@ const TravelsForSaleCard = ({ travel }: TravelsForSaleCardProps) => {
           <Stack spacing={1.5}>
             {/* Date and Time */}
             <Box display='flex' alignItems='center' gap={1}>
-              <i className='tabler-calendar' style={{ fontSize: '1.1rem', color: 'var(--mui-palette-text-secondary)' }} />
+              <i
+                className='tabler-calendar'
+                style={{ fontSize: '1.1rem', color: 'var(--mui-palette-text-secondary)' }}
+              />
               <Typography variant='body2' color='text.secondary'>
                 {formatDate(travel.departure_time)}
               </Typography>
@@ -177,7 +246,10 @@ const TravelsForSaleCard = ({ travel }: TravelsForSaleCardProps) => {
 
             {/* Status */}
             <Box display='flex' alignItems='center' gap={1}>
-              <i className='tabler-info-circle' style={{ fontSize: '1.1rem', color: 'var(--mui-palette-text-secondary)' }} />
+              <i
+                className='tabler-info-circle'
+                style={{ fontSize: '1.1rem', color: 'var(--mui-palette-text-secondary)' }}
+              />
               <Chip
                 label={travel.travel_status === 'active' ? 'Activo' : travel.travel_status}
                 size='small'
@@ -187,18 +259,29 @@ const TravelsForSaleCard = ({ travel }: TravelsForSaleCardProps) => {
             </Box>
           </Stack>
 
-          {/* Action Button */}
+          {/* Action Buttons */}
           <Box mt='auto' pt={2}>
-            <Button
-              fullWidth
-              variant='contained'
-              color='primary'
-              startIcon={<i className='tabler-ticket' />}
-              onClick={() => setOpenDialog(true)}
-              disabled={travel.travel_status !== 'active'}
-            >
-              Vender Tickets
-            </Button>
+            <Stack spacing={1}>
+              <Button
+                fullWidth
+                variant='outlined'
+                color='info'
+                startIcon={<i className='tabler-photo' />}
+                onClick={() => setOpenImagesDialog(true)}
+              >
+                Ver Imágenes del Bus
+              </Button>
+              <Button
+                fullWidth
+                variant='contained'
+                color='primary'
+                startIcon={<i className='tabler-ticket' />}
+                onClick={() => setOpenDialog(true)}
+                disabled={travel.travel_status !== 'active'}
+              >
+                Vender Tickets
+              </Button>
+            </Stack>
           </Box>
         </CardContent>
       </Card>
@@ -211,85 +294,14 @@ const TravelsForSaleCard = ({ travel }: TravelsForSaleCardProps) => {
         preSelectedTravel={travel}
       />
 
-      {/* Confirmation Dialog */}
-      <Dialog
-        open={openConfirmDialog}
-        onClose={() => {}}
-        maxWidth='sm'
-        fullWidth
-        disableEscapeKeyDown
-      >
-        <DialogTitle>
-          <Box display='flex' alignItems='center' gap={2}>
-            <Box
-              sx={{
-                width: 50,
-                height: 50,
-                borderRadius: '50%',
-                bgcolor: 'warning.main',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center'
-              }}
-            >
-              <i className='tabler-alert-circle' style={{ fontSize: '28px', color: 'white' }} />
-            </Box>
-            <Typography variant='h5' fontWeight={600}>
-              Confirmar Venta de Ticket
-            </Typography>
-          </Box>
-        </DialogTitle>
-        <DialogContent>
-          <Typography variant='body1' color='text.secondary' sx={{ mb: 2 }}>
-            Los asientos han sido reservados temporalmente. ¿Deseas confirmar la venta de este ticket?
-          </Typography>
-          {pendingTicket && (
-            <Box
-              sx={{
-                bgcolor: 'primary.lighter',
-                p: 2,
-                borderRadius: 1,
-                border: '1px solid',
-                borderColor: 'primary.main'
-              }}
-            >
-              <Typography variant='body2' fontWeight={600} color='primary.main' sx={{ mb: 1 }}>
-                Detalles del Ticket:
-              </Typography>
-              <Typography variant='body2' color='text.secondary'>
-                Total de asientos: {pendingTicket.seats.length}
-              </Typography>
-              <Typography variant='body2' color='text.secondary'>
-                Total a pagar: Bs. {pendingTicket.total_price}
-              </Typography>
-            </Box>
-          )}
-        </DialogContent>
-        <DialogActions sx={{ px: 3, pb: 3, gap: 2 }}>
-          <Button
-            onClick={handleCancelSale}
-            variant='outlined'
-            color='error'
-            disabled={confirmTicketMutation.isPending || cancelTicketMutation.isPending}
-            startIcon={cancelTicketMutation.isPending ? <CircularProgress size={20} /> : <i className='tabler-x' />}
-            sx={{ flex: 1 }}
-          >
-            {cancelTicketMutation.isPending ? 'Cancelando...' : 'Cancelar Venta'}
-          </Button>
-          <Button
-            onClick={handleConfirmSale}
-            variant='contained'
-            color='success'
-            disabled={confirmTicketMutation.isPending || cancelTicketMutation.isPending}
-            startIcon={
-              confirmTicketMutation.isPending ? <CircularProgress size={20} /> : <i className='tabler-check' />
-            }
-            sx={{ flex: 1 }}
-          >
-            {confirmTicketMutation.isPending ? 'Confirmando...' : 'Confirmar Venta'}
-          </Button>
-        </DialogActions>
-      </Dialog>
+      <AssignPassengersDialog
+        open={openAssignDialog}
+        onClose={handleCancelAssignment}
+        ticket={pendingTicket}
+        onPayCash={handlePayCash}
+        onPayQR={handlePayQR}
+        isLoading={isProcessingPayment}
+      />
 
       {/* Success Dialog */}
       <Dialog open={openSuccessDialog} onClose={() => setOpenSuccessDialog(false)} maxWidth='sm' fullWidth>
@@ -340,6 +352,113 @@ const TravelsForSaleCard = ({ travel }: TravelsForSaleCardProps) => {
             startIcon={<i className='tabler-check' />}
           >
             Entendido
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Bus Images Dialog */}
+      <Dialog open={openImagesDialog} onClose={() => setOpenImagesDialog(false)} maxWidth='md' fullWidth>
+        <DialogTitle>
+          <Box display='flex' alignItems='center' justifyContent='space-between'>
+            <Box display='flex' alignItems='center' gap={2}>
+              <i className='tabler-bus' style={{ fontSize: '24px', color: 'var(--mui-palette-primary-main)' }} />
+              <Typography variant='h5' fontWeight={600}>
+                Imágenes del Bus - {travel.bus.name}
+              </Typography>
+            </Box>
+            <Button onClick={() => setOpenImagesDialog(false)} color='secondary' size='small'>
+              <i className='tabler-x' />
+            </Button>
+          </Box>
+        </DialogTitle>
+        <DialogContent>
+          <Stack spacing={3}>
+            <Box>
+              <Typography variant='subtitle1' fontWeight={600} sx={{ mb: 1.5 }}>
+                Imagen Exterior
+              </Typography>
+              <Box
+                sx={{
+                  width: '100%',
+                  height: 300,
+                  borderRadius: 2,
+                  overflow: 'hidden',
+                  bgcolor: 'action.hover',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center'
+                }}
+              >
+                {getImageUrl(travel.bus.exterior_image) ? (
+                  <img
+                    src={getImageUrl(travel.bus.exterior_image) || ''}
+                    alt={`${travel.bus.name} - Exterior`}
+                    style={{
+                      width: '100%',
+                      height: '100%',
+                      objectFit: 'cover'
+                    }}
+                  />
+                ) : (
+                  <Box textAlign='center'>
+                    <i
+                      className='tabler-photo-off'
+                      style={{ fontSize: '48px', color: 'var(--mui-palette-text-disabled)' }}
+                    />
+                    <Typography variant='body2' color='text.disabled' sx={{ mt: 1 }}>
+                      No hay imagen exterior disponible
+                    </Typography>
+                  </Box>
+                )}
+              </Box>
+            </Box>
+
+            <Divider />
+
+            <Box>
+              <Typography variant='subtitle1' fontWeight={600} sx={{ mb: 1.5 }}>
+                Imagen Interior
+              </Typography>
+              <Box
+                sx={{
+                  width: '100%',
+                  height: 300,
+                  borderRadius: 2,
+                  overflow: 'hidden',
+                  bgcolor: 'action.hover',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center'
+                }}
+              >
+                {getImageUrl(travel.bus.interior_image) ? (
+                  <img
+                    src={getImageUrl(travel.bus.interior_image) || ''}
+                    alt={`${travel.bus.name} - Interior`}
+                    style={{
+                      width: '100%',
+                      height: '100%',
+                      objectFit: 'cover'
+                    }}
+                  />
+                ) : (
+                  <Box textAlign='center'>
+                    <i
+                      className='tabler-photo-off'
+                      style={{ fontSize: '48px', color: 'var(--mui-palette-text-disabled)' }}
+                    />
+                    <Typography variant='body2' color='text.disabled' sx={{ mt: 1 }}>
+                      No hay imagen interior disponible
+                    </Typography>
+                  </Box>
+                )}
+              </Box>
+            </Box>
+          </Stack>
+        </DialogContent>
+        <DialogActions sx={{ px: 3, pb: 3 }}>
+          <Button onClick={() => setOpenImagesDialog(false)} variant='contained' color='primary' fullWidth>
+            Cerrar
           </Button>
         </DialogActions>
       </Dialog>
