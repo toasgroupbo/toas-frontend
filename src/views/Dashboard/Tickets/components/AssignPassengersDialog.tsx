@@ -18,6 +18,7 @@ import CircularProgress from '@mui/material/CircularProgress'
 import Alert from '@mui/material/Alert'
 import MenuItem from '@mui/material/MenuItem'
 import Divider from '@mui/material/Divider'
+import { isAxiosError } from 'axios'
 
 import CustomTextField from '@core/components/mui/TextField'
 import type { Ticket, TicketSeat } from '@/types/api/tickets'
@@ -45,6 +46,7 @@ const AssignPassengersDialog = ({ open, onClose, ticket, onPayCash, onPayQR, isL
   const [showCreateForm, setShowCreateForm] = useState(false)
   const [newPassengerName, setNewPassengerName] = useState('')
   const [newPassengerCI, setNewPassengerCI] = useState('')
+  const [duplicateCIError, setDuplicateCIError] = useState<string | null>(null)
 
   const customerId = (ticket as any)?.buyer?.id || null
   const { data: passengers, isLoading: loadingPassengers } = usePassengersByCustomer(customerId)
@@ -65,6 +67,7 @@ const AssignPassengersDialog = ({ open, onClose, ticket, onPayCash, onPayQR, isL
       setShowCreateForm(false)
       setNewPassengerName('')
       setNewPassengerCI('')
+      setDuplicateCIError(null)
     }
   }, [open, ticket])
 
@@ -72,6 +75,7 @@ const AssignPassengersDialog = ({ open, onClose, ticket, onPayCash, onPayQR, isL
     setSelectedSeat(seatNumber)
     setOpenSelectModal(true)
     setShowCreateForm(false)
+    setDuplicateCIError(null)
   }
 
   const handleSelectPassenger = (passengerId: number) => {
@@ -95,6 +99,8 @@ const AssignPassengersDialog = ({ open, onClose, ticket, onPayCash, onPayQR, isL
   const handleCreatePassenger = async () => {
     if (!customerId || !newPassengerName.trim() || !newPassengerCI.trim()) return
 
+    setDuplicateCIError(null)
+
     try {
       const newPassenger = await createPassengerMutation.mutateAsync({
         customerId,
@@ -116,6 +122,17 @@ const AssignPassengersDialog = ({ open, onClose, ticket, onPayCash, onPayQR, isL
       setSelectedSeat(null)
     } catch (error) {
       console.error('Error creating passenger:', error)
+
+      // Manejo de error 409: CI duplicado
+      if (isAxiosError(error) && error.response?.status === 409) {
+        const errorMessage = error.response?.data?.message || ''
+
+        if (errorMessage.includes('already exists') || errorMessage.includes('ci')) {
+          setDuplicateCIError(`El CI ${newPassengerCI} ya está registrado. Por favor, verifica el número de carnet.`)
+        } else {
+          setDuplicateCIError('Este pasajero ya está registrado en el sistema.')
+        }
+      }
     }
   }
 
@@ -308,6 +325,11 @@ const AssignPassengersDialog = ({ open, onClose, ticket, onPayCash, onPayQR, isL
                   Crear Nuevo Pasajero
                 </Typography>
                 <Stack spacing={2}>
+                  {duplicateCIError && (
+                    <Alert severity='error' icon={<i className='tabler-alert-circle' />}>
+                      {duplicateCIError}
+                    </Alert>
+                  )}
                   <CustomTextField
                     label='Nombre Completo'
                     value={newPassengerName}
@@ -318,9 +340,13 @@ const AssignPassengersDialog = ({ open, onClose, ticket, onPayCash, onPayQR, isL
                   <CustomTextField
                     label='CI'
                     value={newPassengerCI}
-                    onChange={e => setNewPassengerCI(e.target.value)}
+                    onChange={e => {
+                      setNewPassengerCI(e.target.value)
+                      setDuplicateCIError(null)
+                    }}
                     fullWidth
                     size='small'
+                    error={!!duplicateCIError}
                   />
                   <Box display='flex' gap={2}>
                     <Button
@@ -335,7 +361,14 @@ const AssignPassengersDialog = ({ open, onClose, ticket, onPayCash, onPayQR, isL
                     >
                       {createPassengerMutation.isPending ? 'Creando...' : 'Crear Pasajero'}
                     </Button>
-                    <Button variant='outlined' onClick={() => setShowCreateForm(false)} fullWidth>
+                    <Button
+                      variant='outlined'
+                      onClick={() => {
+                        setShowCreateForm(false)
+                        setDuplicateCIError(null)
+                      }}
+                      fullWidth
+                    >
                       Cancelar
                     </Button>
                   </Box>

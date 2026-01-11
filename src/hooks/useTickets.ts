@@ -32,6 +32,12 @@ const cancelTicket = async (id: number): Promise<void> => {
   await api.post(`/api/tickets/for-cashier/cancel/${id}`)
 }
 
+const fetchTicketsByTravel = async (travelId: number): Promise<Ticket[]> => {
+  const response = await api.get<Ticket[]>(`/api/tickets/for-cashier/${travelId}`)
+
+  return response.data
+}
+
 // Hooks
 export const useTickets = () => {
   const { companyId, hasCompany, isImpersonating } = useAuth()
@@ -83,5 +89,13 @@ export const useCancelTicket = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['tickets'] })
     }
+  })
+}
+
+export const useTicketsByTravel = (travelId: number | null) => {
+  return useQuery({
+    queryKey: ['tickets-by-travel', travelId],
+    queryFn: () => fetchTicketsByTravel(travelId!),
+    enabled: !!travelId
   })
 }

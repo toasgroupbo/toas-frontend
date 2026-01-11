@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 
 import { useForm, Controller } from 'react-hook-form'
 import Dialog from '@mui/material/Dialog'
@@ -45,6 +45,7 @@ const SellTicketDialog = ({ open, onClose, onSubmit, isLoading = false, preSelec
   const { data: travelDetail, refetch: refetchTravel, isRefetching } = useCashierTravelById(selectedTravelId)
   const [selectedSeats, setSelectedSeats] = useState<Set<string>>(new Set())
   const [seatPrices, setSeatPrices] = useState<Record<string, string>>({})
+  const customerFieldRef = useRef<HTMLDivElement>(null)
 
   const selectedTravel = travelDetail || null
 
@@ -62,6 +63,12 @@ const SellTicketDialog = ({ open, onClose, onSubmit, isLoading = false, preSelec
       selectedSeats: []
     }
   })
+
+  useEffect(() => {
+    if (errors.customerId && customerFieldRef.current) {
+      customerFieldRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' })
+    }
+  }, [errors.customerId])
 
   const travelId = watch('travelId')
 
@@ -312,7 +319,7 @@ const SellTicketDialog = ({ open, onClose, onSubmit, isLoading = false, preSelec
               </Grid>
             )}
 
-            <Grid item xs={12} sm={preSelectedTravel ? 12 : 6}>
+            <Grid item xs={12} sm={preSelectedTravel ? 12 : 6} ref={customerFieldRef}>
               <Controller
                 name='customerId'
                 control={control}
@@ -359,8 +366,8 @@ const SellTicketDialog = ({ open, onClose, onSubmit, isLoading = false, preSelec
                     <Grid item xs={12} md={6}>
                       <BusSeatMap
                         seats={selectedTravel.travelSeats}
-                        deck={2}
-                        deckPrice={selectedTravel.price_deck_2}
+                        deck={1}
+                        deckPrice={selectedTravel.price_deck_1}
                         selectedSeats={selectedSeats}
                         onSeatToggle={handleSeatToggle}
                         totalDecks={2}
@@ -369,8 +376,8 @@ const SellTicketDialog = ({ open, onClose, onSubmit, isLoading = false, preSelec
                     <Grid item xs={12} md={6}>
                       <BusSeatMap
                         seats={selectedTravel.travelSeats}
-                        deck={1}
-                        deckPrice={selectedTravel.price_deck_1}
+                        deck={2}
+                        deckPrice={selectedTravel.price_deck_2}
                         selectedSeats={selectedSeats}
                         onSeatToggle={handleSeatToggle}
                         totalDecks={2}

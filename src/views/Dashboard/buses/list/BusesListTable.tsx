@@ -40,6 +40,7 @@ import tableStyles from '@core/styles/table.module.css'
 import { useBuses, useDeleteBus } from '@/hooks/useBuses'
 import type { Bus } from '@/types/api/buses'
 import DeleteBusDialog from '../components/DeleteBusDialog'
+import BusDetailsDialog from '../components/BusDetailsDialog'
 import { useSnackbar } from '@/contexts/SnackbarContext'
 import { usePermissions } from '@/hooks/usePermissions'
 
@@ -108,6 +109,8 @@ const BusListTable = () => {
   const [searchQuery, setSearchQuery] = useState('')
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
   const [selectedBus, setSelectedBus] = useState<Bus | null>(null)
+  const [detailsDialogOpen, setDetailsDialogOpen] = useState(false)
+  const [selectedBusId, setSelectedBusId] = useState<string | null>(null)
 
   const { data: buses, isLoading, error } = useBuses()
   const deleteMutation = useDeleteBus()
@@ -148,6 +151,16 @@ const BusListTable = () => {
       console.error('Error al eliminar bus:', error)
       showError(error?.response?.data?.message || 'Error al eliminar el bus')
     }
+  }
+
+  const handleOpenDetailsDialog = (busId: string) => {
+    setSelectedBusId(busId)
+    setDetailsDialogOpen(true)
+  }
+
+  const handleCloseDetailsDialog = () => {
+    setDetailsDialogOpen(false)
+    setSelectedBusId(null)
   }
 
   const getEquipmentIcons = (equipment: string[]) => {
@@ -194,8 +207,7 @@ const BusListTable = () => {
             <Tooltip title='Ver detalles'>
               <IconButton
                 size='small'
-                component={Link}
-                href={`/buses/${row.original.id}`}
+                onClick={() => handleOpenDetailsDialog(row.original.id)}
                 sx={{
                   color: 'info.main',
                   '&:hover': { backgroundColor: 'info.light', color: 'white' }
@@ -593,6 +605,8 @@ const BusListTable = () => {
         bus={selectedBus}
         isLoading={deleteMutation.isPending}
       />
+
+      <BusDetailsDialog open={detailsDialogOpen} onClose={handleCloseDetailsDialog} busId={selectedBusId} />
     </Box>
   )
 }

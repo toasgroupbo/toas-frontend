@@ -21,6 +21,7 @@ import AssignPassengersDialog from '../components/AssignPassengersDialog'
 import type { SeatAssignment } from '../components/AssignPassengersDialog'
 import { useCreateTicket, useConfirmTicket, useCancelTicket } from '@/hooks/useTickets'
 import { useAssignPassenger } from '@/hooks/usePassengers'
+import { useCloseTravel } from '@/hooks/useCashierTravels'
 import type { CreateTicketDto, Ticket } from '@/types/api/tickets'
 
 interface TravelsForSaleCardProps {
@@ -32,12 +33,14 @@ const TravelsForSaleCard = ({ travel }: TravelsForSaleCardProps) => {
   const [openAssignDialog, setOpenAssignDialog] = useState(false)
   const [openSuccessDialog, setOpenSuccessDialog] = useState(false)
   const [openImagesDialog, setOpenImagesDialog] = useState(false)
+  const [openConfirmCloseDialog, setOpenConfirmCloseDialog] = useState(false)
   const [pendingTicket, setPendingTicket] = useState<Ticket | null>(null)
   const [isProcessingPayment, setIsProcessingPayment] = useState(false)
   const createTicketMutation = useCreateTicket()
   const confirmTicketMutation = useConfirmTicket()
   const cancelTicketMutation = useCancelTicket()
   const assignPassengerMutation = useAssignPassenger()
+  const closeTravelMutation = useCloseTravel()
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString)
@@ -152,6 +155,15 @@ const TravelsForSaleCard = ({ travel }: TravelsForSaleCardProps) => {
       setPendingTicket(null)
     } catch (error) {
       console.error('Error canceling ticket:', error)
+    }
+  }
+
+  const handleCloseTravel = async () => {
+    try {
+      await closeTravelMutation.mutateAsync(travel.id)
+      setOpenConfirmCloseDialog(false)
+    } catch (error) {
+      console.error('Error closing travel:', error)
     }
   }
 
@@ -271,16 +283,28 @@ const TravelsForSaleCard = ({ travel }: TravelsForSaleCardProps) => {
               >
                 Ver Imágenes del Bus
               </Button>
-              <Button
-                fullWidth
-                variant='contained'
-                color='primary'
-                startIcon={<i className='tabler-ticket' />}
-                onClick={() => setOpenDialog(true)}
-                disabled={travel.travel_status !== 'active'}
-              >
-                Vender Tickets
-              </Button>
+              <Box sx={{ display: 'flex', gap: 1 }}>
+                <Button
+                  sx={{ flex: 1 }}
+                  variant='contained'
+                  color='primary'
+                  startIcon={<i className='tabler-ticket' />}
+                  onClick={() => setOpenDialog(true)}
+                  disabled={travel.travel_status !== 'active'}
+                >
+                  Vender Tickets
+                </Button>
+                <Button
+                  sx={{ flex: 1 }}
+                  variant='outlined'
+                  color='error'
+                  startIcon={<i className='tabler-lock' />}
+                  onClick={() => setOpenConfirmCloseDialog(true)}
+                  disabled={travel.travel_status !== 'active'}
+                >
+                  Cerrar Viaje
+                </Button>
+              </Box>
             </Stack>
           </Box>
         </CardContent>
@@ -459,6 +483,81 @@ const TravelsForSaleCard = ({ travel }: TravelsForSaleCardProps) => {
         <DialogActions sx={{ px: 3, pb: 3 }}>
           <Button onClick={() => setOpenImagesDialog(false)} variant='contained' color='primary' fullWidth>
             Cerrar
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Confirm Close Travel Dialog */}
+      <Dialog open={openConfirmCloseDialog} onClose={() => setOpenConfirmCloseDialog(false)} maxWidth='sm' fullWidth>
+        <DialogTitle>
+          <Box display='flex' alignItems='center' gap={2}>
+            <Box
+              sx={{
+                width: 50,
+                height: 50,
+                borderRadius: '50%',
+                bgcolor: 'error.main',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center'
+              }}
+            >
+              <i className='tabler-lock' style={{ fontSize: '28px', color: 'white' }} />
+            </Box>
+            <Typography variant='h5' fontWeight={600}>
+              Cerrar Viaje
+            </Typography>
+          </Box>
+        </DialogTitle>
+        <DialogContent>
+          <Typography variant='body1' color='text.secondary' sx={{ mb: 2 }}>
+            ¿Estás seguro de que deseas cerrar este viaje?
+          </Typography>
+          <Box
+            sx={{
+              bgcolor: 'warning.lighter',
+              p: 2,
+              borderRadius: 1,
+              border: '1px solid',
+              borderColor: 'warning.main',
+              mb: 2
+            }}
+          >
+            <Typography variant='body2' fontWeight={600} color='warning.main'>
+              Esta acción cerrará el viaje y no se podrán vender más tickets.
+            </Typography>
+          </Box>
+          <Box sx={{ p: 2, bgcolor: 'action.hover', borderRadius: 1 }}>
+            <Typography variant='body2' color='text.secondary' sx={{ mb: 1 }}>
+              <strong>Ruta:</strong> {travel.route.officeOrigin.city} → {travel.route.officeDestination.city}
+            </Typography>
+            <Typography variant='body2' color='text.secondary' sx={{ mb: 1 }}>
+              <strong>Fecha:</strong> {formatDate(travel.departure_time)} - {formatTime(travel.departure_time)}
+            </Typography>
+            <Typography variant='body2' color='text.secondary'>
+              <strong>Bus:</strong> {travel.bus.name} ({travel.bus.plaque})
+            </Typography>
+          </Box>
+        </DialogContent>
+        <DialogActions sx={{ px: 3, pb: 3, gap: 1 }}>
+          <Button
+            onClick={() => setOpenConfirmCloseDialog(false)}
+            variant='outlined'
+            color='secondary'
+            fullWidth
+            disabled={closeTravelMutation.isPending}
+          >
+            Cancelar
+          </Button>
+          <Button
+            onClick={handleCloseTravel}
+            variant='contained'
+            color='error'
+            fullWidth
+            startIcon={<i className='tabler-lock' />}
+            disabled={closeTravelMutation.isPending}
+          >
+            {closeTravelMutation.isPending ? 'Cerrando...' : 'Cerrar Viaje'}
           </Button>
         </DialogActions>
       </Dialog>

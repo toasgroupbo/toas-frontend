@@ -5,13 +5,10 @@ import { useEffect, useMemo, useState } from 'react'
 import Card from '@mui/material/Card'
 import Button from '@mui/material/Button'
 import Chip from '@mui/material/Chip'
-import Checkbox from '@mui/material/Checkbox'
 import Typography from '@mui/material/Typography'
 import Box from '@mui/material/Box'
 import CircularProgress from '@mui/material/CircularProgress'
 import Alert from '@mui/material/Alert'
-import IconButton from '@mui/material/IconButton'
-import Tooltip from '@mui/material/Tooltip'
 import MenuItem from '@mui/material/MenuItem'
 import type { TextFieldProps } from '@mui/material/TextField'
 import classnames from 'classnames'
@@ -33,13 +30,9 @@ import { Pagination } from '@mui/material'
 
 import CustomTextField from '@core/components/mui/TextField'
 import tableStyles from '@core/styles/table.module.css'
-import { useTickets, useCreateTicket, useConfirmTicket, useCancelTicket } from '@/hooks/useTickets'
-import type { Ticket, CreateTicketDto } from '@/types/api/tickets'
-import SellTicketDialog from '@/views/Dashboard/Tickets/components/SellTicketDialog'
-import ConfirmTicketDialog from '@/views/Dashboard/Tickets/components/ConfirmTicketDialog'
-import CancelTicketDialog from '@/views/Dashboard/Tickets/components/CancelTicketDialog'
-import { useSnackbar } from '@/contexts/SnackbarContext'
-import { usePermissions } from '@/hooks/usePermissions'
+import { useTicketsByTravel } from '@/hooks/useTickets'
+import { useCashierTravels } from '@/hooks/useCashierTravels'
+import type { Ticket } from '@/types/api/tickets'
 
 type TicketWithActionsType = Ticket & {
   actions?: string
@@ -83,23 +76,13 @@ const DebouncedInput = ({
 const columnHelper = createColumnHelper<TicketWithActionsType>()
 
 const TicketsTable = () => {
-  const [rowSelection, setRowSelection] = useState({})
   const [currentPage, setCurrentPage] = useState(1)
   const [pageSize, setPageSize] = useState(10)
   const [searchQuery, setSearchQuery] = useState('')
-  const [sellDialogOpen, setSellDialogOpen] = useState(false)
-  const [confirmDialogOpen, setConfirmDialogOpen] = useState(false)
-  const [cancelDialogOpen, setCancelDialogOpen] = useState(false)
-  const [selectedTicket, setSelectedTicket] = useState<Ticket | null>(null)
+  const [selectedTravelId, setSelectedTravelId] = useState<number | null>(null)
 
-  const { showSuccess, showError } = useSnackbar()
-  const { getCRUDPermissions } = usePermissions()
-  const { canCreate, canUpdate, canDelete } = getCRUDPermissions('TICKET')
-
-  const { data: tickets, isLoading, error } = useTickets()
-  const createMutation = useCreateTicket()
-  const confirmMutation = useConfirmTicket()
-  const cancelMutation = useCancelTicket()
+  const { data: travels, isLoading: travelsLoading } = useCashierTravels()
+  const { data: tickets, isLoading, error } = useTicketsByTravel(selectedTravelId)
 
   const [data, setData] = useState<Ticket[]>([])
 
@@ -109,66 +92,17 @@ const TicketsTable = () => {
     }
   }, [tickets])
 
-  const handleSellTicket = async (data: CreateTicketDto) => {
-    try {
-      await createMutation.mutateAsync(data)
-      setSellDialogOpen(false)
-      showSuccess('Ticket vendido correctamente')
-    } catch (error: any) {
-      console.error('Error al vender ticket:', error)
-      showError(error?.response?.data?.message || 'Error al vender ticket')
-    }
-  }
-
-  const handleConfirmTicket = (ticket: Ticket) => {
-    setSelectedTicket(ticket)
-    setConfirmDialogOpen(true)
-  }
-
-  const handleConfirmAction = async () => {
-    if (!selectedTicket) return
-
-    try {
-      await confirmMutation.mutateAsync(selectedTicket.id)
-      setConfirmDialogOpen(false)
-      setSelectedTicket(null)
-      showSuccess('Ticket confirmado correctamente')
-    } catch (error: any) {
-      console.error('Error al confirmar ticket:', error)
-      showError(error?.response?.data?.message || 'Error al confirmar ticket')
-    }
-  }
-
-  const handleCancelTicket = (ticket: Ticket) => {
-    setSelectedTicket(ticket)
-    setCancelDialogOpen(true)
-  }
-
-  const handleCancelAction = async () => {
-    if (!selectedTicket) return
-
-    try {
-      await cancelMutation.mutateAsync(selectedTicket.id)
-      setCancelDialogOpen(false)
-      setSelectedTicket(null)
-      showSuccess('Ticket cancelado correctamente')
-    } catch (error: any) {
-      console.error('Error al cancelar ticket:', error)
-      showError(error?.response?.data?.message || 'Error al cancelar ticket')
-    }
-  }
-
   const getStatusColor = (status: string) => {
     switch (status.toLowerCase()) {
+      case 'sold':
+      case 'vendido':
+        return 'success'
       case 'reserved':
       case 'reservado':
-        return 'info'
+        return 'warning'
       case 'pending':
       case 'pendiente':
-        return 'warning'
-      case 'confirmed':
-      case 'confirmado':
-        return 'success'
+        return 'info'
       case 'cancelled':
       case 'cancelado':
         return 'error'
@@ -179,15 +113,15 @@ const TicketsTable = () => {
 
   const getStatusLabel = (status: string) => {
     switch (status.toLowerCase()) {
+      case 'sold':
+      case 'vendido':
+        return 'Vendido'
       case 'reserved':
       case 'reservado':
         return 'Reservado'
       case 'pending':
       case 'pendiente':
         return 'Pendiente'
-      case 'confirmed':
-      case 'confirmado':
-        return 'Confirmado'
       case 'cancelled':
       case 'cancelado':
         return 'Cancelado'
@@ -198,28 +132,6 @@ const TicketsTable = () => {
 
   const columns = useMemo<ColumnDef<TicketWithActionsType, any>[]>(
     () => [
-      {
-        id: 'select',
-        header: ({ table }) => (
-          <Checkbox
-            {...{
-              checked: table.getIsAllRowsSelected(),
-              indeterminate: table.getIsSomeRowsSelected(),
-              onChange: table.getToggleAllRowsSelectedHandler()
-            }}
-          />
-        ),
-        cell: ({ row }) => (
-          <Checkbox
-            {...{
-              checked: row.getIsSelected(),
-              disabled: !row.getCanSelect(),
-              indeterminate: row.getIsSomeSelected(),
-              onChange: row.getToggleSelectedHandler()
-            }}
-          />
-        )
-      },
       columnHelper.accessor('id', {
         header: 'ID',
         cell: ({ row }) => (
@@ -232,84 +144,31 @@ const TicketsTable = () => {
           />
         )
       }),
-      columnHelper.accessor('customer', {
-        header: 'Cliente',
+      columnHelper.accessor('type', {
+        header: 'Tipo',
         cell: ({ row }) => (
-          <div className='flex items-center gap-2'>
-            <Box
-              sx={{
-                width: 32,
-                height: 32,
-                borderRadius: '50%',
-                bgcolor: 'primary.main',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                color: 'white',
-                fontWeight: 'bold',
-                fontSize: '14px'
-              }}
-            >
-              {row.original.customer?.name?.charAt(0).toUpperCase() || '?'}
-            </Box>
-            <div className='flex flex-col'>
-              <Typography variant='body2' fontWeight='medium'>
-                {row.original.customer?.name || 'Sin información'}
-              </Typography>
-              <Typography variant='caption' color='text.secondary'>
-                CI: {row.original.customer?.ci || 'N/A'}
-              </Typography>
-            </div>
-          </div>
+          <Chip
+            label={row.original.type === 'IN_OFFICE' ? 'En Oficina' : row.original.type}
+            size='small'
+            variant='outlined'
+          />
         )
-      }),
-      columnHelper.accessor('travel', {
-        header: 'Viaje',
-        cell: ({ row }) => {
-          if (!row.original.travel) {
-            return (
-              <Typography variant='caption' color='text.secondary'>
-                Sin información de viaje
-              </Typography>
-            )
-          }
-
-          return (
-            <div className='flex flex-col gap-1'>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                <div className='flex items-center gap-1'>
-                  <i className='tabler-flag' style={{ fontSize: '14px', color: 'var(--mui-palette-success-main)' }} />
-                  <Typography variant='caption' fontWeight='medium'>
-                    {row.original.travel.route?.officeOrigin?.city || 'N/A'}
-                  </Typography>
-                </div>
-                <i className='tabler-arrow-right' style={{ fontSize: '14px' }} />
-                <div className='flex items-center gap-1'>
-                  <i
-                    className='tabler-flag-filled'
-                    style={{ fontSize: '14px', color: 'var(--mui-palette-error-main)' }}
-                  />
-                  <Typography variant='caption' fontWeight='medium'>
-                    {row.original.travel.route?.officeDestination?.city || 'N/A'}
-                  </Typography>
-                </div>
-              </Box>
-              <Typography variant='caption' color='text.secondary'>
-                {row.original.travel.departure_time}
-              </Typography>
-            </div>
-          )
-        }
       }),
       columnHelper.accessor('seats', {
         header: 'Asientos',
         cell: ({ row }) => (
           <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
-            {row.original.seats.slice(0, 3).map((seat, index) => (
-              <Chip key={index} label={seat.seatNumber} size='small' variant='outlined' />
+            {row.original.seats.slice(0, 5).map((seat, index) => (
+              <Chip
+                key={index}
+                label={`#${seat.seatNumber}`}
+                size='small'
+                variant='outlined'
+                icon={<i className='tabler-armchair' style={{ fontSize: '12px' }} />}
+              />
             ))}
-            {row.original.seats.length > 3 && (
-              <Chip label={`+${row.original.seats.length - 3}`} size='small' variant='outlined' />
+            {row.original.seats.length > 5 && (
+              <Chip label={`+${row.original.seats.length - 5}`} size='small' variant='outlined' color='primary' />
             )}
           </Box>
         )
@@ -318,7 +177,7 @@ const TicketsTable = () => {
         header: 'Total',
         cell: ({ row }) => (
           <Chip
-            label={`Bs. ${row.original.total_price}`}
+            label={`Bs. ${parseFloat(row.original.total_price).toFixed(2)}`}
             color='success'
             variant='tonal'
             size='small'
@@ -338,56 +197,29 @@ const TicketsTable = () => {
         )
       }),
       columnHelper.accessor('createdAt', {
-        header: 'Fecha',
+        header: 'Fecha de Venta',
         cell: ({ row }) => (
-          <Typography variant='body2'>
-            {new Date(row.original.createdAt).toLocaleDateString('es-BO', {
-              year: 'numeric',
-              month: 'short',
-              day: 'numeric',
-              hour: '2-digit',
-              minute: '2-digit'
-            })}
-          </Typography>
+          <Box>
+            <Typography variant='body2' fontWeight='medium'>
+              {new Date(row.original.createdAt).toLocaleDateString('es-ES', {
+                day: '2-digit',
+                month: 'short',
+                year: 'numeric',
+                timeZone: 'America/La_Paz'
+              })}
+            </Typography>
+            <Typography variant='caption' color='text.secondary'>
+              {new Date(row.original.createdAt).toLocaleTimeString('es-ES', {
+                hour: '2-digit',
+                minute: '2-digit',
+                timeZone: 'America/La_Paz'
+              })}
+            </Typography>
+          </Box>
         )
-      }),
-      columnHelper.accessor('actions', {
-        header: 'Acciones',
-        cell: ({ row }) => (
-          <div className='flex items-center gap-1'>
-            {row.original.status.toLowerCase() === 'pending' ||
-              (row.original.status.toLowerCase() === 'pendiente' && (
-                <>
-                  {canUpdate && (
-                    <Tooltip title='Confirmar Ticket'>
-                      <IconButton size='small' color='success' onClick={() => handleConfirmTicket(row.original)}>
-                        <i className='tabler-check' />
-                      </IconButton>
-                    </Tooltip>
-                  )}
-                  {canDelete && (
-                    <Tooltip title='Cancelar Ticket'>
-                      <IconButton size='small' color='error' onClick={() => handleCancelTicket(row.original)}>
-                        <i className='tabler-x' />
-                      </IconButton>
-                    </Tooltip>
-                  )}
-                </>
-              ))}
-            {(row.original.status.toLowerCase() === 'confirmed' ||
-              row.original.status.toLowerCase() === 'confirmado') && (
-              <Chip label='Ticket Confirmado' color='success' size='small' variant='outlined' />
-            )}
-            {(row.original.status.toLowerCase() === 'cancelled' ||
-              row.original.status.toLowerCase() === 'cancelado') && (
-              <Chip label='Ticket Cancelado' color='error' size='small' variant='outlined' />
-            )}
-          </div>
-        ),
-        enableSorting: false
       })
     ],
-    [canUpdate, canDelete]
+    []
   )
 
   const table = useReactTable({
@@ -397,7 +229,6 @@ const TicketsTable = () => {
       fuzzy: fuzzyFilter
     },
     state: {
-      rowSelection,
       globalFilter: searchQuery
     },
     initialState: {
@@ -405,9 +236,7 @@ const TicketsTable = () => {
         pageSize: pageSize
       }
     },
-    enableRowSelection: true,
     globalFilterFn: fuzzyFilter,
-    onRowSelectionChange: setRowSelection,
     getCoreRowModel: getCoreRowModel(),
     onGlobalFilterChange: setSearchQuery,
     getFilteredRowModel: getFilteredRowModel(),
@@ -454,30 +283,136 @@ const TicketsTable = () => {
             <i className='tabler-ticket' style={{ fontSize: '32px', color: 'var(--mui-palette-primary-main)' }} />
             <div>
               <Typography variant='h5' fontWeight='bold'>
-                Listado de Tickets
+                Tickets Vendidos
               </Typography>
               <Typography variant='body2' color='text.secondary'>
-                Gestiona el estado de los tickets vendidos
+                Selecciona un viaje para ver sus tickets vendidos
               </Typography>
             </div>
           </Box>
         </Box>
 
-        <Box sx={{ padding: '0 20px 20px' }}>
-          <DebouncedInput
-            value={searchQuery ?? ''}
-            onChange={value => setSearchQuery(String(value))}
-            placeholder='Buscar tickets...'
-            className='w-full sm:w-auto'
-            InputProps={{
-              startAdornment: (
-                <Box sx={{ mr: 1, display: 'flex', alignItems: 'center' }}>
-                  <i className='tabler-search' />
+        <Box sx={{ padding: '0 20px', display: 'flex', flexDirection: 'column', gap: 2 }}>
+          <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap', alignItems: 'flex-start' }}>
+            <CustomTextField
+              select
+              value={selectedTravelId || ''}
+              onChange={e => {
+                setSelectedTravelId(e.target.value ? Number(e.target.value) : null)
+                setCurrentPage(1)
+              }}
+              label='Seleccionar Viaje'
+              sx={{ minWidth: 300 }}
+              InputProps={{
+                startAdornment: (
+                  <Box sx={{ mr: 1, display: 'flex', alignItems: 'center' }}>
+                    <i className='tabler-bus' />
+                  </Box>
+                )
+              }}
+            >
+              <MenuItem value=''>
+                <em>Selecciona un viaje...</em>
+              </MenuItem>
+              {travelsLoading ? (
+                <MenuItem disabled>
+                  <CircularProgress size={20} />
+                  <span style={{ marginLeft: 8 }}>Cargando viajes...</span>
+                </MenuItem>
+              ) : travels && travels.length > 0 ? (
+                travels.map(travel => (
+                  <MenuItem key={travel.id} value={travel.id}>
+                    <Box sx={{ display: 'flex', flexDirection: 'column', width: '100%' }}>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                        <i className='tabler-flag' style={{ fontSize: '14px', color: 'var(--mui-palette-success-main)' }} />
+                        <Typography variant='body2'>{travel.route.officeOrigin.city}</Typography>
+                        <i className='tabler-arrow-right' style={{ fontSize: '14px' }} />
+                        <i
+                          className='tabler-flag-filled'
+                          style={{ fontSize: '14px', color: 'var(--mui-palette-error-main)' }}
+                        />
+                        <Typography variant='body2'>{travel.route.officeDestination.city}</Typography>
+                      </Box>
+                      <Typography variant='caption' color='text.secondary'>
+                        {new Date(travel.departure_time).toLocaleDateString('es-ES', {
+                          day: '2-digit',
+                          month: 'short',
+                          year: 'numeric',
+                          hour: '2-digit',
+                          minute: '2-digit',
+                          timeZone: 'America/La_Paz'
+                        })}{' '}
+                        - {travel.bus.name} ({travel.bus.plaque})
+                      </Typography>
+                    </Box>
+                  </MenuItem>
+                ))
+              ) : (
+                <MenuItem disabled>No hay viajes disponibles</MenuItem>
+              )}
+            </CustomTextField>
+
+            {selectedTravelId && (
+              <DebouncedInput
+                value={searchQuery ?? ''}
+                onChange={value => setSearchQuery(String(value))}
+                placeholder='Buscar tickets...'
+                sx={{ flexGrow: 1 }}
+                InputProps={{
+                  startAdornment: (
+                    <Box sx={{ mr: 1, display: 'flex', alignItems: 'center' }}>
+                      <i className='tabler-search' />
+                    </Box>
+                  )
+                }}
+              />
+            )}
+          </Box>
+
+          {selectedTravelId && tickets && tickets.length > 0 && (
+            <Box
+              sx={{
+                p: 2,
+                bgcolor: 'success.lighter',
+                borderRadius: 1,
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                gap: 2,
+                flexWrap: 'wrap'
+              }}
+            >
+              <Box sx={{ display: 'flex', gap: 3 }}>
+                <Box>
+                  <Typography variant='caption' color='text.secondary'>
+                    Total de Tickets
+                  </Typography>
+                  <Typography variant='h6' fontWeight='bold'>
+                    {tickets.length}
+                  </Typography>
                 </Box>
-              )
-            }}
-          />
+                <Box>
+                  <Typography variant='caption' color='text.secondary'>
+                    Total de Asientos
+                  </Typography>
+                  <Typography variant='h6' fontWeight='bold'>
+                    {tickets.reduce((sum, ticket) => sum + ticket.seats.length, 0)}
+                  </Typography>
+                </Box>
+              </Box>
+              <Box>
+                <Typography variant='caption' color='text.secondary'>
+                  Ingresos Totales
+                </Typography>
+                <Typography variant='h5' color='success.main' fontWeight='bold'>
+                  Bs. {tickets.reduce((sum, ticket) => sum + parseFloat(ticket.total_price || '0'), 0).toFixed(2)}
+                </Typography>
+              </Box>
+            </Box>
+          )}
         </Box>
+
+        <Box sx={{ height: '20px' }} />
 
         <div className='overflow-x-auto'>
           <table className={tableStyles.table}>
@@ -506,12 +441,25 @@ const TicketsTable = () => {
                 </tr>
               ))}
             </thead>
-            {table.getFilteredRowModel().rows.length === 0 ? (
+            {!selectedTravelId ? (
+              <tbody>
+                <tr>
+                  <td colSpan={table.getVisibleFlatColumns().length} className='text-center'>
+                    <Box sx={{ py: 8, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2 }}>
+                      <i className='tabler-bus' style={{ fontSize: '48px', color: 'var(--mui-palette-text-disabled)' }} />
+                      <Typography variant='h6' color='text.secondary'>
+                        Selecciona un viaje para ver sus tickets vendidos
+                      </Typography>
+                    </Box>
+                  </td>
+                </tr>
+              </tbody>
+            ) : table.getFilteredRowModel().rows.length === 0 ? (
               <tbody>
                 <tr>
                   <td colSpan={table.getVisibleFlatColumns().length} className='text-center'>
                     <Typography variant='body2' color='text.secondary' sx={{ py: 4 }}>
-                      No se encontraron tickets
+                      No se encontraron tickets para este viaje
                     </Typography>
                   </td>
                 </tr>
@@ -560,35 +508,6 @@ const TicketsTable = () => {
           </Box>
         </Box>
       </Card>
-
-      <SellTicketDialog
-        open={sellDialogOpen}
-        onClose={() => setSellDialogOpen(false)}
-        onSubmit={handleSellTicket}
-        isLoading={createMutation.isPending}
-      />
-
-      <ConfirmTicketDialog
-        open={confirmDialogOpen}
-        onClose={() => {
-          setConfirmDialogOpen(false)
-          setSelectedTicket(null)
-        }}
-        onConfirm={handleConfirmAction}
-        ticket={selectedTicket}
-        isLoading={confirmMutation.isPending}
-      />
-
-      <CancelTicketDialog
-        open={cancelDialogOpen}
-        onClose={() => {
-          setCancelDialogOpen(false)
-          setSelectedTicket(null)
-        }}
-        onConfirm={handleCancelAction}
-        ticket={selectedTicket}
-        isLoading={cancelMutation.isPending}
-      />
     </Box>
   )
 }
