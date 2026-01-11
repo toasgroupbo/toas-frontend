@@ -329,7 +329,7 @@ const BusDetailsDialog = ({ open, onClose, busId }: BusDetailsDialogProps) => {
                     Cantidad de Pisos
                   </Typography>
                   <Typography variant='body1' fontWeight={600}>
-                    {bus.decks ? 'Dos pisos' : 'Un piso'}
+                    {bus.busType.decks.length > 1 ? 'Dos pisos' : 'Un piso'}
                   </Typography>
                 </Grid>
               </Grid>

@@ -361,7 +361,7 @@ const SellTicketDialog = ({ open, onClose, onSubmit, isLoading = false, preSelec
                 </Grid>
 
                 {/* Mostrar pisos */}
-                {selectedTravel.bus.decks && getSeatsByDeck(2).length > 0 ? (
+                {selectedTravel.bus.decks === true && getSeatsByDeck(2).length > 0 ? (
                   <>
                     <Grid item xs={12} md={6}>
                       <BusSeatMap
