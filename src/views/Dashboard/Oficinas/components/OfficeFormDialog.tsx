@@ -31,6 +31,7 @@ interface OfficeFormDialogProps {
 interface FormData {
   url_gps: string
   city: string
+  subsidiary: string
   placeId: number
 }
 
@@ -53,6 +54,7 @@ const OfficeFormDialog = ({
     defaultValues: {
       url_gps: '',
       city: '',
+      subsidiary: '',
       placeId: 0
     }
   })
@@ -62,12 +64,14 @@ const OfficeFormDialog = ({
       reset({
         url_gps: office.url_gps,
         city: office.city,
+        subsidiary: office.subsidiary,
         placeId: office.place.id
       })
     } else {
       reset({
         url_gps: '',
         city: '',
+        subsidiary: '',
         placeId: 0
       })
     }
@@ -147,6 +151,30 @@ const OfficeFormDialog = ({
                     disabled={isLoading}
                     InputProps={{
                       startAdornment: <i className='tabler-map-pin' style={{ marginRight: '8px' }} />
+                    }}
+                  />
+                )}
+              />
+            </Grid>
+
+            <Grid item xs={12}>
+              <Controller
+                name='subsidiary'
+                control={control}
+                rules={{
+                  required: 'La subsidiaria es requerida'
+                }}
+                render={({ field }) => (
+                  <CustomTextField
+                    {...field}
+                    fullWidth
+                    label='Subsidiaria'
+                    placeholder='Ej: central'
+                    error={!!errors.subsidiary}
+                    helperText={errors.subsidiary?.message}
+                    disabled={isLoading}
+                    InputProps={{
+                      startAdornment: <i className='tabler-building-community' style={{ marginRight: '8px' }} />
                     }}
                   />
                 )}

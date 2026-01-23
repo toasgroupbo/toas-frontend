@@ -87,6 +87,7 @@ const TravelsTable = () => {
   const [currentPage, setCurrentPage] = useState(1)
   const [pageSize, setPageSize] = useState(10)
   const [searchQuery, setSearchQuery] = useState('')
+  const [statusFilter, setStatusFilter] = useState<string>('all')
   const [createDialogOpen, setCreateDialogOpen] = useState(false)
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
   const [selectedTravel, setSelectedTravel] = useState<Travel | null>(null)
@@ -101,9 +102,16 @@ const TravelsTable = () => {
 
   useEffect(() => {
     if (travels) {
-      setData(travels)
+      let filteredData = travels
+
+      // Filtrar por status
+      if (statusFilter && statusFilter !== 'all') {
+        filteredData = filteredData.filter(travel => travel.travel_status === statusFilter)
+      }
+
+      setData(filteredData)
     }
-  }, [travels])
+  }, [travels, statusFilter])
 
   const handleOpenCreateDialog = () => {
     setCreateDialogOpen(true)
@@ -263,6 +271,23 @@ const TravelsTable = () => {
           </div>
         )
       }),
+      columnHelper.accessor('type', {
+        header: 'Tipo',
+        cell: ({ row }) => (
+          <Chip
+            label={row.original.type === 'normal' ? 'Normal' : 'Habilitada'}
+            color={row.original.type === 'habilitada' ? 'warning' : 'primary'}
+            variant='tonal'
+            size='small'
+            icon={
+              <i
+                className={row.original.type === 'habilitada' ? 'tabler-star-filled' : 'tabler-circle-filled'}
+                style={{ fontSize: '14px' }}
+              />
+            }
+          />
+        )
+      }),
       columnHelper.accessor('price_deck_1', {
         header: 'Precio Piso 1',
         cell: ({ row }) => (
@@ -295,7 +320,12 @@ const TravelsTable = () => {
             color={row.original.travel_status === 'active' ? 'success' : 'default'}
             variant='tonal'
             size='small'
-            icon={<i className={row.original.travel_status === 'active' ? 'tabler-check' : 'tabler-x'} style={{ fontSize: '14px' }} />}
+            icon={
+              <i
+                className={row.original.travel_status === 'active' ? 'tabler-check' : 'tabler-x'}
+                style={{ fontSize: '14px' }}
+              />
+            }
           />
         )
       })
@@ -373,6 +403,20 @@ const TravelsTable = () => {
               placeholder='Buscar viajes...'
               className='max-sm:is-full min-w-[300px] flex-1 max-w-md'
             />
+            <CustomTextField
+              select
+              value={statusFilter}
+              onChange={e => {
+                setStatusFilter(e.target.value)
+                setCurrentPage(1)
+              }}
+              className='max-sm:is-full sm:is-[150px]'
+            >
+              <MenuItem value='all'>Todos</MenuItem>
+              <MenuItem value='active'>Activo</MenuItem>
+              <MenuItem value='closed'>Cerrado</MenuItem>
+              <MenuItem value='cancelled'>Cancelado</MenuItem>
+            </CustomTextField>
           </div>
 
           <div className='flex max-sm:flex-col items-start sm:items-center gap-4 max-sm:is-full'>

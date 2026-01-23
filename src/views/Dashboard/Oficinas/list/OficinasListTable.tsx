@@ -239,6 +239,17 @@ const OfficesListTable = () => {
           </div>
         )
       }),
+      columnHelper.accessor('subsidiary', {
+        header: 'Subsidiaria',
+        cell: ({ row }) => (
+          <div className='flex items-center gap-2'>
+            <i className='tabler-building-community' style={{ fontSize: '18px', color: 'var(--mui-palette-info-main)' }} />
+            <Typography variant='body2' color='text.primary'>
+              {row.original.subsidiary}
+            </Typography>
+          </div>
+        )
+      }),
       columnHelper.accessor('place', {
         header: 'Lugar',
         cell: ({ row }) => (

@@ -28,12 +28,15 @@ export interface TravelBus {
   createdAt: string
 }
 
+export type TravelType = 'normal' | 'habilitada'
+
 export interface Travel {
   id: number
   departure_time: string
   arrival_time: string
   price_deck_1: string
   price_deck_2: string
+  type: TravelType
   travel_status: string
   bus: TravelBus
   travelSeats: TravelSeat[]
@@ -45,6 +48,7 @@ export interface CreateTravelDto {
   routeId: number
   price_deck_1: string
   price_deck_2: string
+  type: TravelType
   departure_time: string
   arrival_time: string
 }
@@ -54,6 +58,7 @@ export interface UpdateTravelDto {
   routeId?: number
   price_deck_1?: string
   price_deck_2?: string
+  type?: TravelType
   departure_time?: string
   arrival_time?: string
 }

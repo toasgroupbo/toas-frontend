@@ -408,7 +408,7 @@ const BusDetailsDialog = ({ open, onClose, busId }: BusDetailsDialogProps) => {
               >
                 {bus.busType.decks.map((deck, deckIndex) => (
                   <Box key={deckIndex} sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2, flexWrap: 'wrap', justifyContent: 'center' }}>
                       <Chip
                         label={`Piso ${deck.deck}`}
                         color={deckIndex === 0 ? 'primary' : 'secondary'}
@@ -416,6 +416,15 @@ const BusDetailsDialog = ({ open, onClose, busId }: BusDetailsDialogProps) => {
                         size='small'
                       />
                       <Chip label={getDeckTypeLabel(deck.deckType)} variant='outlined' size='small' />
+                      {deck.price && (
+                        <Chip
+                          label={`Bs. ${deck.price}`}
+                          variant='outlined'
+                          size='small'
+                          color='info'
+                          icon={<i className='tabler-currency-dollar' />}
+                        />
+                      )}
                       <Chip
                         label={`${deck.seats.filter(s => s.type === 'seat').length} asientos`}
                         variant='outlined'

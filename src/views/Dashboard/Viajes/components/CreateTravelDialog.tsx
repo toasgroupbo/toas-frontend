@@ -17,7 +17,7 @@ import Typography from '@mui/material/Typography'
 import Box from '@mui/material/Box'
 
 import CustomTextField from '@core/components/mui/TextField'
-import type { CreateTravelDto } from '@/types/api/travels'
+import type { CreateTravelDto, TravelType } from '@/types/api/travels'
 import { useBuses } from '@/hooks/useBuses'
 import { useRoutes } from '@/hooks/useRoutes'
 
@@ -31,10 +31,11 @@ interface CreateTravelDialogProps {
 interface FormData {
   busId: number | ''
   routeId: number | ''
+  type: TravelType
   price_deck_1: string
   price_deck_2: string
-  departure_date: string
-  departure_hour: string
+  departure_time: string
+  arrival_time: string
 }
 
 const CreateTravelDialog = ({ open, onClose, onSubmit, isLoading = false }: CreateTravelDialogProps) => {
@@ -45,17 +46,23 @@ const CreateTravelDialog = ({ open, onClose, onSubmit, isLoading = false }: Crea
     control,
     handleSubmit,
     reset,
+    watch,
+    setValue,
     formState: { errors }
   } = useForm<FormData>({
     defaultValues: {
       busId: '',
       routeId: '',
+      type: 'normal',
       price_deck_1: '',
       price_deck_2: '',
-      departure_date: '',
-      departure_hour: ''
+      departure_time: '',
+      arrival_time: ''
     }
   })
+
+  const busId = watch('busId')
+  const travelType = watch('type')
 
   useEffect(() => {
     if (!open) {
@@ -63,18 +70,44 @@ const CreateTravelDialog = ({ open, onClose, onSubmit, isLoading = false }: Crea
     }
   }, [open, reset])
 
-  const handleFormSubmit = async (data: FormData) => {
-    // Combinar fecha y hora en formato ISO
-    const departureDateTime = `${data.departure_date}T${data.departure_hour}:00`
+  // Autocompletar precios cuando se selecciona un bus o cambia el tipo
+  useEffect(() => {
+    if (busId && buses) {
+      const selectedBus = buses.find(b => Number(b.id) === Number(busId))
 
+      if (selectedBus?.busType?.decks) {
+        // Autocompletar precio piso 1
+        const deck1 = selectedBus.busType.decks.find(d => d.deck === 1)
+        if (deck1?.price) {
+          setValue('price_deck_1', deck1.price)
+        }
+
+        // Autocompletar precio piso 2 (si existe)
+        const deck2 = selectedBus.busType.decks.find(d => d.deck === 2)
+        if (deck2?.price) {
+          setValue('price_deck_2', deck2.price)
+        } else {
+          // Limpiar el campo si el bus no tiene segundo piso
+          setValue('price_deck_2', '')
+        }
+      }
+    }
+  }, [busId, buses, travelType, setValue])
+
+  // Obtener el bus seleccionado para determinar cantidad de pisos
+  const selectedBus = busId && buses ? buses.find(b => Number(b.id) === Number(busId)) : null
+  const hasTwoDecks = selectedBus?.busType?.decks && selectedBus.busType.decks.length > 1
+
+  const handleFormSubmit = async (data: FormData) => {
     // Asegurar que busId y routeId sean números válidos
     const payload: CreateTravelDto = {
       busId: typeof data.busId === 'number' ? data.busId : Number(data.busId),
       routeId: typeof data.routeId === 'number' ? data.routeId : Number(data.routeId),
+      type: data.type,
       price_deck_1: data.price_deck_1,
       price_deck_2: data.price_deck_2 || data.price_deck_1, // Si está vacío, usar el mismo precio del piso 1
-      departure_time: departureDateTime,
-      arrival_time: departureDateTime // Usar el mismo valor por ahora
+      departure_time: `${data.departure_time}:00`,
+      arrival_time: `${data.arrival_time}:00`
     }
 
     await onSubmit(payload)
@@ -102,6 +135,47 @@ const CreateTravelDialog = ({ open, onClose, onSubmit, isLoading = false }: Crea
       <form onSubmit={handleSubmit(handleFormSubmit)}>
         <DialogContent>
           <Grid container spacing={4}>
+            <Grid item xs={12}>
+              <Controller
+                name='type'
+                control={control}
+                rules={{
+                  required: 'El tipo de viaje es requerido'
+                }}
+                render={({ field }) => (
+                  <CustomTextField
+                    {...field}
+                    select
+                    fullWidth
+                    label='Tipo de Viaje'
+                    error={!!errors.type}
+                    helperText={errors.type?.message}
+                    disabled={isLoading}
+                    InputProps={{
+                      startAdornment: (
+                        <InputAdornment position='start'>
+                          <i className='tabler-ticket' />
+                        </InputAdornment>
+                      )
+                    }}
+                  >
+                    <MenuItem value='normal'>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                        <i className='tabler-circle-filled' style={{ fontSize: '10px', color: 'var(--mui-palette-primary-main)' }} />
+                        <Typography variant='body2'>Normal</Typography>
+                      </Box>
+                    </MenuItem>
+                    <MenuItem value='habilitada'>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                        <i className='tabler-star-filled' style={{ fontSize: '14px', color: 'var(--mui-palette-warning-main)' }} />
+                        <Typography variant='body2'>Habilitada</Typography>
+                      </Box>
+                    </MenuItem>
+                  </CustomTextField>
+                )}
+              />
+            </Grid>
+
             <Grid item xs={12} sm={6}>
               <Controller
                 name='busId'
@@ -210,7 +284,7 @@ const CreateTravelDialog = ({ open, onClose, onSubmit, isLoading = false }: Crea
               />
             </Grid>
 
-            <Grid item xs={12} sm={6}>
+            <Grid item xs={12} sm={hasTwoDecks ? 6 : 12}>
               <Controller
                 name='price_deck_1'
                 control={control}
@@ -233,8 +307,12 @@ const CreateTravelDialog = ({ open, onClose, onSubmit, isLoading = false }: Crea
                     label='Precio Piso 1'
                     placeholder='0.00'
                     error={!!errors.price_deck_1}
-                    helperText={errors.price_deck_1?.message}
-                    disabled={isLoading}
+                    helperText={
+                      travelType === 'normal'
+                        ? 'Precio cargado automáticamente del bus'
+                        : errors.price_deck_1?.message
+                    }
+                    disabled={isLoading || travelType === 'normal'}
                     InputProps={{
                       startAdornment: (
                         <InputAdornment position='start'>
@@ -247,20 +325,94 @@ const CreateTravelDialog = ({ open, onClose, onSubmit, isLoading = false }: Crea
               />
             </Grid>
 
+            {hasTwoDecks && (
+              <Grid item xs={12} sm={6}>
+                <Controller
+                  name='price_deck_2'
+                  control={control}
+                  rules={{
+                    required: hasTwoDecks ? 'El precio de piso 2 es requerido' : false,
+                    pattern: {
+                      value: /^\d+(\.\d{1,2})?$/,
+                      message: 'Ingrese un precio válido'
+                    },
+                    validate: value => {
+                      if (value && parseFloat(value) < 0.01) {
+                        return 'El precio debe ser mayor a 0'
+                      }
+
+                      return true
+                    }
+                  }}
+                  render={({ field }) => (
+                    <CustomTextField
+                      {...field}
+                      fullWidth
+                      type='number'
+                      label='Precio Piso 2'
+                      placeholder='0.00'
+                      error={!!errors.price_deck_2}
+                      helperText={
+                        travelType === 'normal'
+                          ? 'Precio cargado automáticamente del bus'
+                          : errors.price_deck_2?.message
+                      }
+                      disabled={isLoading || travelType === 'normal'}
+                      InputProps={{
+                        startAdornment: (
+                          <InputAdornment position='start'>
+                            <i className='tabler-currency-dollar' />
+                          </InputAdornment>
+                        )
+                      }}
+                    />
+                  )}
+                />
+              </Grid>
+            )}
+
             <Grid item xs={12} sm={6}>
               <Controller
-                name='price_deck_2'
+                name='departure_time'
                 control={control}
                 rules={{
-                  pattern: {
-                    value: /^\d+(\.\d{1,2})?$/,
-                    message: 'Ingrese un precio válido'
-                  },
-                  validate: value => {
-                    if (value && parseFloat(value) < 0.01) {
-                      return 'El precio debe ser mayor a 0'
-                    }
+                  required: 'La fecha y hora de salida es requerida'
+                }}
+                render={({ field }) => (
+                  <CustomTextField
+                    {...field}
+                    fullWidth
+                    type='datetime-local'
+                    label='Fecha y Hora de Salida'
+                    error={!!errors.departure_time}
+                    helperText={errors.departure_time?.message}
+                    disabled={isLoading}
+                    InputLabelProps={{
+                      shrink: true
+                    }}
+                    InputProps={{
+                      startAdornment: (
+                        <InputAdornment position='start'>
+                          <i className='tabler-calendar-clock' />
+                        </InputAdornment>
+                      )
+                    }}
+                  />
+                )}
+              />
+            </Grid>
 
+            <Grid item xs={12} sm={6}>
+              <Controller
+                name='arrival_time'
+                control={control}
+                rules={{
+                  required: 'La fecha y hora de llegada es requerida',
+                  validate: value => {
+                    const departureTime = watch('departure_time')
+                    if (departureTime && value && new Date(value) <= new Date(departureTime)) {
+                      return 'La hora de llegada debe ser posterior a la hora de salida'
+                    }
                     return true
                   }
                 }}
@@ -268,39 +420,10 @@ const CreateTravelDialog = ({ open, onClose, onSubmit, isLoading = false }: Crea
                   <CustomTextField
                     {...field}
                     fullWidth
-                    type='number'
-                    label='Precio Piso 2 (Opcional)'
-                    placeholder='0.00'
-                    error={!!errors.price_deck_2}
-                    helperText={errors.price_deck_2?.message || 'Dejar vacío si el bus no tiene segundo piso'}
-                    disabled={isLoading}
-                    InputProps={{
-                      startAdornment: (
-                        <InputAdornment position='start'>
-                          <i className='tabler-currency-dollar' />
-                        </InputAdornment>
-                      )
-                    }}
-                  />
-                )}
-              />
-            </Grid>
-
-            <Grid item xs={12} sm={6}>
-              <Controller
-                name='departure_date'
-                control={control}
-                rules={{
-                  required: 'La fecha de salida es requerida'
-                }}
-                render={({ field }) => (
-                  <CustomTextField
-                    {...field}
-                    fullWidth
-                    type='date'
-                    label='Fecha de Salida'
-                    error={!!errors.departure_date}
-                    helperText={errors.departure_date?.message}
+                    type='datetime-local'
+                    label='Fecha y Hora de Llegada'
+                    error={!!errors.arrival_time}
+                    helperText={errors.arrival_time?.message}
                     disabled={isLoading}
                     InputLabelProps={{
                       shrink: true
@@ -308,43 +431,9 @@ const CreateTravelDialog = ({ open, onClose, onSubmit, isLoading = false }: Crea
                     InputProps={{
                       startAdornment: (
                         <InputAdornment position='start'>
-                          <i className='tabler-calendar' />
+                          <i className='tabler-calendar-check' />
                         </InputAdornment>
                       )
-                    }}
-                  />
-                )}
-              />
-            </Grid>
-
-            <Grid item xs={12} sm={6}>
-              <Controller
-                name='departure_hour'
-                control={control}
-                rules={{
-                  required: 'La hora de salida es requerida'
-                }}
-                render={({ field }) => (
-                  <CustomTextField
-                    {...field}
-                    fullWidth
-                    type='time'
-                    label='Hora de Salida'
-                    error={!!errors.departure_hour}
-                    helperText={errors.departure_hour?.message}
-                    disabled={isLoading}
-                    InputLabelProps={{
-                      shrink: true
-                    }}
-                    InputProps={{
-                      startAdornment: (
-                        <InputAdornment position='start'>
-                          <i className='tabler-clock' />
-                        </InputAdornment>
-                      )
-                    }}
-                    inputProps={{
-                      step: 300 // 5 minutos
                     }}
                   />
                 )}

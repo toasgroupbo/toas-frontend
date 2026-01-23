@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 
 import { useForm, Controller } from 'react-hook-form'
 import Dialog from '@mui/material/Dialog'
@@ -46,6 +46,8 @@ const CreateCashierDialog = ({
   isLoading = false
 }: CreateCashierDialogProps) => {
   const { data: offices, isLoading: officesLoading } = useOffices()
+  const [showPassword, setShowPassword] = useState(false)
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false)
 
   const {
     control,
@@ -283,7 +285,7 @@ const CreateCashierDialog = ({
                       <CustomTextField
                         {...field}
                         fullWidth
-                        type='password'
+                        type={showPassword ? 'text' : 'password'}
                         label='Contraseña'
                         placeholder='Mínimo 6 caracteres'
                         error={!!errors.password}
@@ -293,6 +295,17 @@ const CreateCashierDialog = ({
                           startAdornment: (
                             <InputAdornment position='start'>
                               <i className='tabler-lock' />
+                            </InputAdornment>
+                          ),
+                          endAdornment: (
+                            <InputAdornment position='end'>
+                              <IconButton
+                                onClick={() => setShowPassword(!showPassword)}
+                                edge='end'
+                                disabled={isLoading}
+                              >
+                                <i className={showPassword ? 'tabler-eye-off' : 'tabler-eye'} />
+                              </IconButton>
                             </InputAdornment>
                           )
                         }}
@@ -313,7 +326,7 @@ const CreateCashierDialog = ({
                       <CustomTextField
                         {...field}
                         fullWidth
-                        type='password'
+                        type={showConfirmPassword ? 'text' : 'password'}
                         label='Repetir Contraseña'
                         placeholder='Confirme su contraseña'
                         error={!!errors.confirmPassword}
@@ -323,6 +336,17 @@ const CreateCashierDialog = ({
                           startAdornment: (
                             <InputAdornment position='start'>
                               <i className='tabler-lock' />
+                            </InputAdornment>
+                          ),
+                          endAdornment: (
+                            <InputAdornment position='end'>
+                              <IconButton
+                                onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                                edge='end'
+                                disabled={isLoading}
+                              >
+                                <i className={showConfirmPassword ? 'tabler-eye-off' : 'tabler-eye'} />
+                              </IconButton>
                             </InputAdornment>
                           )
                         }}

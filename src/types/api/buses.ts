@@ -30,6 +30,7 @@ export interface Seat {
 
 export interface Deck {
   deck: number
+  price: string
   deckType: DeckType
   seats: Seat[]
 }

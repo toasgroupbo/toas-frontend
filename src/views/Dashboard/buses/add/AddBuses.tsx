@@ -24,6 +24,7 @@ import StepResumen from './StepResumen'
 
 interface DeckFormData {
   deck: number
+  price: string
   deckType: DeckType
   rows: number
   columns: number
@@ -62,6 +63,7 @@ const AddBuses = () => {
   const [decks, setDecks] = useState<DeckFormData[]>([
     {
       deck: 1,
+      price: '50.00',
       deckType: 'SEMICAMA' as DeckType,
       rows: 10,
       columns: 4,
@@ -94,6 +96,7 @@ const AddBuses = () => {
 
         return {
           deck: deck.deck,
+          price: deck.price,
           deckType: deck.deckType,
           rows: maxRow,
           columns: maxCol,
@@ -318,6 +321,7 @@ const AddBuses = () => {
 
       const builtDecks = decks.map(deck => ({
         deck: deck.deck,
+        price: deck.price,
         deckType: deck.deckType,
         seats: deck.seats
       }))

@@ -20,9 +20,9 @@ const fetchTravels = async (): Promise<Travel[]> => {
     }
   }
 
-  const response = await api.get<Travel[]>(url)
+  const response = await api.get<{ data: Travel[]; meta: any }>(url)
 
-  return response.data
+  return response.data.data
 }
 
 const fetchTravelById = async (id: string): Promise<Travel> => {

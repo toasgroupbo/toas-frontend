@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 
 import { useForm, Controller } from 'react-hook-form'
 import Dialog from '@mui/material/Dialog'
@@ -31,6 +31,9 @@ interface FormData {
 }
 
 const ChangePasswordDialog = ({ open, onClose, onSubmit, userName, isLoading = false }: ChangePasswordDialogProps) => {
+  const [showPassword, setShowPassword] = useState(false)
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false)
+
   const {
     control,
     handleSubmit,
@@ -97,7 +100,7 @@ const ChangePasswordDialog = ({ open, onClose, onSubmit, userName, isLoading = f
                   <CustomTextField
                     {...field}
                     fullWidth
-                    type='password'
+                    type={showPassword ? 'text' : 'password'}
                     label='Nueva Contraseña'
                     placeholder='Mínimo 6 caracteres'
                     error={!!errors.password}
@@ -107,6 +110,13 @@ const ChangePasswordDialog = ({ open, onClose, onSubmit, userName, isLoading = f
                       startAdornment: (
                         <InputAdornment position='start'>
                           <i className='tabler-lock' />
+                        </InputAdornment>
+                      ),
+                      endAdornment: (
+                        <InputAdornment position='end'>
+                          <IconButton onClick={() => setShowPassword(!showPassword)} edge='end' disabled={isLoading}>
+                            <i className={showPassword ? 'tabler-eye-off' : 'tabler-eye'} />
+                          </IconButton>
                         </InputAdornment>
                       )
                     }}
@@ -127,7 +137,7 @@ const ChangePasswordDialog = ({ open, onClose, onSubmit, userName, isLoading = f
                   <CustomTextField
                     {...field}
                     fullWidth
-                    type='password'
+                    type={showConfirmPassword ? 'text' : 'password'}
                     label='Confirmar Contraseña'
                     placeholder='Repita la contraseña'
                     error={!!errors.confirmPassword}
@@ -137,6 +147,17 @@ const ChangePasswordDialog = ({ open, onClose, onSubmit, userName, isLoading = f
                       startAdornment: (
                         <InputAdornment position='start'>
                           <i className='tabler-lock-check' />
+                        </InputAdornment>
+                      ),
+                      endAdornment: (
+                        <InputAdornment position='end'>
+                          <IconButton
+                            onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                            edge='end'
+                            disabled={isLoading}
+                          >
+                            <i className={showConfirmPassword ? 'tabler-eye-off' : 'tabler-eye'} />
+                          </IconButton>
                         </InputAdornment>
                       )
                     }}

@@ -29,6 +29,7 @@ import type { Seat, DeckType } from '@/types/api/buses'
 
 interface DeckFormData {
   deck: number
+  price: string
   deckType: DeckType
   rows: number
   columns: number
@@ -202,7 +203,7 @@ const StepConfiguracion = ({
         }
       }
 
-      setDecks([...decks, { deck: 2, deckType: 'SEMICAMA' as DeckType, rows: 10, columns: 4, seats: newSeats }])
+      setDecks([...decks, { deck: 2, price: '50.00', deckType: 'SEMICAMA' as DeckType, rows: 10, columns: 4, seats: newSeats }])
     }
   }
 
@@ -340,7 +341,7 @@ const StepConfiguracion = ({
                 </div>
 
                 <Grid container spacing={2} className='mb-4'>
-                  <Grid size={{ xs: 12, sm: 4 }}>
+                  <Grid size={{ xs: 12, sm: 3 }}>
                     <CustomTextField
                       select
                       fullWidth
@@ -355,7 +356,28 @@ const StepConfiguracion = ({
                       ))}
                     </CustomTextField>
                   </Grid>
-                  <Grid size={{ xs: 12, sm: 4 }}>
+                  <Grid size={{ xs: 12, sm: 3 }}>
+                    <CustomTextField
+                      fullWidth
+                      type='number'
+                      label='Precio'
+                      placeholder='Ej: 50.00'
+                      value={deck.price}
+                      onChange={e => updateDeck(deckIndex, 'price', e.target.value)}
+                      InputProps={{
+                        startAdornment: (
+                          <InputAdornment position='start'>
+                            <Typography variant='caption'>Bs.</Typography>
+                          </InputAdornment>
+                        )
+                      }}
+                      inputProps={{
+                        min: 0,
+                        step: 0.01
+                      }}
+                    />
+                  </Grid>
+                  <Grid size={{ xs: 12, sm: 3 }}>
                     <CustomTextField
                       fullWidth
                       type='number'
@@ -376,7 +398,7 @@ const StepConfiguracion = ({
                     />
                   </Grid>
 
-                  <Grid size={{ xs: 12, sm: 4 }}>
+                  <Grid size={{ xs: 12, sm: 3 }}>
                     <CustomTextField
                       fullWidth
                       type='number'
