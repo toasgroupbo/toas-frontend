@@ -6,23 +6,39 @@ import { api } from '@/libs/axios'
 import type { Travel, CreateTravelDto } from '@/types/api/travels'
 import { useAuth } from '@/contexts/AuthContext'
 
-const fetchTravels = async (): Promise<Travel[]> => {
+const fetchTravels = async (params: {
+  page: number
+  limit: number
+  status?: string
+}): Promise<{ data: Travel[]; meta: any }> => {
+  const { page = 1, limit = 10, status } = params
   const actingAsCompany = localStorage.getItem('acting_as_company')
   let url = '/api/travels'
+
+  const queryParams = new URLSearchParams({
+    page: page.toString(),
+    limit: limit.toString()
+  })
+
+  if (status && status !== 'all') {
+    queryParams.append('status', status)
+  }
 
   if (actingAsCompany) {
     try {
       const company = JSON.parse(actingAsCompany)
 
-      url = `/api/travels?companyId=${company.id}`
+      queryParams.append('companyId', company.id.toString())
     } catch (error) {
       console.error('Error parsing acting_as_company:', error)
     }
   }
 
+  url = `${url}?${queryParams.toString()}`
+
   const response = await api.get<{ data: Travel[]; meta: any }>(url)
 
-  return response.data.data
+  return response.data
 }
 
 const fetchTravelById = async (id: string): Promise<Travel> => {
@@ -80,15 +96,16 @@ const deleteTravel = async (id: number): Promise<void> => {
   await api.delete(url)
 }
 
-export const useTravels = () => {
-  const { companyId, hasCompany, isImpersonating } = useAuth()
-
-  const shouldFetch = hasCompany || isImpersonating
+export const useTravels = (params: { page: number; limit: number; status?: string }) => {
+  const { companyId } = useAuth()
 
   return useQuery({
-    queryKey: ['travels', companyId],
-    queryFn: fetchTravels,
-    enabled: shouldFetch
+    queryKey: ['travels', companyId, params.page, params.limit, params.status],
+    queryFn: () => fetchTravels(params),
+    enabled: !!companyId,
+    placeholderData: previousData => previousData,
+    staleTime: 5 * 60 * 1000,
+    retry: 2
   })
 }
 
@@ -107,6 +124,9 @@ export const useCreateTravel = () => {
     mutationFn: createTravel,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['travels'] })
+    },
+    onError: error => {
+      console.error('Error creating travel:', error)
     }
   })
 }

@@ -16,13 +16,12 @@ import Stack from '@mui/material/Stack'
 import Chip from '@mui/material/Chip'
 import CircularProgress from '@mui/material/CircularProgress'
 import Alert from '@mui/material/Alert'
-import MenuItem from '@mui/material/MenuItem'
-import Divider from '@mui/material/Divider'
+import InputAdornment from '@mui/material/InputAdornment'
 import { isAxiosError } from 'axios'
 
 import CustomTextField from '@core/components/mui/TextField'
-import type { Ticket, TicketSeat } from '@/types/api/tickets'
-import { usePassengersByCustomer, useCreatePassenger, type Passenger } from '@/hooks/usePassengers'
+import type { Ticket } from '@/types/api/tickets'
+import { useSearchPassengerByCI, useCreatePassenger, type Passenger } from '@/hooks/usePassengers'
 
 interface AssignPassengersDialogProps {
   open: boolean
@@ -39,22 +38,36 @@ export interface SeatAssignment {
   customerId: number
 }
 
-const AssignPassengersDialog = ({ open, onClose, ticket, onPayCash, onPayQR, isLoading }: AssignPassengersDialogProps) => {
-  const [assignments, setAssignments] = useState<Record<string, number | null>>({})
+interface PassengerAssignment {
+  passenger: Passenger
+  seatNumber: string
+}
+
+const AssignPassengersDialog = ({
+  open,
+  onClose,
+  ticket,
+  onPayCash,
+  onPayQR,
+  isLoading
+}: AssignPassengersDialogProps) => {
+  const [assignments, setAssignments] = useState<Record<string, Passenger | null>>({})
   const [openSelectModal, setOpenSelectModal] = useState(false)
   const [selectedSeat, setSelectedSeat] = useState<string | null>(null)
+  const [searchCI, setSearchCI] = useState('')
   const [showCreateForm, setShowCreateForm] = useState(false)
   const [newPassengerName, setNewPassengerName] = useState('')
   const [newPassengerCI, setNewPassengerCI] = useState('')
   const [duplicateCIError, setDuplicateCIError] = useState<string | null>(null)
+  const [searchError, setSearchError] = useState<string | null>(null)
 
   const customerId = (ticket as any)?.buyer?.id || null
-  const { data: passengers, isLoading: loadingPassengers } = usePassengersByCustomer(customerId)
+  const { data: foundPassenger, isLoading: searchingPassenger, isFetching } = useSearchPassengerByCI(searchCI)
   const createPassengerMutation = useCreatePassenger()
 
   useEffect(() => {
     if (open && ticket) {
-      const initialAssignments: Record<string, number | null> = {}
+      const initialAssignments: Record<string, Passenger | null> = {}
 
       ticket.seats.forEach(seat => {
         initialAssignments[seat.seatNumber] = null
@@ -64,10 +77,12 @@ const AssignPassengersDialog = ({ open, onClose, ticket, onPayCash, onPayQR, isL
       setAssignments({})
       setOpenSelectModal(false)
       setSelectedSeat(null)
+      setSearchCI('')
       setShowCreateForm(false)
       setNewPassengerName('')
       setNewPassengerCI('')
       setDuplicateCIError(null)
+      setSearchError(null)
     }
   }, [open, ticket])
 
@@ -75,17 +90,31 @@ const AssignPassengersDialog = ({ open, onClose, ticket, onPayCash, onPayQR, isL
     setSelectedSeat(seatNumber)
     setOpenSelectModal(true)
     setShowCreateForm(false)
+    setSearchCI('')
     setDuplicateCIError(null)
+    setSearchError(null)
   }
 
-  const handleSelectPassenger = (passengerId: number) => {
+  const handleSelectPassenger = (passenger: Passenger) => {
     if (selectedSeat) {
+      // Verificar si el pasajero ya está asignado a otro asiento
+      const alreadyAssigned = Object.entries(assignments).find(
+        ([seatNum, p]) => p?.id === passenger.id && seatNum !== selectedSeat
+      )
+
+      if (alreadyAssigned) {
+        setSearchError(`Este pasajero ya está asignado al asiento ${alreadyAssigned[0]}`)
+
+        return
+      }
+
       setAssignments(prev => ({
         ...prev,
-        [selectedSeat]: passengerId
+        [selectedSeat]: passenger
       }))
       setOpenSelectModal(false)
       setSelectedSeat(null)
+      setSearchCI('')
     }
   }
 
@@ -111,7 +140,7 @@ const AssignPassengersDialog = ({ open, onClose, ticket, onPayCash, onPayQR, isL
       if (selectedSeat) {
         setAssignments(prev => ({
           ...prev,
-          [selectedSeat]: newPassenger.id
+          [selectedSeat]: newPassenger
         }))
       }
 
@@ -123,7 +152,6 @@ const AssignPassengersDialog = ({ open, onClose, ticket, onPayCash, onPayQR, isL
     } catch (error) {
       console.error('Error creating passenger:', error)
 
-      // Manejo de error 409: CI duplicado
       if (isAxiosError(error) && error.response?.status === 409) {
         const errorMessage = error.response?.data?.message || ''
 
@@ -136,31 +164,14 @@ const AssignPassengersDialog = ({ open, onClose, ticket, onPayCash, onPayQR, isL
     }
   }
 
-  const getAvailablePassengers = (): Passenger[] => {
-    if (!passengers) return []
-
-    const assignedPassengerIds = Object.values(assignments).filter(id => id !== null)
-
-    return passengers.filter(p => !assignedPassengerIds.includes(p.id))
-  }
-
-  const getAssignedPassenger = (seatNumber: string): Passenger | null => {
-    const passengerId = assignments[seatNumber]
-
-    if (!passengerId || !passengers) return null
-
-    return passengers.find(p => p.id === passengerId) || null
-  }
-
   const handlePayment = async (paymentMethod: 'cash' | 'qr') => {
     if (!ticket || !customerId) return
 
-    // Solo incluir asientos que tienen pasajero asignado
     const seatAssignments: SeatAssignment[] = ticket.seats
       .filter(seat => assignments[seat.seatNumber] !== null)
       .map(seat => ({
         seatId: seat.id || Number(seat.seatNumber),
-        passengerId: Number(assignments[seat.seatNumber]!),
+        passengerId: assignments[seat.seatNumber]!.id,
         customerId: Number(customerId)
       }))
 
@@ -172,8 +183,6 @@ const AssignPassengersDialog = ({ open, onClose, ticket, onPayCash, onPayQR, isL
   }
 
   if (!ticket) return null
-
-  const availablePassengers = getAvailablePassengers()
 
   return (
     <>
@@ -198,8 +207,8 @@ const AssignPassengersDialog = ({ open, onClose, ticket, onPayCash, onPayQR, isL
               Asigna un pasajero a cada asiento seleccionado. Cliente: <strong>{(ticket as any)?.buyer?.name}</strong>
             </Alert>
 
-            {ticket.seats.map(seat => {
-              const assignedPassenger = getAssignedPassenger(seat.seatNumber)
+            {ticket.travelSeats.map(seat => {
+              const assignedPassenger = assignments[seat.seatNumber]
 
               return (
                 <Card key={seat.seatNumber} variant='outlined'>
@@ -213,29 +222,22 @@ const AssignPassengersDialog = ({ open, onClose, ticket, onPayCash, onPayQR, isL
                           icon={<i className='tabler-armchair' />}
                         />
                         {seat.deck && (
-                          <Chip
-                            label={`Piso ${seat.deck}`}
-                            size='small'
-                            color='secondary'
-                            variant='outlined'
-                          />
+                          <Chip label={`Piso ${seat.deck}`} size='small' color='secondary' variant='outlined' />
                         )}
-                        <Typography variant='body2' color='text.secondary'>
+                        <Typography variant='body2' color='text.secondary' sx={{ minWidth: 80 }}>
                           Bs. {seat.price}
                         </Typography>
                       </Box>
 
                       <Box display='flex' alignItems='center' gap={1}>
                         {assignedPassenger ? (
-                          <>
-                            <Chip
-                              label={`${assignedPassenger.fullName} - CI: ${assignedPassenger.ci}`}
-                              color='success'
-                              variant='outlined'
-                              onDelete={() => handleRemoveAssignment(seat.seatNumber)}
-                              deleteIcon={<i className='tabler-x' />}
-                            />
-                          </>
+                          <Chip
+                            label={`${assignedPassenger.fullName} - CI: ${assignedPassenger.ci}`}
+                            color='success'
+                            variant='outlined'
+                            onDelete={() => handleRemoveAssignment(seat.seatNumber)}
+                            deleteIcon={<i className='tabler-x' />}
+                          />
                         ) : (
                           <Button
                             variant='outlined'
@@ -301,11 +303,12 @@ const AssignPassengersDialog = ({ open, onClose, ticket, onPayCash, onPayQR, isL
         </DialogActions>
       </Dialog>
 
+      {/* Modal para buscar/crear pasajero */}
       <Dialog open={openSelectModal} onClose={() => setOpenSelectModal(false)} maxWidth='sm' fullWidth>
         <DialogTitle>
           <Box display='flex' alignItems='center' justifyContent='space-between'>
             <Typography variant='h6' fontWeight={600}>
-              Seleccionar Pasajero - Asiento {selectedSeat}
+              Buscar Pasajero - Asiento {selectedSeat}
             </Typography>
             <IconButton onClick={() => setOpenSelectModal(false)} size='small'>
               <i className='tabler-x' />
@@ -315,11 +318,7 @@ const AssignPassengersDialog = ({ open, onClose, ticket, onPayCash, onPayQR, isL
 
         <DialogContent>
           <Stack spacing={3} sx={{ mt: 1 }}>
-            {loadingPassengers ? (
-              <Box display='flex' justifyContent='center' py={3}>
-                <CircularProgress size={30} />
-              </Box>
-            ) : showCreateForm ? (
+            {showCreateForm ? (
               <Box>
                 <Typography variant='subtitle2' fontWeight={600} sx={{ mb: 2 }}>
                   Crear Nuevo Pasajero
@@ -355,7 +354,11 @@ const AssignPassengersDialog = ({ open, onClose, ticket, onPayCash, onPayQR, isL
                       onClick={handleCreatePassenger}
                       disabled={!newPassengerName.trim() || !newPassengerCI.trim() || createPassengerMutation.isPending}
                       startIcon={
-                        createPassengerMutation.isPending ? <CircularProgress size={16} /> : <i className='tabler-check' />
+                        createPassengerMutation.isPending ? (
+                          <CircularProgress size={16} />
+                        ) : (
+                          <i className='tabler-check' />
+                        )
                       }
                       fullWidth
                     >
@@ -376,44 +379,102 @@ const AssignPassengersDialog = ({ open, onClose, ticket, onPayCash, onPayQR, isL
               </Box>
             ) : (
               <>
-                {availablePassengers.length > 0 && (
-                  <>
-                    <CustomTextField
-                      select
-                      label='Seleccionar Pasajero'
-                      value=''
-                      onChange={e => {
-                        const passengerId = Number(e.target.value)
+                <CustomTextField
+                  label='Buscar por CI'
+                  placeholder='Ingrese el CI del pasajero'
+                  value={searchCI}
+                  onChange={e => {
+                    setSearchCI(e.target.value)
+                    setSearchError(null)
+                  }}
+                  fullWidth
+                  InputProps={{
+                    startAdornment: (
+                      <InputAdornment position='start'>
+                        <i className='tabler-search' />
+                      </InputAdornment>
+                    ),
+                    endAdornment: (searchingPassenger || isFetching) && searchCI.length >= 3 && (
+                      <InputAdornment position='end'>
+                        <CircularProgress size={20} />
+                      </InputAdornment>
+                    )
+                  }}
+                  helperText='Ingrese al menos 3 caracteres para buscar'
+                />
 
-                        if (passengerId) {
-                          handleSelectPassenger(passengerId)
-                        }
-                      }}
-                      fullWidth
-                      helperText='Selecciona un pasajero de la lista'
-                    >
-                      <MenuItem value=''>Seleccionar...</MenuItem>
-                      {availablePassengers.map(passenger => (
-                        <MenuItem key={passenger.id} value={passenger.id}>
-                          {passenger.fullName} - CI: {passenger.ci}
-                        </MenuItem>
-                      ))}
-                    </CustomTextField>
-                    <Divider>
-                      <Chip label='O' size='small' />
-                    </Divider>
-                  </>
-                )}
-                {availablePassengers.length === 0 && (
-                  <Alert severity='info' icon={<i className='tabler-info-circle' />}>
-                    No hay pasajeros disponibles. Crea uno nuevo.
+                {searchError && (
+                  <Alert severity='error' icon={<i className='tabler-alert-circle' />}>
+                    {searchError}
                   </Alert>
                 )}
+
+                {searchCI.length >= 3 && !searchingPassenger && !isFetching && (
+                  <>
+                    {foundPassenger ? (
+                      <Card
+                        variant='outlined'
+                        sx={{
+                          cursor: 'pointer',
+                          '&:hover': { bgcolor: 'action.hover' }
+                        }}
+                        onClick={() => handleSelectPassenger(foundPassenger)}
+                      >
+                        <CardContent>
+                          <Box display='flex' alignItems='center' justifyContent='space-between'>
+                            <Box display='flex' alignItems='center' gap={2}>
+                              <Box
+                                sx={{
+                                  width: 40,
+                                  height: 40,
+                                  borderRadius: '50%',
+                                  bgcolor: 'primary.lighter',
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'center'
+                                }}
+                              >
+                                <i
+                                  className='tabler-user'
+                                  style={{ fontSize: '20px', color: 'var(--mui-palette-primary-main)' }}
+                                />
+                              </Box>
+                              <Box>
+                                <Typography variant='body1' fontWeight={600}>
+                                  {foundPassenger.fullName}
+                                </Typography>
+                                <Typography variant='body2' color='text.secondary'>
+                                  CI: {foundPassenger.ci}
+                                </Typography>
+                              </Box>
+                            </Box>
+                            <Button
+                              variant='contained'
+                              size='small'
+                              startIcon={<i className='tabler-check' />}
+                              onClick={() => handleSelectPassenger(foundPassenger)}
+                            >
+                              Seleccionar
+                            </Button>
+                          </Box>
+                        </CardContent>
+                      </Card>
+                    ) : (
+                      <Alert severity='warning' icon={<i className='tabler-user-off' />}>
+                        No se encontró ningún pasajero con CI: {searchCI}
+                      </Alert>
+                    )}
+                  </>
+                )}
+
                 <Button
                   variant='contained'
                   color='primary'
                   startIcon={<i className='tabler-user-plus' />}
-                  onClick={() => setShowCreateForm(true)}
+                  onClick={() => {
+                    setShowCreateForm(true)
+                    setNewPassengerCI(searchCI)
+                  }}
                   fullWidth
                 >
                   Crear Nuevo Pasajero

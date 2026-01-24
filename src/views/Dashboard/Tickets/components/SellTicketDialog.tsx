@@ -420,7 +420,7 @@ const SellTicketDialog = ({ open, onClose, onSubmit, isLoading = false, preSelec
                                 type='number'
                                 value={seatPrices[seatId] || ''}
                                 onChange={e => handlePriceChange(seatId, e.target.value)}
-                                sx={{ width: 100 }}
+                                sx={{ width: 130 }}
                                 size='small'
                                 InputProps={{
                                   startAdornment: (

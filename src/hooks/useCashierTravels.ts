@@ -6,8 +6,25 @@ import { api } from '@/libs/axios'
 import type { Travel } from '@/types/api/travels'
 import { useAuth } from '@/contexts/AuthContext'
 
-const fetchCashierTravels = async (): Promise<Travel[]> => {
-  const response = await api.get<Travel[]>('/api/travels/for-cashier/all')
+interface FetchCashierTravelsParams {
+  departure_time?: string
+  destination_placeId?: number
+}
+
+const fetchCashierTravels = async (params?: FetchCashierTravelsParams): Promise<Travel[]> => {
+  const queryParams = new URLSearchParams()
+
+  if (params?.departure_time) {
+    queryParams.append('departure_time', params.departure_time)
+  }
+
+  if (params?.destination_placeId) {
+    queryParams.append('destination_placeId', params.destination_placeId.toString())
+  }
+
+  const url = `/api/travels/for-cashier/all${queryParams.toString() ? `?${queryParams.toString()}` : ''}`
+
+  const response = await api.get<Travel[]>(url)
 
   return response.data
 }
@@ -18,13 +35,14 @@ const fetchCashierTravelById = async (id: number): Promise<Travel> => {
   return response.data
 }
 
-export const useCashierTravels = () => {
+export const useCashierTravels = (params?: FetchCashierTravelsParams) => {
   const { isCashier } = useAuth()
 
   return useQuery({
-    queryKey: ['cashier-travels'],
-    queryFn: fetchCashierTravels,
-    enabled: isCashier
+    queryKey: ['cashier-travels', params],
+    queryFn: () => fetchCashierTravels(params),
+    enabled: isCashier,
+    retry: false
   })
 }
 

@@ -70,47 +70,47 @@ const CreateTravelDialog = ({ open, onClose, onSubmit, isLoading = false }: Crea
     }
   }, [open, reset])
 
-  // Autocompletar precios cuando se selecciona un bus o cambia el tipo
   useEffect(() => {
     if (busId && buses) {
       const selectedBus = buses.find(b => Number(b.id) === Number(busId))
 
       if (selectedBus?.busType?.decks) {
-        // Autocompletar precio piso 1
         const deck1 = selectedBus.busType.decks.find(d => d.deck === 1)
+
         if (deck1?.price) {
           setValue('price_deck_1', deck1.price)
         }
 
-        // Autocompletar precio piso 2 (si existe)
         const deck2 = selectedBus.busType.decks.find(d => d.deck === 2)
+
         if (deck2?.price) {
           setValue('price_deck_2', deck2.price)
         } else {
-          // Limpiar el campo si el bus no tiene segundo piso
           setValue('price_deck_2', '')
         }
       }
     }
   }, [busId, buses, travelType, setValue])
 
-  // Obtener el bus seleccionado para determinar cantidad de pisos
   const selectedBus = busId && buses ? buses.find(b => Number(b.id) === Number(busId)) : null
   const hasTwoDecks = selectedBus?.busType?.decks && selectedBus.busType.decks.length > 1
 
   const handleFormSubmit = async (data: FormData) => {
-    // Asegurar que busId y routeId sean números válidos
     const payload: CreateTravelDto = {
       busId: typeof data.busId === 'number' ? data.busId : Number(data.busId),
       routeId: typeof data.routeId === 'number' ? data.routeId : Number(data.routeId),
       type: data.type,
       price_deck_1: data.price_deck_1,
-      price_deck_2: data.price_deck_2 || data.price_deck_1, // Si está vacío, usar el mismo precio del piso 1
+      price_deck_2: data.price_deck_2 || data.price_deck_1,
       departure_time: `${data.departure_time}:00`,
       arrival_time: `${data.arrival_time}:00`
     }
 
-    await onSubmit(payload)
+    try {
+      await onSubmit(payload)
+    } catch (error: any) {
+      console.error('Error en handleFormSubmit:', error)
+    }
   }
 
   const handleClose = () => {
@@ -161,13 +161,19 @@ const CreateTravelDialog = ({ open, onClose, onSubmit, isLoading = false }: Crea
                   >
                     <MenuItem value='normal'>
                       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                        <i className='tabler-circle-filled' style={{ fontSize: '10px', color: 'var(--mui-palette-primary-main)' }} />
+                        <i
+                          className='tabler-circle-filled'
+                          style={{ fontSize: '10px', color: 'var(--mui-palette-primary-main)' }}
+                        />
                         <Typography variant='body2'>Normal</Typography>
                       </Box>
                     </MenuItem>
                     <MenuItem value='habilitada'>
                       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                        <i className='tabler-star-filled' style={{ fontSize: '14px', color: 'var(--mui-palette-warning-main)' }} />
+                        <i
+                          className='tabler-star-filled'
+                          style={{ fontSize: '14px', color: 'var(--mui-palette-warning-main)' }}
+                        />
                         <Typography variant='body2'>Habilitada</Typography>
                       </Box>
                     </MenuItem>
@@ -308,9 +314,7 @@ const CreateTravelDialog = ({ open, onClose, onSubmit, isLoading = false }: Crea
                     placeholder='0.00'
                     error={!!errors.price_deck_1}
                     helperText={
-                      travelType === 'normal'
-                        ? 'Precio cargado automáticamente del bus'
-                        : errors.price_deck_1?.message
+                      travelType === 'normal' ? 'Precio cargado automáticamente del bus' : errors.price_deck_1?.message
                     }
                     disabled={isLoading || travelType === 'normal'}
                     InputProps={{
@@ -410,9 +414,11 @@ const CreateTravelDialog = ({ open, onClose, onSubmit, isLoading = false }: Crea
                   required: 'La fecha y hora de llegada es requerida',
                   validate: value => {
                     const departureTime = watch('departure_time')
+
                     if (departureTime && value && new Date(value) <= new Date(departureTime)) {
                       return 'La hora de llegada debe ser posterior a la hora de salida'
                     }
+
                     return true
                   }
                 }}

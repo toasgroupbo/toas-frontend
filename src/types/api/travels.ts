@@ -41,6 +41,8 @@ export interface Travel {
   bus: TravelBus
   travelSeats: TravelSeat[]
   route: Route
+  seatsAvailable?: number
+  closedAt?: string | null
 }
 
 export interface CreateTravelDto {

@@ -23,6 +23,14 @@ export interface CompanyResponse {
   commission?: number
 }
 
+export interface UserOfficeResponse {
+  id: number
+  place: {
+    id: number
+    name?: string
+  }
+}
+
 export interface UserResponse {
   id: string
   email: string
@@ -32,11 +40,20 @@ export interface UserResponse {
   rol: RolResponse
   company: CompanyResponse | null
   companyId?: string | null
+  office?: UserOfficeResponse | null
 }
 
 export interface LoginResponse {
   user: UserResponse
   token: string
+}
+
+export interface UserOffice {
+  id: number
+  place: {
+    id: number
+    name?: string
+  }
 }
 
 export interface User {
@@ -53,4 +70,5 @@ export interface User {
   }
   company: CompanyResponse | null
   companyId?: string | null
+  office?: UserOffice | null
 }

@@ -34,7 +34,8 @@ export const useLogin = () => {
           permissions: userData.rol.permissions || []
         },
         company: userData.company,
-        companyId: userData.company?.id || null
+        companyId: userData.company?.id || null,
+        office: userData.office || null
       }
 
       login(user, token)

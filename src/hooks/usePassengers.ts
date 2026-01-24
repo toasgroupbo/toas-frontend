@@ -30,6 +30,16 @@ const fetchPassengersByCustomer = async (customerId: number): Promise<Passenger[
   return response.data
 }
 
+const searchPassengerByCI = async (ci: string): Promise<Passenger | null> => {
+  try {
+    const response = await api.get<Passenger>(`/api/customers/for-cashier/passengers/${ci}`)
+
+    return response.data
+  } catch {
+    return null
+  }
+}
+
 const createPassenger = async (data: CreatePassengerDto): Promise<Passenger> => {
   const response = await api.post<Passenger>('/api/customers/for-cashier/passengers', data)
 
@@ -45,6 +55,14 @@ export const usePassengersByCustomer = (customerId: number | null) => {
     queryKey: ['passengers', customerId],
     queryFn: () => fetchPassengersByCustomer(customerId!),
     enabled: !!customerId
+  })
+}
+
+export const useSearchPassengerByCI = (ci: string) => {
+  return useQuery({
+    queryKey: ['passenger-search', ci],
+    queryFn: () => searchPassengerByCI(ci),
+    enabled: ci.length >= 3
   })
 }
 

@@ -92,26 +92,22 @@ const TravelsTable = () => {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
   const [selectedTravel, setSelectedTravel] = useState<Travel | null>(null)
 
-  const { data: travels, isLoading, error } = useTravels()
+  const queryParams = useMemo(
+    () => ({
+      page: currentPage,
+      limit: pageSize,
+      status: statusFilter
+    }),
+    [currentPage, pageSize, statusFilter]
+  )
+
+  const { data: travelsResponse, isLoading, error } = useTravels(queryParams)
+  const travels = travelsResponse?.data || []
+  const totalRecords = travelsResponse?.meta?.total || 0
   const createMutation = useCreateTravel()
   const deleteMutation = useDeleteTravel()
   const { showSuccess, showError } = useSnackbar()
   const { canCreate, canDelete } = usePermissions().getCRUDPermissions('TRAVEL')
-
-  const [data, setData] = useState<Travel[]>([])
-
-  useEffect(() => {
-    if (travels) {
-      let filteredData = travels
-
-      // Filtrar por status
-      if (statusFilter && statusFilter !== 'all') {
-        filteredData = filteredData.filter(travel => travel.travel_status === statusFilter)
-      }
-
-      setData(filteredData)
-    }
-  }, [travels, statusFilter])
 
   const handleOpenCreateDialog = () => {
     setCreateDialogOpen(true)
@@ -128,7 +124,24 @@ const TravelsTable = () => {
       handleCloseCreateDialog()
     } catch (error: any) {
       console.error('Error al crear viaje:', error)
-      showError(error?.response?.data?.message || 'Error al crear el viaje')
+
+      const errorMessage = error?.response?.data?.message || 'Error desconocido'
+
+      const errorMessages: Record<string, string> = {
+        'The bus is already assigned to an active travel':
+          'El bus ya está asignado a un viaje activo. Por favor, seleccione otro bus o espere a que el viaje actual finalice.',
+        'Bus not found': 'El bus seleccionado no existe.',
+        'Route not found': 'La ruta seleccionada no existe.',
+        'Invalid departure time': 'La fecha y hora de salida no es válida.',
+        'Invalid arrival time': 'La fecha y hora de llegada no es válida.',
+        'Arrival time must be after departure time': 'La hora de llegada debe ser posterior a la hora de salida.',
+        Unauthorized: 'No tienes permiso para crear viajes.',
+        Forbidden: 'Acceso denegado.'
+      }
+
+      const translatedMessage = errorMessages[errorMessage] || `Error al crear el viaje: ${errorMessage}`
+
+      showError(translatedMessage)
     }
   }
 
@@ -334,7 +347,7 @@ const TravelsTable = () => {
   )
 
   const table = useReactTable({
-    data: data,
+    data: travels,
     columns,
     filterFns: {
       fuzzy: fuzzyFilter
@@ -350,13 +363,10 @@ const TravelsTable = () => {
     getCoreRowModel: getCoreRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
     getSortedRowModel: getSortedRowModel(),
-    getPaginationRowModel: getPaginationRowModel(),
     getFacetedRowModel: getFacetedRowModel(),
     getFacetedUniqueValues: getFacetedUniqueValues(),
     getFacetedMinMaxValues: getFacetedMinMaxValues()
   })
-
-  const totalRecords = table.getFilteredRowModel().rows.length
 
   if (isLoading) {
     return (
@@ -474,16 +484,13 @@ const TravelsTable = () => {
               </tbody>
             ) : (
               <tbody>
-                {table
-                  .getRowModel()
-                  .rows.slice((currentPage - 1) * pageSize, currentPage * pageSize)
-                  .map(row => (
-                    <tr key={row.id} className={classnames({ selected: row.getIsSelected() })}>
-                      {row.getVisibleCells().map(cell => (
-                        <td key={cell.id}>{flexRender(cell.column.columnDef.cell, cell.getContext())}</td>
-                      ))}
-                    </tr>
-                  ))}
+                {table.getRowModel().rows.map(row => (
+                  <tr key={row.id} className={classnames({ selected: row.getIsSelected() })}>
+                    {row.getVisibleCells().map(cell => (
+                      <td key={cell.id}>{flexRender(cell.column.columnDef.cell, cell.getContext())}</td>
+                    ))}
+                  </tr>
+                ))}
               </tbody>
             )}
           </table>

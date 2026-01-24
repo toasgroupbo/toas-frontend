@@ -77,6 +77,7 @@ export const useConfirmTicket = () => {
     mutationFn: confirmTicket,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['tickets'] })
+      queryClient.invalidateQueries({ queryKey: ['tickets-by-travel'] })
     }
   })
 }
@@ -88,6 +89,7 @@ export const useCancelTicket = () => {
     mutationFn: cancelTicket,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['tickets'] })
+      queryClient.invalidateQueries({ queryKey: ['tickets-by-travel'] })
     }
   })
 }
