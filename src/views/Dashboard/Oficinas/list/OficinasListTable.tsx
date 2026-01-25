@@ -288,7 +288,7 @@ const OfficesListTable = () => {
             <i className='tabler-calendar' style={{ fontSize: '16px', color: 'var(--mui-palette-text-secondary)' }} />
             <Typography variant='body2' color='text.secondary'>
               {row.original.createdAt
-                ? new Date(row.original.createdAt).toLocaleDateString('es-ES', {
+                ? new Date(row.original.createdAt.replace('Z', '')).toLocaleDateString('es-ES', {
                     year: 'numeric',
                     month: 'short',
                     day: 'numeric'

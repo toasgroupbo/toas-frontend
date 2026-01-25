@@ -132,9 +132,10 @@ const TravelsForSale = () => {
     return travels.filter(travel => travel.travel_status === 'active')
   }, [travels])
 
-  // Formatear fecha
+  // Formatear fecha (las fechas del backend vienen en hora Bolivia pero con Z)
   const formatDate = (dateString: string) => {
-    const date = new Date(dateString)
+    const dateWithoutZ = dateString.replace('Z', '')
+    const date = new Date(dateWithoutZ)
 
     return date.toLocaleDateString('es-ES', {
       weekday: 'short',
@@ -144,9 +145,10 @@ const TravelsForSale = () => {
     })
   }
 
-  // Formatear hora
+  // Formatear hora (las fechas del backend vienen en hora Bolivia pero con Z)
   const formatTime = (dateString: string) => {
-    const date = new Date(dateString)
+    const dateWithoutZ = dateString.replace('Z', '')
+    const date = new Date(dateWithoutZ)
 
     return date.toLocaleTimeString('es-ES', {
       hour: '2-digit',
@@ -284,23 +286,49 @@ const TravelsForSale = () => {
   // Definir columnas de la tabla
   const columns = useMemo<ColumnDef<TravelWithActionsType, any>[]>(
     () => [
-      columnHelper.accessor('route', {
-        header: 'Ruta',
+      columnHelper.accessor('actions', {
+        header: 'Acciones',
         cell: ({ row }) => (
-          <Box>
-            <Box display='flex' alignItems='center' gap={1}>
-              <i className='tabler-flag' style={{ fontSize: '14px', color: 'var(--mui-palette-success-main)' }} />
-              <Typography variant='body2' fontWeight='medium'>
-                {row.original.route.officeOrigin.city}
-              </Typography>
-              <i className='tabler-arrow-right' style={{ fontSize: '14px' }} />
-              <i className='tabler-flag-filled' style={{ fontSize: '14px', color: 'var(--mui-palette-error-main)' }} />
-              <Typography variant='body2' fontWeight='medium'>
-                {row.original.route.officeDestination.city}
-              </Typography>
-            </Box>
-          </Box>
-        )
+          <div className='flex items-center gap-2'>
+            <Tooltip title='Ver Imágenes'>
+              <IconButton
+                size='small'
+                onClick={e => {
+                  e.stopPropagation()
+                  setSelectedTravel(row.original)
+                  setOpenImagesDialog(true)
+                }}
+                sx={{
+                  color: 'info.main',
+                  '&:hover': { backgroundColor: 'info.light', color: 'white' }
+                }}
+              >
+                <i className='tabler-photo' style={{ fontSize: '18px' }} />
+              </IconButton>
+            </Tooltip>
+            <Tooltip title='Cerrar Viaje'>
+              <span>
+                <IconButton
+                  size='small'
+                  onClick={e => {
+                    e.stopPropagation()
+                    setSelectedTravel(row.original)
+                    setOpenConfirmCloseDialog(true)
+                  }}
+                  disabled={row.original.travel_status !== 'active'}
+                  sx={{
+                    color: 'error.main',
+                    '&:hover': { backgroundColor: 'error.light', color: 'white' },
+                    '&.Mui-disabled': { color: 'action.disabled' }
+                  }}
+                >
+                  <i className='tabler-lock' style={{ fontSize: '18px' }} />
+                </IconButton>
+              </span>
+            </Tooltip>
+          </div>
+        ),
+        enableSorting: false
       }),
       columnHelper.accessor('departure_time', {
         header: 'Salida',
@@ -447,50 +475,6 @@ const TravelsForSale = () => {
             variant='outlined'
           />
         )
-      }),
-      columnHelper.accessor('actions', {
-        header: 'Acciones',
-        cell: ({ row }) => (
-          <div className='flex items-center gap-2'>
-            <Tooltip title='Ver Imágenes'>
-              <IconButton
-                size='small'
-                onClick={e => {
-                  e.stopPropagation()
-                  setSelectedTravel(row.original)
-                  setOpenImagesDialog(true)
-                }}
-                sx={{
-                  color: 'info.main',
-                  '&:hover': { backgroundColor: 'info.light', color: 'white' }
-                }}
-              >
-                <i className='tabler-photo' style={{ fontSize: '18px' }} />
-              </IconButton>
-            </Tooltip>
-            <Tooltip title='Cerrar Viaje'>
-              <span>
-                <IconButton
-                  size='small'
-                  onClick={e => {
-                    e.stopPropagation()
-                    setSelectedTravel(row.original)
-                    setOpenConfirmCloseDialog(true)
-                  }}
-                  disabled={row.original.travel_status !== 'active'}
-                  sx={{
-                    color: 'error.main',
-                    '&:hover': { backgroundColor: 'error.light', color: 'white' },
-                    '&.Mui-disabled': { color: 'action.disabled' }
-                  }}
-                >
-                  <i className='tabler-lock' style={{ fontSize: '18px' }} />
-                </IconButton>
-              </span>
-            </Tooltip>
-          </div>
-        ),
-        enableSorting: false
       })
     ],
     []
@@ -833,7 +817,9 @@ const TravelsForSale = () => {
                     <Typography variant='caption' color='text.secondary'>
                       Fecha venta:
                     </Typography>
-                    <Typography variant='body2'>{new Date().toLocaleDateString('es-ES')}</Typography>
+                    <Typography variant='body2'>
+                      {new Date().toLocaleDateString('es-ES', { timeZone: 'America/La_Paz' })}
+                    </Typography>
                   </Grid>
                   <Grid item xs={12}>
                     <Typography variant='caption' color='text.secondary'>

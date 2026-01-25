@@ -43,7 +43,8 @@ const TravelsForSaleCard = ({ travel }: TravelsForSaleCardProps) => {
   const closeTravelMutation = useCloseTravel()
 
   const formatDate = (dateString: string) => {
-    const date = new Date(dateString)
+    const dateWithoutZ = dateString.replace('Z', '')
+    const date = new Date(dateWithoutZ)
 
     return date.toLocaleDateString('es-ES', {
       weekday: 'short',
@@ -54,7 +55,8 @@ const TravelsForSaleCard = ({ travel }: TravelsForSaleCardProps) => {
   }
 
   const formatTime = (dateString: string) => {
-    const date = new Date(dateString)
+    const dateWithoutZ = dateString.replace('Z', '')
+    const date = new Date(dateWithoutZ)
 
     return date.toLocaleTimeString('es-ES', {
       hour: '2-digit',

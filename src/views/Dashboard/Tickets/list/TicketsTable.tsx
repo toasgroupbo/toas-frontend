@@ -243,7 +243,7 @@ const ExpandedTicketDetails = ({ ticket }: { ticket: Ticket }) => {
                 Expira
               </Typography>
               <Typography variant='body2' fontWeight={600}>
-                {new Date(ticket.reserve_expiresAt).toLocaleString('es-ES', { timeZone: 'America/La_Paz' })}
+                {new Date(ticket.reserve_expiresAt.replace('Z', '')).toLocaleString('es-ES')}
               </Typography>
             </Box>
           )}
@@ -252,7 +252,7 @@ const ExpandedTicketDetails = ({ ticket }: { ticket: Ticket }) => {
               Fecha de Creación
             </Typography>
             <Typography variant='body2' fontWeight={600}>
-              {new Date(ticket.createdAt).toLocaleString('es-ES', { timeZone: 'America/La_Paz' })}
+              {new Date(ticket.createdAt.replace('Z', '')).toLocaleString('es-ES')}
             </Typography>
           </Box>
         </Box>
@@ -452,18 +452,16 @@ const TicketsTable = ({ initialTravelId }: TicketsTableProps) => {
         cell: ({ row }) => (
           <Box>
             <Typography variant='body2' fontWeight='medium'>
-              {new Date(row.original.createdAt).toLocaleDateString('es-ES', {
+              {new Date(row.original.createdAt.replace('Z', '')).toLocaleDateString('es-ES', {
                 day: '2-digit',
                 month: 'short',
-                year: 'numeric',
-                timeZone: 'America/La_Paz'
+                year: 'numeric'
               })}
             </Typography>
             <Typography variant='caption' color='text.secondary'>
-              {new Date(row.original.createdAt).toLocaleTimeString('es-ES', {
+              {new Date(row.original.createdAt.replace('Z', '')).toLocaleTimeString('es-ES', {
                 hour: '2-digit',
-                minute: '2-digit',
-                timeZone: 'America/La_Paz'
+                minute: '2-digit'
               })}
             </Typography>
           </Box>
@@ -616,13 +614,12 @@ const TicketsTable = ({ initialTravelId }: TicketsTableProps) => {
                         <Typography variant='body2'>{travel.route.officeDestination.city}</Typography>
                       </Box>
                       <Typography variant='caption' color='text.secondary'>
-                        {new Date(travel.departure_time).toLocaleDateString('es-ES', {
+                        {new Date(travel.departure_time.replace('Z', '')).toLocaleDateString('es-ES', {
                           day: '2-digit',
                           month: 'short',
                           year: 'numeric',
                           hour: '2-digit',
-                          minute: '2-digit',
-                          timeZone: 'America/La_Paz'
+                          minute: '2-digit'
                         })}{' '}
                         - {travel.bus.name} ({travel.bus.plaque})
                       </Typography>
