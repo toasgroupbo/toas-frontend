@@ -31,9 +31,10 @@ interface RouteFormDialogProps {
 }
 
 interface FormData {
-  officeOriginId: number
-  officeDestinationId: number
+  officeOriginId: number | string // Cambiar a permitir string también
+  officeDestinationId: number | string
   pass_by: string[]
+  travel_hours: number
 }
 
 const RouteFormDialog = ({
@@ -56,9 +57,10 @@ const RouteFormDialog = ({
     formState: { errors }
   } = useForm<FormData>({
     defaultValues: {
-      officeOriginId: 0,
-      officeDestinationId: 0,
-      pass_by: []
+      officeOriginId: '',
+      officeDestinationId: '',
+      pass_by: [],
+      travel_hours: 1
     }
   })
 
@@ -69,19 +71,28 @@ const RouteFormDialog = ({
       reset({
         officeOriginId: route.officeOrigin.id,
         officeDestinationId: route.officeDestination.id,
-        pass_by: route.pass_by || []
+        pass_by: route.pass_by || [],
+        travel_hours: route.travel_hours || 1
       })
     } else {
       reset({
-        officeOriginId: 0,
-        officeDestinationId: 0,
-        pass_by: []
+        officeOriginId: '',
+        officeDestinationId: '',
+        pass_by: [],
+        travel_hours: 1
       })
     }
   }, [route, isEditMode, reset, open])
 
   const handleFormSubmit = async (data: FormData) => {
-    await onSubmit(data)
+    const submitData = {
+      ...data,
+      officeOriginId: Number(data.officeOriginId),
+      officeDestinationId: Number(data.officeDestinationId),
+      travel_hours: Number(data.travel_hours)
+    }
+
+    await onSubmit(submitData)
   }
 
   const handleClose = () => {
@@ -231,6 +242,62 @@ const RouteFormDialog = ({
                       <MenuItem disabled>No hay oficinas disponibles</MenuItem>
                     )}
                   </CustomTextField>
+                )}
+              />
+            </Grid>
+            <Grid item xs={12} sm={6}>
+              <Controller
+                name='travel_hours'
+                control={control}
+                rules={{
+                  required: 'Las horas de viaje son requeridas',
+                  min: { value: 1, message: 'Mínimo 1 hora' }
+                }}
+                render={({ field: { ref, value, onChange, ...field } }) => (
+                  <CustomTextField
+                    {...field}
+                    inputRef={ref}
+                    type='number'
+                    fullWidth
+                    label='Horas de Viaje'
+                    value={value || ''}
+                    error={!!errors.travel_hours}
+                    helperText={errors.travel_hours?.message}
+                    disabled={isLoading}
+                    onChange={e => {
+                      const inputValue = e.target.value
+
+                      if (inputValue === '') {
+                        onChange('')
+
+                        return
+                      }
+
+                      const numValue = parseInt(inputValue, 10)
+
+                      if (!isNaN(numValue) && numValue >= 1) {
+                        onChange(numValue)
+                      }
+                    }}
+                    InputProps={{
+                      startAdornment: (
+                        <InputAdornment position='start'>
+                          <i className='tabler-clock' />
+                        </InputAdornment>
+                      ),
+                      endAdornment: <InputAdornment position='end'>horas</InputAdornment>,
+                      inputProps: {
+                        min: 1,
+                        step: 1,
+                        pattern: '[0-9]*'
+                      }
+                    }}
+                    slotProps={{
+                      htmlInput: {
+                        inputMode: 'numeric'
+                      }
+                    }}
+                  />
                 )}
               />
             </Grid>

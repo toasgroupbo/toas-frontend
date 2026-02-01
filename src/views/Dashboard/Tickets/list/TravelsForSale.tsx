@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useMemo, useEffect } from 'react'
+import React, { useState, useMemo, useEffect } from 'react'
 
 import Card from '@mui/material/Card'
 import Box from '@mui/material/Box'
@@ -30,9 +30,7 @@ import { rankItem } from '@tanstack/match-sorter-utils'
 
 import CustomTextField from '@core/components/mui/TextField'
 import tableStyles from '@core/styles/table.module.css'
-import { useCashierTravels, useCloseTravel } from '@/hooks/useCashierTravels'
-import { usePlaces } from '@/hooks/useOffices'
-import { useAuth } from '@/contexts/AuthContext'
+import { useCashierTravels, useCloseTravel, useCashierRoutes } from '@/hooks/useCashierTravels'
 import type { Travel } from '@/types/api/travels'
 import TicketsTable from './TicketsTable'
 import SellTicketDialog from '../components/SellTicketDialog'
@@ -91,21 +89,37 @@ const TravelsForSale = () => {
     travel: Travel | null
   }>({ ticket: null, travel: null })
 
-  const { user } = useAuth()
-  const { data: places } = usePlaces()
+  const { data: cashierRoutes } = useCashierRoutes()
 
+  // Obtener el nombre del lugar del cajero desde las rutas (origen)
   const cashierPlaceName = useMemo(() => {
-    if (!user?.office?.place?.id || !places) return null
-    const place = places.find(p => p.id === user.office?.place?.id)
+    if (!cashierRoutes || cashierRoutes.length === 0) return null
 
-    return place?.name || null
-  }, [user, places])
+    return cashierRoutes[0].officeOrigin.place.name
+  }, [cashierRoutes])
+
+  // Extraer destinos únicos de las rutas (sin repetidos)
+  const uniqueDestinations = useMemo(() => {
+    if (!cashierRoutes || cashierRoutes.length === 0) return []
+
+    const destinationsMap = new Map<number, { id: number; name: string }>()
+
+    cashierRoutes.forEach(route => {
+      const place = route.officeDestination.place
+
+      if (!destinationsMap.has(place.id)) {
+        destinationsMap.set(place.id, { id: place.id, name: place.name })
+      }
+    })
+
+    return Array.from(destinationsMap.values())
+  }, [cashierRoutes])
 
   useEffect(() => {
-    if (places && places.length > 0 && !destinationPlaceIdFilter) {
-      setDestinationPlaceIdFilter(places[0].id.toString())
+    if (uniqueDestinations.length > 0 && !destinationPlaceIdFilter) {
+      setDestinationPlaceIdFilter(uniqueDestinations[0].id.toString())
     }
-  }, [places, destinationPlaceIdFilter])
+  }, [uniqueDestinations, destinationPlaceIdFilter])
 
   const filters = useMemo(() => {
     if (!destinationPlaceIdFilter) {
@@ -131,6 +145,54 @@ const TravelsForSale = () => {
 
     return travels.filter(travel => travel.travel_status === 'active')
   }, [travels])
+
+  // Agrupar viajes por fecha de salida
+  const travelsByDate = useMemo(() => {
+    if (!activeTravels || activeTravels.length === 0) return {}
+
+    const grouped: Record<string, typeof activeTravels> = {}
+
+    activeTravels.forEach(travel => {
+      const dateWithoutZ = travel.departure_time.replace('Z', '')
+      const date = new Date(dateWithoutZ)
+      const dateKey = date.toISOString().split('T')[0] // YYYY-MM-DD
+
+      if (!grouped[dateKey]) {
+        grouped[dateKey] = []
+      }
+
+      grouped[dateKey].push(travel)
+    })
+
+    // Ordenar cada grupo por hora
+    Object.keys(grouped).forEach(key => {
+      grouped[key].sort((a, b) => {
+        const dateA = new Date(a.departure_time.replace('Z', ''))
+        const dateB = new Date(b.departure_time.replace('Z', ''))
+
+        return dateA.getTime() - dateB.getTime()
+      })
+    })
+
+    return grouped
+  }, [activeTravels])
+
+  // Obtener las fechas ordenadas
+  const sortedDates = useMemo(() => {
+    return Object.keys(travelsByDate).sort((a, b) => new Date(a).getTime() - new Date(b).getTime())
+  }, [travelsByDate])
+
+  // Formatear fecha completa para el encabezado de grupo
+  const formatDateHeader = (dateKey: string) => {
+    const date = new Date(dateKey + 'T12:00:00')
+
+    return date.toLocaleDateString('es-ES', {
+      weekday: 'long',
+      day: 'numeric',
+      month: 'long',
+      year: 'numeric'
+    })
+  }
 
   // Formatear fecha (las fechas del backend vienen en hora Bolivia pero con Z)
   const formatDate = (dateString: string) => {
@@ -448,7 +510,7 @@ const TravelsForSale = () => {
         )
       }),
       columnHelper.accessor('seatsAvailable', {
-        header: 'Asientos',
+        header: ' Disponibles',
         cell: ({ row }) => (
           <Chip
             label={row.original.seatsAvailable ?? 'N/A'}
@@ -622,10 +684,10 @@ const TravelsForSale = () => {
                 )
               }}
             >
-              {places && places.length > 0 ? (
-                places.map(place => (
-                  <MenuItem key={place.id} value={place.id.toString()}>
-                    {place.name}
+              {uniqueDestinations.length > 0 ? (
+                uniqueDestinations.map(destination => (
+                  <MenuItem key={destination.id} value={destination.id.toString()}>
+                    {destination.name}
                   </MenuItem>
                 ))
               ) : (
@@ -691,25 +753,67 @@ const TravelsForSale = () => {
               </tbody>
             ) : (
               <tbody>
-                {table.getRowModel().rows.map(row => (
-                  <tr
-                    key={row.id}
-                    onClick={() => {
-                      if (row.original.travel_status === 'active') {
-                        setSelectedTravel(row.original)
-                        setOpenSellDialog(true)
-                      }
-                    }}
-                    style={{
-                      cursor: row.original.travel_status === 'active' ? 'pointer' : 'default',
-                      transition: 'background-color 0.2s ease'
-                    }}
-                    className={classnames({ selected: row.getIsSelected() })}
-                  >
-                    {row.getVisibleCells().map(cell => (
-                      <td key={cell.id}>{flexRender(cell.column.columnDef.cell, cell.getContext())}</td>
-                    ))}
-                  </tr>
+                {sortedDates.map(dateKey => (
+                  <React.Fragment key={dateKey}>
+                    {/* Encabezado de fecha */}
+                    <tr>
+                      <td
+                        colSpan={table.getVisibleFlatColumns().length}
+                        style={{
+                          backgroundColor: 'var(--mui-palette-primary-lightOpacity)',
+                          padding: '10px 16px',
+                          borderLeft: '3px solid var(--mui-palette-primary-main)'
+                        }}
+                      >
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                          <i
+                            className='tabler-calendar-event'
+                            style={{ fontSize: '16px', color: 'var(--mui-palette-primary-main)' }}
+                          />
+                          <Typography
+                            variant='body2'
+                            fontWeight={600}
+                            color='primary.main'
+                            sx={{ textTransform: 'capitalize' }}
+                          >
+                            {formatDateHeader(dateKey)}
+                          </Typography>
+                          <Typography variant='caption' color='text.secondary'>
+                            ({travelsByDate[dateKey].length})
+                          </Typography>
+                        </Box>
+                      </td>
+                    </tr>
+                    {/* Filas de viajes para esta fecha */}
+                    {table
+                      .getRowModel()
+                      .rows.filter(row => {
+                        const rowDateWithoutZ = row.original.departure_time.replace('Z', '')
+                        const rowDateKey = new Date(rowDateWithoutZ).toISOString().split('T')[0]
+
+                        return rowDateKey === dateKey
+                      })
+                      .map(row => (
+                        <tr
+                          key={row.id}
+                          onClick={() => {
+                            if (row.original.travel_status === 'active') {
+                              setSelectedTravel(row.original)
+                              setOpenSellDialog(true)
+                            }
+                          }}
+                          style={{
+                            cursor: row.original.travel_status === 'active' ? 'pointer' : 'default',
+                            transition: 'background-color 0.2s ease'
+                          }}
+                          className={classnames({ selected: row.getIsSelected() })}
+                        >
+                          {row.getVisibleCells().map(cell => (
+                            <td key={cell.id}>{flexRender(cell.column.columnDef.cell, cell.getContext())}</td>
+                          ))}
+                        </tr>
+                      ))}
+                  </React.Fragment>
                 ))}
               </tbody>
             )}

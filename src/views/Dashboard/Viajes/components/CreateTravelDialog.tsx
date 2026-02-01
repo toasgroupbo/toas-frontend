@@ -62,13 +62,35 @@ const CreateTravelDialog = ({ open, onClose, onSubmit, isLoading = false }: Crea
   })
 
   const busId = watch('busId')
+  const routeId = watch('routeId')
+  const departureTime = watch('departure_time')
   const travelType = watch('type')
+
+  // Obtener la ruta seleccionada para calcular travel_hours
+  const selectedRoute = routeId && routes ? routes.find(r => Number(r.id) === Number(routeId)) : null
 
   useEffect(() => {
     if (!open) {
       reset()
     }
   }, [open, reset])
+
+  // Calcular automáticamente la hora de llegada basándose en travel_hours
+  useEffect(() => {
+    if (departureTime && selectedRoute?.travel_hours) {
+      const departure = new Date(departureTime)
+      const arrival = new Date(departure.getTime() + selectedRoute.travel_hours * 60 * 60 * 1000)
+
+      // Formatear para datetime-local (YYYY-MM-DDTHH:mm)
+      const year = arrival.getFullYear()
+      const month = String(arrival.getMonth() + 1).padStart(2, '0')
+      const day = String(arrival.getDate()).padStart(2, '0')
+      const hours = String(arrival.getHours()).padStart(2, '0')
+      const minutes = String(arrival.getMinutes()).padStart(2, '0')
+
+      setValue('arrival_time', `${year}-${month}-${day}T${hours}:${minutes}`)
+    }
+  }, [departureTime, selectedRoute, setValue])
 
   useEffect(() => {
     if (busId && buses) {
@@ -110,6 +132,8 @@ const CreateTravelDialog = ({ open, onClose, onSubmit, isLoading = false }: Crea
       await onSubmit(payload)
     } catch (error: any) {
       console.error('Error en handleFormSubmit:', error)
+
+      throw error
     }
   }
 
@@ -272,13 +296,13 @@ const CreateTravelDialog = ({ open, onClose, onSubmit, isLoading = false }: Crea
                               className='tabler-flag'
                               style={{ fontSize: '14px', color: 'var(--mui-palette-success-main)' }}
                             />
-                            <Typography variant='body2'>{route.officeOrigin.city}</Typography>
+                            <Typography variant='body2'>{route.officeOrigin.place?.name}</Typography>
                             <i className='tabler-arrow-right' style={{ fontSize: '14px' }} />
                             <i
                               className='tabler-flag-filled'
                               style={{ fontSize: '14px', color: 'var(--mui-palette-error-main)' }}
                             />
-                            <Typography variant='body2'>{route.officeDestination.city}</Typography>
+                            <Typography variant='body2'>{route.officeDestination.place?.name}</Typography>
                           </Box>
                         </MenuItem>
                       ))
@@ -411,16 +435,7 @@ const CreateTravelDialog = ({ open, onClose, onSubmit, isLoading = false }: Crea
                 name='arrival_time'
                 control={control}
                 rules={{
-                  required: 'La fecha y hora de llegada es requerida',
-                  validate: value => {
-                    const departureTime = watch('departure_time')
-
-                    if (departureTime && value && new Date(value) <= new Date(departureTime)) {
-                      return 'La hora de llegada debe ser posterior a la hora de salida'
-                    }
-
-                    return true
-                  }
+                  required: 'La fecha y hora de llegada es requerida'
                 }}
                 render={({ field }) => (
                   <CustomTextField
@@ -429,12 +444,17 @@ const CreateTravelDialog = ({ open, onClose, onSubmit, isLoading = false }: Crea
                     type='datetime-local'
                     label='Fecha y Hora de Llegada'
                     error={!!errors.arrival_time}
-                    helperText={errors.arrival_time?.message}
-                    disabled={isLoading}
+                    helperText={
+                      selectedRoute?.travel_hours
+                        ? `(${selectedRoute.travel_hours} hora${selectedRoute.travel_hours > 1 ? 's' : ''} de viaje)`
+                        : 'Seleccione una ruta y hora de salida'
+                    }
+                    disabled
                     InputLabelProps={{
                       shrink: true
                     }}
                     InputProps={{
+                      readOnly: true,
                       startAdornment: (
                         <InputAdornment position='start'>
                           <i className='tabler-calendar-check' />

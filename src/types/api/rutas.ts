@@ -13,6 +13,7 @@ export interface Route {
   id: string
   isActive: boolean
   pass_by: string[]
+  travel_hours: number
   officeOrigin: RouteOffice
   officeDestination: RouteOffice
 }
@@ -21,10 +22,12 @@ export interface CreateRouteDto {
   officeOriginId: number
   officeDestinationId: number
   pass_by: string[]
+  travel_hours: number
 }
 
 export interface UpdateRouteDto {
   officeOriginId?: number
   officeDestinationId?: number
   pass_by?: string[]
+  travel_hours?: number
 }

@@ -70,3 +70,45 @@ export const useCloseTravel = () => {
     }
   })
 }
+
+// Tipos para las rutas del cajero
+interface Place {
+  id: number
+  name: string
+  createdAt: string
+}
+
+interface Office {
+  id: number
+  url_gps: string
+  city: string
+  subsidiary: string
+  createdAt: string
+  place: Place
+}
+
+interface CashierRoute {
+  id: number
+  isActive: boolean
+  pass_by: string[]
+  createdAt: string
+  officeOrigin: Office
+  officeDestination: Office
+}
+
+const fetchCashierRoutes = async (): Promise<CashierRoute[]> => {
+  const response = await api.get<CashierRoute[]>('/api/routes/for-cashier/all')
+
+  return response.data
+}
+
+export const useCashierRoutes = () => {
+  const { isCashier } = useAuth()
+
+  return useQuery({
+    queryKey: ['cashier-routes'],
+    queryFn: fetchCashierRoutes,
+    enabled: isCashier,
+    retry: false
+  })
+}

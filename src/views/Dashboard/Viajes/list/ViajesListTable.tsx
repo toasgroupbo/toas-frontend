@@ -136,7 +136,9 @@ const TravelsTable = () => {
         'Invalid arrival time': 'La fecha y hora de llegada no es válida.',
         'Arrival time must be after departure time': 'La hora de llegada debe ser posterior a la hora de salida.',
         Unauthorized: 'No tienes permiso para crear viajes.',
-        Forbidden: 'Acceso denegado.'
+        Forbidden: 'Acceso denegado.',
+        'The bus already has a travel scheduled that overlaps with the selected departure or arrival time':
+          'El bus ya tiene un viaje para este horario. Por favor, seleccione otro horario o bus.'
       }
 
       const translatedMessage = errorMessages[errorMessage] || `Error al crear el viaje: ${errorMessage}`
@@ -243,37 +245,42 @@ const TravelsTable = () => {
       }),
       columnHelper.accessor('route', {
         header: 'Ruta',
-        cell: ({ row }) => (
-          <div className='flex items-center gap-2'>
-            <Box
-              sx={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: 1,
-                p: 1,
-                borderRadius: 1,
-                bgcolor: 'action.hover'
-              }}
-            >
-              <div className='flex items-center gap-1'>
-                <i className='tabler-flag' style={{ fontSize: '16px', color: 'var(--mui-palette-success-main)' }} />
-                <Typography variant='caption' fontWeight='medium'>
-                  {row.original.route.officeOrigin.city}
-                </Typography>
-              </div>
-              <i className='tabler-arrow-right' style={{ fontSize: '16px' }} />
-              <div className='flex items-center gap-1'>
-                <i
-                  className='tabler-flag-filled'
-                  style={{ fontSize: '16px', color: 'var(--mui-palette-error-main)' }}
-                />
-                <Typography variant='caption' fontWeight='medium'>
-                  {row.original.route.officeDestination.city}
-                </Typography>
-              </div>
-            </Box>
-          </div>
-        )
+        cell: ({ row }) => {
+          const originCity = row.original.route.officeOrigin.place?.name || 'N/A'
+          const destinationCity = row.original.route.officeDestination.place?.name || 'N/A'
+
+          return (
+            <div className='flex items-center gap-2'>
+              <Box
+                sx={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 1,
+                  p: 1,
+                  borderRadius: 1,
+                  bgcolor: 'action.hover'
+                }}
+              >
+                <div className='flex items-center gap-1'>
+                  <i className='tabler-flag' style={{ fontSize: '16px', color: 'var(--mui-palette-success-main)' }} />
+                  <Typography variant='caption' fontWeight='medium'>
+                    {originCity}
+                  </Typography>
+                </div>
+                <i className='tabler-arrow-right' style={{ fontSize: '16px' }} />
+                <div className='flex items-center gap-1'>
+                  <i
+                    className='tabler-flag-filled'
+                    style={{ fontSize: '16px', color: 'var(--mui-palette-error-main)' }}
+                  />
+                  <Typography variant='caption' fontWeight='medium'>
+                    {destinationCity}
+                  </Typography>
+                </div>
+              </Box>
+            </div>
+          )
+        }
       }),
       columnHelper.accessor('departure_time', {
         header: 'Salida',

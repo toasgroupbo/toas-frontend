@@ -369,7 +369,7 @@ const CreateCashierDialog = ({
                     {...field}
                     select
                     fullWidth
-                    label='Oficina'
+                    label='Subsidiaria'
                     error={!!errors.officeId}
                     helperText={errors.officeId?.message}
                     disabled={isLoading || officesLoading}
@@ -393,10 +393,7 @@ const CreateCashierDialog = ({
                           <div className='flex items-center gap-2'>
                             <i className='tabler-building' style={{ fontSize: '18px' }} />
                             <div className='flex flex-col'>
-                              <span>{office.city}</span>
-                              <span style={{ fontSize: '12px', color: 'var(--mui-palette-text-secondary)' }}>
-                                {office.place.name}
-                              </span>
+                              <span>{office.place.name}</span>
                             </div>
                           </div>
                         </MenuItem>

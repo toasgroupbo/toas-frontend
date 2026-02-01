@@ -228,30 +228,9 @@ const OfficesListTable = () => {
         ),
         enableSorting: false
       }),
-      columnHelper.accessor('city', {
-        header: 'Ciudad',
-        cell: ({ row }) => (
-          <div className='flex items-center gap-2'>
-            <i className='tabler-building' style={{ fontSize: '20px', color: 'var(--mui-palette-primary-main)' }} />
-            <Typography className='font-medium' color='text.primary'>
-              {row.original.city}
-            </Typography>
-          </div>
-        )
-      }),
-      columnHelper.accessor('subsidiary', {
-        header: 'Subsidiaria',
-        cell: ({ row }) => (
-          <div className='flex items-center gap-2'>
-            <i className='tabler-building-community' style={{ fontSize: '18px', color: 'var(--mui-palette-info-main)' }} />
-            <Typography variant='body2' color='text.primary'>
-              {row.original.subsidiary}
-            </Typography>
-          </div>
-        )
-      }),
+
       columnHelper.accessor('place', {
-        header: 'Lugar',
+        header: 'Subidiaria ',
         cell: ({ row }) => (
           <div className='flex items-center gap-2'>
             <i className='tabler-map-pin' style={{ fontSize: '18px', color: 'var(--mui-palette-secondary-main)' }} />

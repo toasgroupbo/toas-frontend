@@ -16,7 +16,7 @@ import { MenuItem } from '@mui/material'
 
 import CustomTextField from '@core/components/mui/TextField'
 import type { Office, CreateOfficeDto, UpdateOfficeDto } from '@/types/api/offices'
-import { BoliviaCities } from '@/types/api/offices'
+
 import { usePlaces } from '@/hooks/useOffices'
 
 interface OfficeFormDialogProps {
@@ -30,8 +30,7 @@ interface OfficeFormDialogProps {
 
 interface FormData {
   url_gps: string
-  city: string
-  subsidiary: string
+
   placeId: number
 }
 
@@ -53,8 +52,6 @@ const OfficeFormDialog = ({
   } = useForm<FormData>({
     defaultValues: {
       url_gps: '',
-      city: '',
-      subsidiary: '',
       placeId: 0
     }
   })
@@ -63,15 +60,11 @@ const OfficeFormDialog = ({
     if (office && isEditMode) {
       reset({
         url_gps: office.url_gps,
-        city: office.city,
-        subsidiary: office.subsidiary,
         placeId: office.place.id
       })
     } else {
       reset({
         url_gps: '',
-        city: '',
-        subsidiary: '',
         placeId: 0
       })
     }
@@ -105,36 +98,6 @@ const OfficeFormDialog = ({
           <Grid container spacing={4}>
             <Grid item xs={12}>
               <Controller
-                name='city'
-                control={control}
-                rules={{
-                  required: 'La ciudad es requerida'
-                }}
-                render={({ field }) => (
-                  <CustomTextField
-                    {...field}
-                    select
-                    fullWidth
-                    label='Ciudad'
-                    error={!!errors.city}
-                    helperText={errors.city?.message}
-                    disabled={isLoading}
-                    InputProps={{
-                      startAdornment: <i className='tabler-building-community' style={{ marginRight: '8px' }} />
-                    }}
-                  >
-                    {Object.values(BoliviaCities).map(city => (
-                      <MenuItem key={city} value={city}>
-                        {city}
-                      </MenuItem>
-                    ))}
-                  </CustomTextField>
-                )}
-              />
-            </Grid>
-
-            <Grid item xs={12}>
-              <Controller
                 name='url_gps'
                 control={control}
                 rules={{
@@ -159,30 +122,6 @@ const OfficeFormDialog = ({
 
             <Grid item xs={12}>
               <Controller
-                name='subsidiary'
-                control={control}
-                rules={{
-                  required: 'La subsidiaria es requerida'
-                }}
-                render={({ field }) => (
-                  <CustomTextField
-                    {...field}
-                    fullWidth
-                    label='Subsidiaria'
-                    placeholder='Ej: central'
-                    error={!!errors.subsidiary}
-                    helperText={errors.subsidiary?.message}
-                    disabled={isLoading}
-                    InputProps={{
-                      startAdornment: <i className='tabler-building-community' style={{ marginRight: '8px' }} />
-                    }}
-                  />
-                )}
-              />
-            </Grid>
-
-            <Grid item xs={12}>
-              <Controller
                 name='placeId'
                 control={control}
                 rules={{ required: 'El lugar es requerido' }}
@@ -191,7 +130,7 @@ const OfficeFormDialog = ({
                     {...field}
                     select
                     fullWidth
-                    label='Lugar'
+                    label='Subsidiaria (Ubicación)'
                     error={!!errors.placeId}
                     helperText={errors.placeId?.message}
                     disabled={isLoading || placesLoading}
