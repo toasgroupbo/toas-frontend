@@ -89,7 +89,7 @@ const CancelTicketDialog = ({ open, onClose, onConfirm, ticket, isLoading = fals
                     <div className='flex items-center gap-1'>
                       <i className='tabler-flag' style={{ fontSize: '16px', color: 'var(--mui-palette-success-main)' }} />
                       <Typography variant='body2' fontWeight='medium'>
-                        {ticket.travel.route.officeOrigin.city}
+                        {ticket.travel.route.officeOrigin.place?.name || 'N/A'}
                       </Typography>
                     </div>
                     <i className='tabler-arrow-right' style={{ fontSize: '16px' }} />
@@ -99,7 +99,7 @@ const CancelTicketDialog = ({ open, onClose, onConfirm, ticket, isLoading = fals
                         style={{ fontSize: '16px', color: 'var(--mui-palette-error-main)' }}
                       />
                       <Typography variant='body2' fontWeight='medium'>
-                        {ticket.travel.route.officeDestination.city}
+                        {ticket.travel.route.officeDestination.place?.name || 'N/A'}
                       </Typography>
                     </div>
                   </Box>

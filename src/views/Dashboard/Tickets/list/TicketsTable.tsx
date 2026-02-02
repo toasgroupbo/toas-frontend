@@ -679,75 +679,89 @@ const TicketsTable = ({ initialTravelId }: TicketsTableProps) => {
                 Tickets Vendidos
               </Typography>
               <Typography variant='body2' color='text.secondary'>
-                Selecciona un viaje para ver sus tickets vendidos
+                {initialTravelId
+                  ? 'Mostrando tickets del viaje seleccionado'
+                  : 'Selecciona un viaje para ver sus tickets vendidos'}
               </Typography>
             </div>
           </Box>
+          {(selectedTravelId || initialTravelId) && tickets && tickets.length > 0 && (
+            <Button variant='outlined' color='primary' startIcon={<i className='tabler-file-download' />}>
+              Descargar PDF
+            </Button>
+          )}
         </Box>
 
         <Box sx={{ padding: '0 20px', display: 'flex', flexDirection: 'column', gap: 2 }}>
           <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap', alignItems: 'flex-start' }}>
-            <CustomTextField
-              select
-              value={selectedTravelId || ''}
-              onChange={e => {
-                setSelectedTravelId(e.target.value ? Number(e.target.value) : null)
-                setCurrentPage(1)
-              }}
-              label='Seleccionar Viaje'
-              sx={{ minWidth: 300 }}
-              InputProps={{
-                startAdornment: (
-                  <Box sx={{ mr: 1, display: 'flex', alignItems: 'center' }}>
-                    <i className='tabler-bus' />
-                  </Box>
-                )
-              }}
-            >
-              <MenuItem value=''>
-                <em>Selecciona un viaje...</em>
-              </MenuItem>
-              {travelsLoading ? (
-                <MenuItem disabled>
-                  <CircularProgress size={20} />
-                  <span style={{ marginLeft: 8 }}>Cargando viajes...</span>
-                </MenuItem>
-              ) : travels && travels.length > 0 ? (
-                travels.map(travel => (
-                  <MenuItem key={travel.id} value={travel.id}>
-                    <Box sx={{ display: 'flex', flexDirection: 'column', width: '100%' }}>
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                        <i
-                          className='tabler-flag'
-                          style={{ fontSize: '14px', color: 'var(--mui-palette-success-main)' }}
-                        />
-                        <Typography variant='body2'>{travel.route.officeOrigin.city}</Typography>
-                        <i className='tabler-arrow-right' style={{ fontSize: '14px' }} />
-                        <i
-                          className='tabler-flag-filled'
-                          style={{ fontSize: '14px', color: 'var(--mui-palette-error-main)' }}
-                        />
-                        <Typography variant='body2'>{travel.route.officeDestination.city}</Typography>
-                      </Box>
-                      <Typography variant='caption' color='text.secondary'>
-                        {new Date(travel.departure_time.replace('Z', '')).toLocaleDateString('es-ES', {
-                          day: '2-digit',
-                          month: 'short',
-                          year: 'numeric',
-                          hour: '2-digit',
-                          minute: '2-digit'
-                        })}{' '}
-                        - {travel.bus.name} ({travel.bus.plaque})
-                      </Typography>
+            {/* Solo mostrar el select si no viene un travelId predefinido */}
+            {!initialTravelId && (
+              <CustomTextField
+                select
+                value={selectedTravelId || ''}
+                onChange={e => {
+                  setSelectedTravelId(e.target.value ? Number(e.target.value) : null)
+                  setCurrentPage(1)
+                }}
+                label='Seleccionar Viaje'
+                sx={{ minWidth: 300 }}
+                InputProps={{
+                  startAdornment: (
+                    <Box sx={{ mr: 1, display: 'flex', alignItems: 'center' }}>
+                      <i className='tabler-bus' />
                     </Box>
+                  )
+                }}
+              >
+                <MenuItem value=''>
+                  <em>Selecciona un viaje...</em>
+                </MenuItem>
+                {travelsLoading ? (
+                  <MenuItem disabled>
+                    <CircularProgress size={20} />
+                    <span style={{ marginLeft: 8 }}>Cargando viajes...</span>
                   </MenuItem>
-                ))
-              ) : (
-                <MenuItem disabled>No hay viajes disponibles</MenuItem>
-              )}
-            </CustomTextField>
+                ) : travels && travels.length > 0 ? (
+                  travels.map(travel => (
+                    <MenuItem key={travel.id} value={travel.id}>
+                      <Box sx={{ display: 'flex', flexDirection: 'column', width: '100%' }}>
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                          <i
+                            className='tabler-flag'
+                            style={{ fontSize: '14px', color: 'var(--mui-palette-success-main)' }}
+                          />
+                          <Typography variant='body2'>
+                            {travel.route.officeOrigin.place?.name || travel.route.officeOrigin.city}
+                          </Typography>
+                          <i className='tabler-arrow-right' style={{ fontSize: '14px' }} />
+                          <i
+                            className='tabler-flag-filled'
+                            style={{ fontSize: '14px', color: 'var(--mui-palette-error-main)' }}
+                          />
+                          <Typography variant='body2'>
+                            {travel.route.officeDestination.place?.name || travel.route.officeDestination.city}
+                          </Typography>
+                        </Box>
+                        <Typography variant='caption' color='text.secondary'>
+                          {new Date(travel.departure_time.replace('Z', '')).toLocaleDateString('es-ES', {
+                            day: '2-digit',
+                            month: 'short',
+                            year: 'numeric',
+                            hour: '2-digit',
+                            minute: '2-digit'
+                          })}{' '}
+                          - {travel.bus.name} ({travel.bus.plaque})
+                        </Typography>
+                      </Box>
+                    </MenuItem>
+                  ))
+                ) : (
+                  <MenuItem disabled>No hay viajes disponibles</MenuItem>
+                )}
+              </CustomTextField>
+            )}
 
-            {selectedTravelId && (
+            {(selectedTravelId || initialTravelId) && (
               <DebouncedInput
                 value={searchQuery ?? ''}
                 onChange={value => setSearchQuery(String(value))}
@@ -764,7 +778,7 @@ const TicketsTable = ({ initialTravelId }: TicketsTableProps) => {
             )}
           </Box>
 
-          {selectedTravelId && tickets && tickets.length > 0 && (
+          {(selectedTravelId || initialTravelId) && tickets && tickets.length > 0 && (
             <Box
               sx={{
                 p: 2,
@@ -836,7 +850,7 @@ const TicketsTable = ({ initialTravelId }: TicketsTableProps) => {
                 </tr>
               ))}
             </thead>
-            {!selectedTravelId ? (
+            {!selectedTravelId && !initialTravelId ? (
               <tbody>
                 <tr>
                   <td colSpan={table.getVisibleFlatColumns().length} className='text-center'>

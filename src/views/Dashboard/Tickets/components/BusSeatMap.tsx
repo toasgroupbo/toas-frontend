@@ -260,8 +260,6 @@ const BusSeatMap = ({ seats, deck, deckPrice, selectedSeats, onSeatToggle, total
                   )
                 }
 
-                // Si no es 'seat' ni 'aisle', o es un seat sin seatNumber (baño, depósito, etc.)
-                // Mostrar cuadro con rayas
                 if (seat.type !== 'seat' || !seat.seatNumber) {
                   return (
                     <Box
@@ -291,11 +289,9 @@ const BusSeatMap = ({ seats, deck, deckPrice, selectedSeats, onSeatToggle, total
                   )
                 }
 
-                // Es un asiento normal
                 const isAvailable = isSeatAvailable(seat)
                 const isSelected = selectedSeats.has(String(seat.id))
 
-                // Calcular el precio a mostrar (igual que en calculateTotal)
                 let displayPrice = seat.price
 
                 if (!displayPrice || parseFloat(displayPrice) === 0) {

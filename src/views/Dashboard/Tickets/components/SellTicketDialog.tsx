@@ -239,7 +239,7 @@ const SellTicketDialog = ({ open, onClose, onSubmit, isLoading = false, preSelec
           <Typography variant='h6'>Vender Ticket</Typography>
           {selectedTravel && (
             <Chip
-              label={`${selectedTravel.route.officeOrigin.city} → ${selectedTravel.route.officeDestination.city}`}
+              label={`${selectedTravel.route.officeOrigin.place?.name || 'N/A'} → ${selectedTravel.route.officeDestination.place?.name || 'N/A'}`}
               color='primary'
               variant='tonal'
               size='small'
@@ -296,13 +296,13 @@ const SellTicketDialog = ({ open, onClose, onSubmit, isLoading = false, preSelec
                                     className='tabler-flag'
                                     style={{ fontSize: '14px', color: 'var(--mui-palette-success-main)' }}
                                   />
-                                  <Typography variant='body2'>{travel.route.officeOrigin.city}</Typography>
+                                  <Typography variant='body2'>{travel.route.officeOrigin.place?.name || 'N/A'}</Typography>
                                   <i className='tabler-arrow-right' style={{ fontSize: '14px' }} />
                                   <i
                                     className='tabler-flag-filled'
                                     style={{ fontSize: '14px', color: 'var(--mui-palette-error-main)' }}
                                   />
-                                  <Typography variant='body2'>{travel.route.officeDestination.city}</Typography>
+                                  <Typography variant='body2'>{travel.route.officeDestination.place?.name || 'N/A'}</Typography>
                                 </Box>
                                 <Typography variant='caption' color='text.secondary'>
                                   {travel.departure_time} - {travel.bus.name} ({travel.bus.plaque})

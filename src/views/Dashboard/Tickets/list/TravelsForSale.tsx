@@ -91,14 +91,12 @@ const TravelsForSale = () => {
 
   const { data: cashierRoutes } = useCashierRoutes()
 
-  // Obtener el nombre del lugar del cajero desde las rutas (origen)
   const cashierPlaceName = useMemo(() => {
     if (!cashierRoutes || cashierRoutes.length === 0) return null
 
     return cashierRoutes[0].officeOrigin.place.name
   }, [cashierRoutes])
 
-  // Extraer destinos únicos de las rutas (sin repetidos)
   const uniqueDestinations = useMemo(() => {
     if (!cashierRoutes || cashierRoutes.length === 0) return []
 
@@ -155,7 +153,7 @@ const TravelsForSale = () => {
     activeTravels.forEach(travel => {
       const dateWithoutZ = travel.departure_time.replace('Z', '')
       const date = new Date(dateWithoutZ)
-      const dateKey = date.toISOString().split('T')[0] // YYYY-MM-DD
+      const dateKey = date.toISOString().split('T')[0]
 
       if (!grouped[dateKey]) {
         grouped[dateKey] = []
@@ -164,7 +162,6 @@ const TravelsForSale = () => {
       grouped[dateKey].push(travel)
     })
 
-    // Ordenar cada grupo por hora
     Object.keys(grouped).forEach(key => {
       grouped[key].sort((a, b) => {
         const dateA = new Date(a.departure_time.replace('Z', ''))
@@ -177,12 +174,10 @@ const TravelsForSale = () => {
     return grouped
   }, [activeTravels])
 
-  // Obtener las fechas ordenadas
   const sortedDates = useMemo(() => {
     return Object.keys(travelsByDate).sort((a, b) => new Date(a).getTime() - new Date(b).getTime())
   }, [travelsByDate])
 
-  // Formatear fecha completa para el encabezado de grupo
   const formatDateHeader = (dateKey: string) => {
     const date = new Date(dateKey + 'T12:00:00')
 
@@ -194,7 +189,6 @@ const TravelsForSale = () => {
     })
   }
 
-  // Formatear fecha (las fechas del backend vienen en hora Bolivia pero con Z)
   const formatDate = (dateString: string) => {
     const dateWithoutZ = dateString.replace('Z', '')
     const date = new Date(dateWithoutZ)
@@ -207,7 +201,6 @@ const TravelsForSale = () => {
     })
   }
 
-  // Formatear hora (las fechas del backend vienen en hora Bolivia pero con Z)
   const formatTime = (dateString: string) => {
     const dateWithoutZ = dateString.replace('Z', '')
     const date = new Date(dateWithoutZ)
@@ -352,6 +345,22 @@ const TravelsForSale = () => {
         header: 'Acciones',
         cell: ({ row }) => (
           <div className='flex items-center gap-2'>
+            <Tooltip title='Ver Tickets'>
+              <IconButton
+                size='small'
+                onClick={e => {
+                  e.stopPropagation()
+                  setSelectedTravelForTickets(row.original.id)
+                  setShowTicketsList(true)
+                }}
+                sx={{
+                  color: 'success.main',
+                  '&:hover': { backgroundColor: 'success.light', color: 'white' }
+                }}
+              >
+                <i className='tabler-ticket' style={{ fontSize: '18px' }} />
+              </IconButton>
+            </Tooltip>
             <Tooltip title='Ver Imágenes'>
               <IconButton
                 size='small'
@@ -573,7 +582,6 @@ const TravelsForSale = () => {
     return (
       <Box>
         <Box display='flex' justifyContent='space-between' alignItems='center' mb={4}>
-          <Typography variant='h4'>Lista de Tickets Vendidos</Typography>
           <Button
             variant='outlined'
             startIcon={<i className='tabler-arrow-left' />}
@@ -630,9 +638,6 @@ const TravelsForSale = () => {
               </Typography>
             </div>
           </Box>
-          <Button variant='outlined' startIcon={<i className='tabler-list' />} onClick={() => setShowTicketsList(true)}>
-            Ver Tickets Vendidos
-          </Button>
         </Box>
 
         <Box sx={{ padding: '0 20px', display: 'flex', flexDirection: 'column', gap: 2 }}>
@@ -930,7 +935,7 @@ const TravelsForSale = () => {
                       Ruta:
                     </Typography>
                     <Typography variant='body2'>
-                      {saleDetails.travel.route.officeOrigin.city} → {saleDetails.travel.route.officeDestination.city}
+                      {saleDetails.travel.route.officeOrigin.place?.name || 'N/A'} → {saleDetails.travel.route.officeDestination.place?.name || 'N/A'}
                     </Typography>
                   </Grid>
                   <Grid item xs={6}>
@@ -1183,8 +1188,8 @@ const TravelsForSale = () => {
           {selectedTravel && (
             <Box sx={{ p: 2, bgcolor: 'action.hover', borderRadius: 1 }}>
               <Typography variant='body2' color='text.secondary' sx={{ mb: 1 }}>
-                <strong>Ruta:</strong> {selectedTravel.route.officeOrigin.city} →{' '}
-                {selectedTravel.route.officeDestination.city}
+                <strong>Ruta:</strong> {selectedTravel.route.officeOrigin.place?.name || 'N/A'} →{' '}
+                {selectedTravel.route.officeDestination.place?.name || 'N/A'}
               </Typography>
               <Typography variant='body2' color='text.secondary' sx={{ mb: 1 }}>
                 <strong>Fecha:</strong> {formatDate(selectedTravel.departure_time)} -{' '}

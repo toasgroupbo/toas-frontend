@@ -74,13 +74,8 @@ const DeleteRouteDialog = ({ open, onClose, onConfirm, route, isLoading = false 
                     Origen
                   </Typography>
                   <Typography variant='body2' fontWeight='medium'>
-                    {route.officeOrigin.city}
+                    {route.officeOrigin.place?.name || route.officeOrigin.city}
                   </Typography>
-                  {route.officeOrigin.place && (
-                    <Typography variant='caption' color='text.secondary'>
-                      {route.officeOrigin.place.name}
-                    </Typography>
-                  )}
                 </div>
               </div>
 
@@ -131,13 +126,8 @@ const DeleteRouteDialog = ({ open, onClose, onConfirm, route, isLoading = false 
                     Destino
                   </Typography>
                   <Typography variant='body2' fontWeight='medium'>
-                    {route.officeDestination.city}
+                    {route.officeDestination.place?.name || route.officeDestination.city}
                   </Typography>
-                  {route.officeDestination.place && (
-                    <Typography variant='caption' color='text.secondary'>
-                      {route.officeDestination.place.name}
-                    </Typography>
-                  )}
                 </div>
               </div>
             </div>
