@@ -28,7 +28,7 @@ import CustomerSearchField from './CustomerSearchField'
 interface SellTicketDialogProps {
   open: boolean
   onClose: () => void
-  onSubmit: (data: CreateTicketDto) => Promise<void>
+  onSubmit: (data: Omit<CreateTicketDto, 'payment_type'>, travel: Travel) => Promise<void>
   isLoading?: boolean
   preSelectedTravel?: Travel
 }
@@ -182,13 +182,13 @@ const SellTicketDialog = ({ open, onClose, onSubmit, isLoading = false, preSelec
       }
     })
 
-    const createData: CreateTicketDto = {
+    const createData: Omit<CreateTicketDto, 'payment_type'> = {
       travelId: typeof data.travelId === 'number' ? data.travelId : Number(data.travelId),
       customerId: typeof data.customerId === 'number' ? data.customerId : Number(data.customerId),
       seatSelections: seatSelections
     }
 
-    await onSubmit(createData)
+    await onSubmit(createData, latestTravelData)
   }
 
   const handleClose = () => {
@@ -296,13 +296,17 @@ const SellTicketDialog = ({ open, onClose, onSubmit, isLoading = false, preSelec
                                     className='tabler-flag'
                                     style={{ fontSize: '14px', color: 'var(--mui-palette-success-main)' }}
                                   />
-                                  <Typography variant='body2'>{travel.route.officeOrigin.place?.name || 'N/A'}</Typography>
+                                  <Typography variant='body2'>
+                                    {travel.route.officeOrigin.place?.name || 'N/A'}
+                                  </Typography>
                                   <i className='tabler-arrow-right' style={{ fontSize: '14px' }} />
                                   <i
                                     className='tabler-flag-filled'
                                     style={{ fontSize: '14px', color: 'var(--mui-palette-error-main)' }}
                                   />
-                                  <Typography variant='body2'>{travel.route.officeDestination.place?.name || 'N/A'}</Typography>
+                                  <Typography variant='body2'>
+                                    {travel.route.officeDestination.place?.name || 'N/A'}
+                                  </Typography>
                                 </Box>
                                 <Typography variant='caption' color='text.secondary'>
                                   {travel.departure_time} - {travel.bus.name} ({travel.bus.plaque})

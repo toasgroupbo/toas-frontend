@@ -66,6 +66,7 @@ export interface CreateTicketDto {
   travelId: number
   seatSelections: SeatSelection[]
   customerId: number
+  payment_type: 'qr' | 'cash'
 }
 
 export interface TicketsResponse {

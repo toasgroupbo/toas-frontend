@@ -17,11 +17,10 @@ import Chip from '@mui/material/Chip'
 import CircularProgress from '@mui/material/CircularProgress'
 import Alert from '@mui/material/Alert'
 import InputAdornment from '@mui/material/InputAdornment'
-import { isAxiosError } from 'axios'
 
 import CustomTextField from '@core/components/mui/TextField'
 import type { Ticket } from '@/types/api/tickets'
-import { useSearchPassengerByCI, useCreatePassenger, type Passenger } from '@/hooks/usePassengers'
+import { useSearchPassengerByCI, type Passenger } from '@/hooks/usePassengers'
 
 interface AssignPassengersDialogProps {
   open: boolean
@@ -36,11 +35,8 @@ export interface SeatAssignment {
   seatId: number
   passengerId: number
   customerId: number
-}
-
-interface PassengerAssignment {
-  passenger: Passenger
-  seatNumber: string
+  passengerName: string
+  passengerCI: string
 }
 
 const AssignPassengersDialog = ({
@@ -60,10 +56,40 @@ const AssignPassengersDialog = ({
   const [newPassengerCI, setNewPassengerCI] = useState('')
   const [duplicateCIError, setDuplicateCIError] = useState<string | null>(null)
   const [searchError, setSearchError] = useState<string | null>(null)
+  const [foundPassenger, setFoundPassenger] = useState<Passenger | null>(null)
 
   const customerId = (ticket as any)?.buyer?.id || null
-  const { data: foundPassenger, isLoading: searchingPassenger, isFetching } = useSearchPassengerByCI(searchCI)
-  const createPassengerMutation = useCreatePassenger()
+  const searchPassengerMutation = useSearchPassengerByCI()
+
+  const handleSearchPassenger = async () => {
+    if (searchCI.length < 3) {
+      setSearchError('Ingresa al menos 3 caracteres para buscar')
+
+      return
+    }
+
+    setSearchError(null)
+    setFoundPassenger(null)
+
+    try {
+      const result = await searchPassengerMutation.mutateAsync(searchCI)
+
+      if (result) {
+        setFoundPassenger(result)
+      } else {
+        setSearchError('No se encontró ningún pasajero con ese CI')
+      }
+    } catch {
+      setSearchError('Error al buscar pasajero')
+    }
+  }
+
+  const handleSearchKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      e.preventDefault()
+      handleSearchPassenger()
+    }
+  }
 
   useEffect(() => {
     if (open && ticket) {
@@ -125,43 +151,42 @@ const AssignPassengersDialog = ({
     }))
   }
 
-  const handleCreatePassenger = async () => {
-    if (!customerId || !newPassengerName.trim() || !newPassengerCI.trim()) return
+  const handleCreatePassenger = () => {
+    if (!newPassengerName.trim() || !newPassengerCI.trim()) return
 
-    setDuplicateCIError(null)
-
-    try {
-      const newPassenger = await createPassengerMutation.mutateAsync({
-        customerId,
-        fullName: newPassengerName,
-        ci: newPassengerCI
-      })
-
-      if (selectedSeat) {
-        setAssignments(prev => ({
-          ...prev,
-          [selectedSeat]: newPassenger
-        }))
-      }
-
-      setNewPassengerName('')
-      setNewPassengerCI('')
-      setShowCreateForm(false)
-      setOpenSelectModal(false)
-      setSelectedSeat(null)
-    } catch (error) {
-      console.error('Error creating passenger:', error)
-
-      if (isAxiosError(error) && error.response?.status === 409) {
-        const errorMessage = error.response?.data?.message || ''
-
-        if (errorMessage.includes('already exists') || errorMessage.includes('ci')) {
-          setDuplicateCIError(`El CI ${newPassengerCI} ya está registrado. Por favor, verifica el número de carnet.`)
-        } else {
-          setDuplicateCIError('Este pasajero ya está registrado en el sistema.')
-        }
-      }
+    // Crear un pasajero local (sin llamar al API)
+    // El backend lo creará cuando se asigne al ticket
+    const newPassenger: Passenger = {
+      id: -1, // ID temporal para indicar que es nuevo
+      fullName: newPassengerName.trim(),
+      ci: newPassengerCI.trim(),
+      customerId: customerId || 0
     }
+
+    if (selectedSeat) {
+      // Verificar si el CI ya está asignado a otro asiento
+      const alreadyAssigned = Object.entries(assignments).find(
+        ([seatNum, p]) => p?.ci === newPassenger.ci && seatNum !== selectedSeat
+      )
+
+      if (alreadyAssigned) {
+        setDuplicateCIError(`Este CI ya está asignado al asiento ${alreadyAssigned[0]}`)
+
+        return
+      }
+
+      setAssignments(prev => ({
+        ...prev,
+        [selectedSeat]: newPassenger
+      }))
+    }
+
+    setNewPassengerName('')
+    setNewPassengerCI('')
+    setShowCreateForm(false)
+    setOpenSelectModal(false)
+    setSelectedSeat(null)
+    setDuplicateCIError(null)
   }
 
   const handlePayment = async (paymentMethod: 'cash' | 'qr') => {
@@ -172,7 +197,9 @@ const AssignPassengersDialog = ({
       .map(seat => ({
         seatId: seat.id || Number(seat.seatNumber),
         passengerId: assignments[seat.seatNumber]!.id,
-        customerId: Number(customerId)
+        customerId: Number(customerId),
+        passengerName: assignments[seat.seatNumber]!.fullName,
+        passengerCI: assignments[seat.seatNumber]!.ci
       }))
 
     if (paymentMethod === 'cash') {
@@ -352,17 +379,11 @@ const AssignPassengersDialog = ({
                       variant='contained'
                       color='primary'
                       onClick={handleCreatePassenger}
-                      disabled={!newPassengerName.trim() || !newPassengerCI.trim() || createPassengerMutation.isPending}
-                      startIcon={
-                        createPassengerMutation.isPending ? (
-                          <CircularProgress size={16} />
-                        ) : (
-                          <i className='tabler-check' />
-                        )
-                      }
+                      disabled={!newPassengerName.trim() || !newPassengerCI.trim()}
+                      startIcon={<i className='tabler-check' />}
                       fullWidth
                     >
-                      {createPassengerMutation.isPending ? 'Creando...' : 'Crear Pasajero'}
+                      Agregar Pasajero
                     </Button>
                     <Button
                       variant='outlined'
@@ -386,7 +407,9 @@ const AssignPassengersDialog = ({
                   onChange={e => {
                     setSearchCI(e.target.value)
                     setSearchError(null)
+                    setFoundPassenger(null)
                   }}
+                  onKeyDown={handleSearchKeyDown}
                   fullWidth
                   InputProps={{
                     startAdornment: (
@@ -394,13 +417,13 @@ const AssignPassengersDialog = ({
                         <i className='tabler-search' />
                       </InputAdornment>
                     ),
-                    endAdornment: (searchingPassenger || isFetching) && searchCI.length >= 3 && (
+                    endAdornment: searchPassengerMutation.isPending && (
                       <InputAdornment position='end'>
                         <CircularProgress size={20} />
                       </InputAdornment>
                     )
                   }}
-                  helperText='Ingrese al menos 3 caracteres para buscar'
+                  helperText='Presiona Enter para buscar'
                 />
 
                 {searchError && (
@@ -409,62 +432,54 @@ const AssignPassengersDialog = ({
                   </Alert>
                 )}
 
-                {searchCI.length >= 3 && !searchingPassenger && !isFetching && (
-                  <>
-                    {foundPassenger ? (
-                      <Card
-                        variant='outlined'
-                        sx={{
-                          cursor: 'pointer',
-                          '&:hover': { bgcolor: 'action.hover' }
-                        }}
-                        onClick={() => handleSelectPassenger(foundPassenger)}
-                      >
-                        <CardContent>
-                          <Box display='flex' alignItems='center' justifyContent='space-between'>
-                            <Box display='flex' alignItems='center' gap={2}>
-                              <Box
-                                sx={{
-                                  width: 40,
-                                  height: 40,
-                                  borderRadius: '50%',
-                                  bgcolor: 'primary.lighter',
-                                  display: 'flex',
-                                  alignItems: 'center',
-                                  justifyContent: 'center'
-                                }}
-                              >
-                                <i
-                                  className='tabler-user'
-                                  style={{ fontSize: '20px', color: 'var(--mui-palette-primary-main)' }}
-                                />
-                              </Box>
-                              <Box>
-                                <Typography variant='body1' fontWeight={600}>
-                                  {foundPassenger.fullName}
-                                </Typography>
-                                <Typography variant='body2' color='text.secondary'>
-                                  CI: {foundPassenger.ci}
-                                </Typography>
-                              </Box>
-                            </Box>
-                            <Button
-                              variant='contained'
-                              size='small'
-                              startIcon={<i className='tabler-check' />}
-                              onClick={() => handleSelectPassenger(foundPassenger)}
-                            >
-                              Seleccionar
-                            </Button>
+                {foundPassenger && !searchPassengerMutation.isPending && (
+                  <Card
+                    variant='outlined'
+                    sx={{
+                      cursor: 'pointer',
+                      '&:hover': { bgcolor: 'action.hover' }
+                    }}
+                    onClick={() => handleSelectPassenger(foundPassenger)}
+                  >
+                    <CardContent>
+                      <Box display='flex' alignItems='center' justifyContent='space-between'>
+                        <Box display='flex' alignItems='center' gap={2}>
+                          <Box
+                            sx={{
+                              width: 40,
+                              height: 40,
+                              borderRadius: '50%',
+                              bgcolor: 'primary.lighter',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center'
+                            }}
+                          >
+                            <i
+                              className='tabler-user'
+                              style={{ fontSize: '20px', color: 'var(--mui-palette-primary-main)' }}
+                            />
                           </Box>
-                        </CardContent>
-                      </Card>
-                    ) : (
-                      <Alert severity='warning' icon={<i className='tabler-user-off' />}>
-                        No se encontró ningún pasajero con CI: {searchCI}
-                      </Alert>
-                    )}
-                  </>
+                          <Box>
+                            <Typography variant='body1' fontWeight={600}>
+                              {foundPassenger.fullName}
+                            </Typography>
+                            <Typography variant='body2' color='text.secondary'>
+                              CI: {foundPassenger.ci}
+                            </Typography>
+                          </Box>
+                        </Box>
+                        <Button
+                          variant='contained'
+                          size='small'
+                          startIcon={<i className='tabler-check' />}
+                          onClick={() => handleSelectPassenger(foundPassenger)}
+                        >
+                          Seleccionar
+                        </Button>
+                      </Box>
+                    </CardContent>
+                  </Card>
                 )}
 
                 <Button

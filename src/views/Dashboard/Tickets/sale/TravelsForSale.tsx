@@ -10,13 +10,9 @@ import Alert from '@mui/material/Alert'
 import Button from '@mui/material/Button'
 import Chip from '@mui/material/Chip'
 import MenuItem from '@mui/material/MenuItem'
-import Dialog from '@mui/material/Dialog'
-import DialogTitle from '@mui/material/DialogTitle'
-import DialogContent from '@mui/material/DialogContent'
-import DialogActions from '@mui/material/DialogActions'
 import IconButton from '@mui/material/IconButton'
 import Tooltip from '@mui/material/Tooltip'
-import { Grid, Pagination } from '@mui/material'
+import { Pagination } from '@mui/material'
 import classnames from 'classnames'
 import {
   createColumnHelper,
@@ -32,13 +28,20 @@ import CustomTextField from '@core/components/mui/TextField'
 import tableStyles from '@core/styles/table.module.css'
 import { useCashierTravels, useCloseTravel, useCashierRoutes } from '@/hooks/useCashierTravels'
 import type { Travel } from '@/types/api/travels'
-import TicketsTable from './TicketsTable'
-import SellTicketDialog from '../components/SellTicketDialog'
-import AssignPassengersDialog from '../components/AssignPassengersDialog'
-import type { SeatAssignment } from '../components/AssignPassengersDialog'
+import TicketsTable from '../sold/TicketsTable'
+import SellTicketDialog from './components/SellTicketDialog'
+import AssignPassengersDialog from './components/AssignPassengersDialog'
+import type { SeatAssignment } from './components/AssignPassengersDialog'
+import SaleSuccessDialog from './components/SaleSuccessDialog'
+import BusImagesDialog from './components/BusImagesDialog'
+import CloseTravelDialog from './components/CloseTravelDialog'
+import QRPaymentDialog from './components/QRPaymentDialog'
+import ConfirmPaymentDialog from './components/ConfirmPaymentDialog'
 import { useCreateTicket, useConfirmTicket, useCancelTicket } from '@/hooks/useTickets'
-import { useAssignPassenger } from '@/hooks/usePassengers'
-import type { CreateTicketDto, Ticket } from '@/types/api/tickets'
+import { useAssignPassengers } from '@/hooks/usePassengers'
+import type { CreateTicketDto, Ticket, SeatSelection } from '@/types/api/tickets'
+import { formatDateHeader, formatDate, formatTime } from './utils/dateFormatters'
+import { equipmentConfig } from './utils/equipmentConfig'
 
 type TravelWithActionsType = Travel & {
   actions?: string
@@ -52,20 +55,6 @@ const fuzzyFilter: FilterFn<any> = (row, columnId, value, addMeta) => {
   addMeta({ itemRank })
 
   return itemRank.passed
-}
-
-// Mapeo de equipamiento a iconos y nombres legibles
-const equipmentConfig: Record<string, { icon: string; label: string }> = {
-  tablet: { icon: 'tabler-device-tablet', label: 'Tablet' },
-  usb_charger: { icon: 'tabler-usb', label: 'Cargador USB' },
-  air_conditioning: { icon: 'tabler-air-conditioning', label: 'Aire Acondicionado' },
-  wifi: { icon: 'tabler-wifi', label: 'WiFi' },
-  tv: { icon: 'tabler-device-tv', label: 'Televisión' },
-  bathroom: { icon: 'tabler-bath', label: 'Baño' },
-  reclining_seats: { icon: 'tabler-armchair', label: 'Asientos Reclinables' },
-  blankets: { icon: 'tabler-bed', label: 'Mantas' },
-  snacks: { icon: 'tabler-cookie', label: 'Snacks' },
-  drinks: { icon: 'tabler-bottle', label: 'Bebidas' }
 }
 
 const TravelsForSale = () => {
@@ -83,6 +72,12 @@ const TravelsForSale = () => {
   const [pendingTicket, setPendingTicket] = useState<Ticket | null>(null)
   const [isProcessingPayment, setIsProcessingPayment] = useState(false)
   const [selectedTravelForTickets, setSelectedTravelForTickets] = useState<number | null>(null)
+  const [openQRDialog, setOpenQRDialog] = useState(false)
+  const [openConfirmPaymentDialog, setOpenConfirmPaymentDialog] = useState(false)
+  const [pendingAssignments, setPendingAssignments] = useState<SeatAssignment[]>([])
+  const [pendingTicketData, setPendingTicketData] = useState<Omit<CreateTicketDto, 'payment_type'> | null>(null)
+  const [isConfirmingPayment, setIsConfirmingPayment] = useState(false)
+  const [isCancellingPayment, setIsCancellingPayment] = useState(false)
 
   const [saleDetails, setSaleDetails] = useState<{
     ticket: Ticket | null
@@ -135,7 +130,7 @@ const TravelsForSale = () => {
   const createTicketMutation = useCreateTicket()
   const confirmTicketMutation = useConfirmTicket()
   const cancelTicketMutation = useCancelTicket()
-  const assignPassengerMutation = useAssignPassenger()
+  const assignPassengersMutation = useAssignPassengers()
   const closeTravelMutation = useCloseTravel()
 
   const activeTravels = useMemo(() => {
@@ -178,100 +173,108 @@ const TravelsForSale = () => {
     return Object.keys(travelsByDate).sort((a, b) => new Date(a).getTime() - new Date(b).getTime())
   }, [travelsByDate])
 
-  const formatDateHeader = (dateKey: string) => {
-    const date = new Date(dateKey + 'T12:00:00')
+  const handleSellTicket = async (data: Omit<CreateTicketDto, 'payment_type'>, travel: Travel) => {
+    // Guardar datos para crear el ticket cuando se elija método de pago
+    setPendingTicketData(data)
 
-    return date.toLocaleDateString('es-ES', {
-      weekday: 'long',
-      day: 'numeric',
-      month: 'long',
-      year: 'numeric'
-    })
-  }
+    // Guardar el travel con los datos completos (incluyendo travelSeats)
+    setSelectedTravel(travel)
 
-  const formatDate = (dateString: string) => {
-    const dateWithoutZ = dateString.replace('Z', '')
-    const date = new Date(dateWithoutZ)
+    // Construir un pseudo-ticket basado en los datos del travel para mostrar en AssignPassengersDialog
+    const selectedSeatsData = travel.travelSeats.filter(seat =>
+      data.seatSelections.some(sel => sel.seatId === String(seat.id))
+    )
 
-    return date.toLocaleDateString('es-ES', {
-      weekday: 'short',
-      day: '2-digit',
-      month: 'short',
-      year: 'numeric'
-    })
-  }
-
-  const formatTime = (dateString: string) => {
-    const dateWithoutZ = dateString.replace('Z', '')
-    const date = new Date(dateWithoutZ)
-
-    return date.toLocaleTimeString('es-ES', {
-      hour: '2-digit',
-      minute: '2-digit'
-    })
-  }
-
-  const getImageUrl = (imagePath: string | undefined) => {
-    if (!imagePath) return null
-    const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000'
-
-    return `${baseUrl}${imagePath}`
-  }
-
-  const handleSellTicket = async (data: CreateTicketDto) => {
-    try {
-      const createdTicket = await createTicketMutation.mutateAsync(data)
-
-      const travelSeats = (createdTicket as any).travelSeats || []
-
-      const enrichedSeats = createdTicket.seats.map(seat => {
-        const travelSeat = travelSeats.find((ts: any) => ts.id === seat.id)
+    const pseudoTicket: Ticket = {
+      id: 0, // ID temporal
+      type: 'IN_OFFICE',
+      status: 'pending',
+      total_price: data.seatSelections
+        .reduce((sum, sel) => sum + parseFloat(sel.price || '0'), 0)
+        .toFixed(2),
+      seats: selectedSeatsData.map(seat => {
+        const selection = data.seatSelections.find(sel => sel.seatId === String(seat.id))
 
         return {
-          ...seat,
-          deck: travelSeat?.deck
+          id: seat.id,
+          seatNumber: seat.seatNumber,
+          price: selection?.price || seat.price,
+          deck: seat.deck
         }
-      })
+      }),
+      reserve_expiresAt: null,
+      createdAt: new Date().toISOString(),
+      travelSeats: selectedSeatsData.map(seat => {
+        const selection = data.seatSelections.find(sel => sel.seatId === String(seat.id))
 
-      const enrichedTicket = {
-        ...createdTicket,
-        seats: enrichedSeats
+        return {
+          id: seat.id,
+          row: seat.row,
+          column: seat.column,
+          deck: seat.deck,
+          price: selection?.price || seat.price,
+          seatNumber: seat.seatNumber,
+          type: seat.type,
+          sale_type: seat.sale_type,
+          status: seat.status,
+          createdAt: seat.createdAt,
+          passenger: null
+        }
+      }),
+      buyer: {
+        id: data.customerId,
+        email: null,
+        name: 'Cliente',
+        ci: '',
+        phone: null,
+        is_verified: false,
+        provider: null,
+        idProvider: null,
+        birthDate: null,
+        photo: null,
+        createdAt: new Date().toISOString()
       }
-
-      setPendingTicket(enrichedTicket)
-      setOpenSellDialog(false)
-      setOpenAssignDialog(true)
-    } catch (error) {
-      console.error('Error creating ticket:', error)
     }
+
+    setPendingTicket(pseudoTicket)
+    setOpenSellDialog(false)
+    setOpenAssignDialog(true)
   }
 
   const handlePayCash = async (assignments: SeatAssignment[]) => {
-    if (!pendingTicket || !selectedTravel) return
+    if (!pendingTicketData || !selectedTravel) return
 
     try {
       setIsProcessingPayment(true)
 
-      for (const assignment of assignments) {
-        await assignPassengerMutation.mutateAsync({
-          ticketId: pendingTicket.id,
-          seatId: assignment.seatId,
-          passengerId: assignment.passengerId,
-          customerId: assignment.customerId
-        })
+      // Crear el ticket con payment_type: 'cash'
+      const ticketData: CreateTicketDto = {
+        ...pendingTicketData,
+        payment_type: 'cash'
       }
 
-      await confirmTicketMutation.mutateAsync(pendingTicket.id)
+      const createdTicket = await createTicketMutation.mutateAsync(ticketData)
 
-      setSaleDetails({
-        ticket: pendingTicket,
-        travel: selectedTravel
+      // Asignar pasajeros (una sola llamada con todos)
+      await assignPassengersMutation.mutateAsync({
+        ticketId: createdTicket.id,
+        customerId: assignments[0]?.customerId || pendingTicketData.customerId,
+        passengers: assignments.map(a => ({
+          seatId: a.seatId,
+          passenger: {
+            name: a.passengerName,
+            ci: a.passengerCI
+          }
+        }))
       })
 
+      // Guardar el ticket creado y asignaciones
+      setPendingTicket(createdTicket)
+      setPendingAssignments(assignments)
+
+      // Cerrar diálogo de asignación y abrir diálogo de confirmación
       setOpenAssignDialog(false)
-      setPendingTicket(null)
-      setSelectedTravel(undefined)
-      setOpenSuccessDialog(true)
+      setOpenConfirmPaymentDialog(true)
     } catch (error) {
       console.error('Error processing cash payment:', error)
     } finally {
@@ -279,33 +282,88 @@ const TravelsForSale = () => {
     }
   }
 
-  const handlePayQR = async (assignments: SeatAssignment[]) => {
+  const handleConfirmCashPayment = async () => {
     if (!pendingTicket || !selectedTravel) return
 
     try {
-      setIsProcessingPayment(true)
+      setIsConfirmingPayment(true)
 
-      for (const assignment of assignments) {
-        await assignPassengerMutation.mutateAsync({
-          ticketId: pendingTicket.id,
-          seatId: assignment.seatId,
-          passengerId: assignment.passengerId,
-          customerId: assignment.customerId
-        })
-      }
-
+      // Confirmar ticket
       await confirmTicketMutation.mutateAsync(pendingTicket.id)
 
-      // Guarda los detalles ANTES de limpiar
       setSaleDetails({
         ticket: pendingTicket,
         travel: selectedTravel
       })
 
-      setOpenAssignDialog(false)
+      setOpenConfirmPaymentDialog(false)
       setPendingTicket(null)
+      setPendingTicketData(null)
+      setPendingAssignments([])
       setSelectedTravel(undefined)
       setOpenSuccessDialog(true)
+    } catch (error) {
+      console.error('Error confirming cash payment:', error)
+    } finally {
+      setIsConfirmingPayment(false)
+    }
+  }
+
+  const handleCancelCashPayment = async () => {
+    if (!pendingTicket) return
+
+    try {
+      setIsCancellingPayment(true)
+
+      // Cancelar el ticket
+      await cancelTicketMutation.mutateAsync(pendingTicket.id)
+
+      setOpenConfirmPaymentDialog(false)
+      setPendingTicket(null)
+      setPendingTicketData(null)
+      setPendingAssignments([])
+      setSelectedTravel(undefined)
+    } catch (error) {
+      console.error('Error cancelling cash payment:', error)
+    } finally {
+      setIsCancellingPayment(false)
+    }
+  }
+
+  const handlePayQR = async (assignments: SeatAssignment[]) => {
+    if (!pendingTicketData || !selectedTravel) return
+
+    try {
+      setIsProcessingPayment(true)
+
+      // Crear el ticket con payment_type: 'qr'
+      const ticketData: CreateTicketDto = {
+        ...pendingTicketData,
+        payment_type: 'qr'
+      }
+
+      const createdTicket = await createTicketMutation.mutateAsync(ticketData)
+
+      // Asignar pasajeros (una sola llamada con todos)
+      await assignPassengersMutation.mutateAsync({
+        ticketId: createdTicket.id,
+        customerId: assignments[0]?.customerId || pendingTicketData.customerId,
+        passengers: assignments.map(a => ({
+          seatId: a.seatId,
+          passenger: {
+            name: a.passengerName,
+            ci: a.passengerCI
+          }
+        }))
+      })
+
+      // Guardar el ticket real y las asignaciones para el flujo QR
+      setPendingTicket(createdTicket)
+      setPendingAssignments(assignments)
+
+      // Cerrar el diálogo de asignación y abrir el de QR
+      setOpenAssignDialog(false)
+      setOpenQRDialog(true)
     } catch (error) {
       console.error('Error processing QR payment:', error)
     } finally {
@@ -314,15 +372,50 @@ const TravelsForSale = () => {
   }
 
   const handleCancelAssignment = async () => {
+    // Solo limpiar estado, el ticket aún no se ha creado
+    setOpenAssignDialog(false)
+    setPendingTicket(null)
+    setPendingTicketData(null)
+    setSelectedTravel(undefined)
+  }
+
+  const handleQRPaymentSuccess = async () => {
+    if (!pendingTicket || !selectedTravel) return
+
+    try {
+      // Confirmar el ticket después del pago exitoso
+      await confirmTicketMutation.mutateAsync(pendingTicket.id)
+
+      setSaleDetails({
+        ticket: pendingTicket,
+        travel: selectedTravel
+      })
+
+      setOpenQRDialog(false)
+      setPendingTicket(null)
+      setPendingTicketData(null)
+      setPendingAssignments([])
+      setSelectedTravel(undefined)
+      setOpenSuccessDialog(true)
+    } catch (error) {
+      console.error('Error confirming ticket after QR payment:', error)
+    }
+  }
+
+  const handleQRPaymentCancel = async () => {
     if (!pendingTicket) return
 
     try {
+      // Cancelar el ticket si el usuario cancela el pago QR
       await cancelTicketMutation.mutateAsync(pendingTicket.id)
-
-      setOpenAssignDialog(false)
-      setPendingTicket(null)
     } catch (error) {
       console.error('Error canceling ticket:', error)
+    } finally {
+      setOpenQRDialog(false)
+      setPendingTicket(null)
+      setPendingTicketData(null)
+      setPendingAssignments([])
+      setSelectedTravel(undefined)
     }
   }
 
@@ -879,353 +972,71 @@ const TravelsForSale = () => {
         isLoading={isProcessingPayment}
       />
 
-      <Dialog open={openSuccessDialog} onClose={() => setOpenSuccessDialog(false)} maxWidth='md' fullWidth>
-        <DialogTitle>
-          <Box display='flex' alignItems='center' gap={2}>
-            <Box
-              sx={{
-                width: 50,
-                height: 50,
-                borderRadius: '50%',
-                bgcolor: 'success.main',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center'
-              }}
-            >
-              <i className='tabler-check' style={{ fontSize: '28px', color: 'white' }} />
-            </Box>
-            <Box>
-              <Typography variant='h5' fontWeight={600}>
-                ¡Venta Exitosa!
-              </Typography>
-              <Typography variant='body2' color='text.secondary'>
-                Ticket confirmado y pagado correctamente
-              </Typography>
-            </Box>
-          </Box>
-        </DialogTitle>
-        <DialogContent>
-          <Box sx={{ mb: 3 }}>
-            {saleDetails.ticket && saleDetails.travel && (
-              <Box sx={{ p: 2, bgcolor: 'action.hover', borderRadius: 1, mb: 2 }}>
-                <Typography variant='subtitle2' fontWeight={600} sx={{ mb: 1.5 }}>
-                  Resumen de la venta:
-                </Typography>
+      {/* Sale Success Dialog */}
+      <SaleSuccessDialog
+        open={openSuccessDialog}
+        onClose={() => setOpenSuccessDialog(false)}
+        saleDetails={saleDetails}
+        onContinueSelling={() => {
+          setOpenSuccessDialog(false)
+          setSaleDetails({ ticket: null, travel: null })
+        }}
+        onViewTickets={() => {
+          setOpenSuccessDialog(false)
 
-                <Grid container spacing={2}>
-                  <Grid item xs={6}>
-                    <Typography variant='caption' color='text.secondary'>
-                      N° Ticket:
-                    </Typography>
-                    <Typography variant='body2' fontWeight={600}>
-                      #{saleDetails.ticket.id}
-                    </Typography>
-                  </Grid>
-                  <Grid item xs={6}>
-                    <Typography variant='caption' color='text.secondary'>
-                      Fecha venta:
-                    </Typography>
-                    <Typography variant='body2'>
-                      {new Date().toLocaleDateString('es-ES', { timeZone: 'America/La_Paz' })}
-                    </Typography>
-                  </Grid>
-                  <Grid item xs={12}>
-                    <Typography variant='caption' color='text.secondary'>
-                      Ruta:
-                    </Typography>
-                    <Typography variant='body2'>
-                      {saleDetails.travel.route.officeOrigin.place?.name || 'N/A'} → {saleDetails.travel.route.officeDestination.place?.name || 'N/A'}
-                    </Typography>
-                  </Grid>
-                  <Grid item xs={6}>
-                    <Typography variant='caption' color='text.secondary'>
-                      Asientos:
-                    </Typography>
-                    <Typography variant='body2'>{saleDetails.ticket.seats.length} asiento(s)</Typography>
-                  </Grid>
-                  <Grid item xs={6}>
-                    <Typography variant='caption' color='text.secondary'>
-                      Monto total:
-                    </Typography>
-                    <Typography variant='body2' fontWeight={600} color='success.main'>
-                      Bs. {parseFloat(saleDetails.ticket.total_price as string).toFixed(2)}
-                    </Typography>
-                  </Grid>
-                </Grid>
-              </Box>
-            )}
+          if (saleDetails.travel?.id) {
+            setSelectedTravelForTickets(saleDetails.travel.id)
+          }
 
-            <Box
-              sx={{
-                bgcolor: 'success.lighter',
-                p: 2,
-                borderRadius: 1,
-                border: '1px solid',
-                borderColor: 'success.main',
-                mb: 2
-              }}
-            >
-              <Typography variant='body2' fontWeight={600} color='success.main'>
-                ✅ El ticket ha sido confirmado y el pago procesado
-              </Typography>
-              <Typography variant='caption' color='text.secondary'>
-                El cliente recibirá su ticket en el sistema y puede ser impreso
-              </Typography>
-            </Box>
-          </Box>
-        </DialogContent>
-        <DialogActions sx={{ px: 3, pb: 3, gap: 2 }}>
-          <Button
-            onClick={() => {
-              setOpenSuccessDialog(false)
-              setSaleDetails({ ticket: null, travel: null })
-            }}
-            variant='outlined'
-            color='secondary'
-            sx={{ flex: 1 }}
-          >
-            Continuar vendiendo
-          </Button>
-          <Button
-            onClick={() => {
-              setOpenSuccessDialog(false)
-
-              if (saleDetails.travel?.id) {
-                setSelectedTravelForTickets(saleDetails.travel.id)
-              }
-
-              setSaleDetails({ ticket: null, travel: null })
-
-              setShowTicketsList(true)
-            }}
-            variant='contained'
-            color='primary'
-            sx={{ flex: 1 }}
-            startIcon={<i className='tabler-list' />}
-          >
-            Ver lista de tickets
-          </Button>
-        </DialogActions>
-      </Dialog>
+          setSaleDetails({ ticket: null, travel: null })
+          setShowTicketsList(true)
+        }}
+      />
 
       {/* Bus Images Dialog */}
-      <Dialog
+      <BusImagesDialog
         open={openImagesDialog}
         onClose={() => {
           setOpenImagesDialog(false)
           setSelectedTravel(undefined)
         }}
-        maxWidth='md'
-        fullWidth
-      >
-        <DialogTitle>
-          <Box display='flex' alignItems='center' justifyContent='space-between'>
-            <Box display='flex' alignItems='center' gap={2}>
-              <i className='tabler-bus' style={{ fontSize: '24px', color: 'var(--mui-palette-primary-main)' }} />
-              <Typography variant='h5' fontWeight={600}>
-                Imágenes del Bus - {selectedTravel?.bus?.name || 'N/A'}
-              </Typography>
-            </Box>
-            <Button
-              onClick={() => {
-                setOpenImagesDialog(false)
-                setSelectedTravel(undefined)
-              }}
-              color='secondary'
-              size='small'
-            >
-              <i className='tabler-x' />
-            </Button>
-          </Box>
-        </DialogTitle>
-        <DialogContent>
-          <Box display='flex' flexDirection='column' gap={3}>
-            <Box>
-              <Typography variant='subtitle1' fontWeight={600} sx={{ mb: 1.5 }}>
-                Imagen Exterior
-              </Typography>
-              <Box
-                sx={{
-                  width: '100%',
-                  height: 300,
-                  borderRadius: 2,
-                  overflow: 'hidden',
-                  bgcolor: 'action.hover',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center'
-                }}
-              >
-                {getImageUrl(selectedTravel?.bus?.exterior_image) ? (
-                  <img
-                    src={getImageUrl(selectedTravel?.bus?.exterior_image) || ''}
-                    alt={`${selectedTravel?.bus?.name} - Exterior`}
-                    style={{
-                      width: '100%',
-                      height: '100%',
-                      objectFit: 'cover'
-                    }}
-                  />
-                ) : (
-                  <Box textAlign='center'>
-                    <i
-                      className='tabler-photo-off'
-                      style={{ fontSize: '48px', color: 'var(--mui-palette-text-disabled)' }}
-                    />
-                    <Typography variant='body2' color='text.disabled' sx={{ mt: 1 }}>
-                      No hay imagen exterior disponible
-                    </Typography>
-                  </Box>
-                )}
-              </Box>
-            </Box>
-
-            <Box>
-              <Typography variant='subtitle1' fontWeight={600} sx={{ mb: 1.5 }}>
-                Imagen Interior
-              </Typography>
-              <Box
-                sx={{
-                  width: '100%',
-                  height: 300,
-                  borderRadius: 2,
-                  overflow: 'hidden',
-                  bgcolor: 'action.hover',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center'
-                }}
-              >
-                {getImageUrl(selectedTravel?.bus?.interior_image) ? (
-                  <img
-                    src={getImageUrl(selectedTravel?.bus?.interior_image) || ''}
-                    alt={`${selectedTravel?.bus?.name} - Interior`}
-                    style={{
-                      width: '100%',
-                      height: '100%',
-                      objectFit: 'cover'
-                    }}
-                  />
-                ) : (
-                  <Box textAlign='center'>
-                    <i
-                      className='tabler-photo-off'
-                      style={{ fontSize: '48px', color: 'var(--mui-palette-text-disabled)' }}
-                    />
-                    <Typography variant='body2' color='text.disabled' sx={{ mt: 1 }}>
-                      No hay imagen interior disponible
-                    </Typography>
-                  </Box>
-                )}
-              </Box>
-            </Box>
-          </Box>
-        </DialogContent>
-        <DialogActions sx={{ px: 3, pb: 3 }}>
-          <Button
-            onClick={() => {
-              setOpenImagesDialog(false)
-              setSelectedTravel(undefined)
-            }}
-            variant='contained'
-            color='primary'
-            fullWidth
-          >
-            Cerrar
-          </Button>
-        </DialogActions>
-      </Dialog>
+        selectedTravel={selectedTravel}
+      />
 
       {/* Confirm Close Travel Dialog */}
-      <Dialog
+      <CloseTravelDialog
         open={openConfirmCloseDialog}
         onClose={() => {
           setOpenConfirmCloseDialog(false)
           setSelectedTravel(undefined)
         }}
-        maxWidth='sm'
-        fullWidth
-      >
-        <DialogTitle>
-          <Box display='flex' alignItems='center' gap={2}>
-            <Box
-              sx={{
-                width: 50,
-                height: 50,
-                borderRadius: '50%',
-                bgcolor: 'error.main',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center'
-              }}
-            >
-              <i className='tabler-lock' style={{ fontSize: '28px', color: 'white' }} />
-            </Box>
-            <Typography variant='h5' fontWeight={600}>
-              Cerrar Viaje
-            </Typography>
-          </Box>
-        </DialogTitle>
-        <DialogContent>
-          <Typography variant='body1' color='text.secondary' sx={{ mb: 2 }}>
-            ¿Estás seguro de que deseas cerrar este viaje?
-          </Typography>
-          <Box
-            sx={{
-              bgcolor: 'warning.lighter',
-              p: 2,
-              borderRadius: 1,
-              border: '1px solid',
-              borderColor: 'warning.main',
-              mb: 2
-            }}
-          >
-            <Typography variant='body2' fontWeight={600} color='warning.main'>
-              Esta acción cerrará el viaje y no se podrán vender más tickets.
-            </Typography>
-          </Box>
-          {selectedTravel && (
-            <Box sx={{ p: 2, bgcolor: 'action.hover', borderRadius: 1 }}>
-              <Typography variant='body2' color='text.secondary' sx={{ mb: 1 }}>
-                <strong>Ruta:</strong> {selectedTravel.route.officeOrigin.place?.name || 'N/A'} →{' '}
-                {selectedTravel.route.officeDestination.place?.name || 'N/A'}
-              </Typography>
-              <Typography variant='body2' color='text.secondary' sx={{ mb: 1 }}>
-                <strong>Fecha:</strong> {formatDate(selectedTravel.departure_time)} -{' '}
-                {formatTime(selectedTravel.departure_time)}
-              </Typography>
-              <Typography variant='body2' color='text.secondary'>
-                <strong>Bus:</strong> {selectedTravel.bus?.name || 'N/A'} ({selectedTravel.bus?.plaque || 'N/A'})
-              </Typography>
-            </Box>
-          )}
-        </DialogContent>
-        <DialogActions sx={{ px: 3, pb: 3, gap: 1 }}>
-          <Button
-            onClick={() => {
-              setOpenConfirmCloseDialog(false)
-              setSelectedTravel(undefined)
-            }}
-            variant='outlined'
-            color='secondary'
-            fullWidth
-            disabled={closeTravelMutation.isPending}
-          >
-            Cancelar
-          </Button>
-          <Button
-            onClick={handleCloseTravel}
-            variant='contained'
-            color='error'
-            fullWidth
-            startIcon={<i className='tabler-lock' />}
-            disabled={closeTravelMutation.isPending}
-          >
-            {closeTravelMutation.isPending ? 'Cerrando...' : 'Cerrar Viaje'}
-          </Button>
-        </DialogActions>
-      </Dialog>
+        selectedTravel={selectedTravel}
+        onConfirmClose={handleCloseTravel}
+        isLoading={closeTravelMutation.isPending}
+      />
+
+      {/* QR Payment Dialog */}
+      <QRPaymentDialog
+        open={openQRDialog}
+        onClose={() => setOpenQRDialog(false)}
+        ticket={pendingTicket}
+        travel={selectedTravel || null}
+        onPaymentSuccess={handleQRPaymentSuccess}
+        onPaymentCancel={handleQRPaymentCancel}
+      />
+
+      {/* Confirm Cash Payment Dialog */}
+      <ConfirmPaymentDialog
+        open={openConfirmPaymentDialog}
+        onClose={() => setOpenConfirmPaymentDialog(false)}
+        onConfirm={handleConfirmCashPayment}
+        onCancel={handleCancelCashPayment}
+        isConfirming={isConfirmingPayment}
+        isCancelling={isCancellingPayment}
+        ticket={pendingTicket}
+        travel={selectedTravel || null}
+        paymentMethod='cash'
+      />
     </Box>
   )
 }

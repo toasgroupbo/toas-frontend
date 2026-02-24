@@ -17,11 +17,18 @@ export interface CreatePassengerDto {
   ci: string
 }
 
-export interface AssignPassengerDto {
-  ticketId: number
+export interface PassengerAssignment {
   seatId: number
-  passengerId: number
+  passenger: {
+    name: string
+    ci: string
+  }
+}
+
+export interface AssignPassengersDto {
+  ticketId: number
   customerId: number
+  passengers: PassengerAssignment[]
 }
 
 const fetchPassengersByCustomer = async (customerId: number): Promise<Passenger[]> => {
@@ -46,8 +53,8 @@ const createPassenger = async (data: CreatePassengerDto): Promise<Passenger> => 
   return response.data
 }
 
-const assignPassenger = async (data: AssignPassengerDto): Promise<void> => {
-  await api.patch('/api/tickets/for-cashier/assign-passenger', data)
+const assignPassengers = async (data: AssignPassengersDto): Promise<void> => {
+  await api.post('/api/tickets/for-cashier/assign-passenger', data)
 }
 
 export const usePassengersByCustomer = (customerId: number | null) => {
@@ -58,11 +65,9 @@ export const usePassengersByCustomer = (customerId: number | null) => {
   })
 }
 
-export const useSearchPassengerByCI = (ci: string) => {
-  return useQuery({
-    queryKey: ['passenger-search', ci],
-    queryFn: () => searchPassengerByCI(ci),
-    enabled: ci.length >= 3
+export const useSearchPassengerByCI = () => {
+  return useMutation({
+    mutationFn: searchPassengerByCI
   })
 }
 
@@ -77,8 +82,8 @@ export const useCreatePassenger = () => {
   })
 }
 
-export const useAssignPassenger = () => {
+export const useAssignPassengers = () => {
   return useMutation({
-    mutationFn: assignPassenger
+    mutationFn: assignPassengers
   })
 }

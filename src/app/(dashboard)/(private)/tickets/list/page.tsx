@@ -2,7 +2,7 @@
 import Grid from '@mui/material/Grid2'
 import { Typography } from '@mui/material'
 
-import TravelsForSale from '@/views/Dashboard/Tickets/list/TravelsForSale'
+import TravelsForSale from '@/views/Dashboard/Tickets/sale/TravelsForSale'
 
 const PageTickets = () => {
   return (
