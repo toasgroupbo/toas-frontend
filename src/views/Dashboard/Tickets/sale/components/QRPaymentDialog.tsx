@@ -102,12 +102,12 @@ const QRPaymentDialog = ({
         ticketId: ticketId
       })
 
-      if (response.status === 'paid') {
+      if (response.status === 'PAID') {
         setPaymentStatus('paid')
         setTimeout(() => {
           onPaymentSuccess()
         }, 1500)
-      } else if (response.status === 'expired') {
+      } else if (response.status === 'EXPIRED') {
         setPaymentStatus('expired')
         setErrorMessage('El código QR ha expirado.')
       } else {

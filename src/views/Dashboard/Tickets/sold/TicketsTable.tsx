@@ -38,6 +38,7 @@ import DebouncedInput from './components/DebouncedInput'
 import TicketDetailDialog from './components/TicketDetailDialog'
 import CancelTicketDialog from './components/CancelTicketDialog'
 import { getStatusColor, getStatusLabel } from './utils/ticketStatus'
+import { formatDate, formatTime } from '../sale/utils/dateFormatters'
 
 type TicketWithActionsType = Ticket & {
   actions?: string
@@ -213,6 +214,23 @@ const TicketsTable = ({ initialTravelId }: TicketsTableProps) => {
           />
         )
       }),
+      columnHelper.accessor('payment_type', {
+        header: 'Método de Pago',
+        cell: ({ row }) => (
+          <Chip
+            label={row.original.payment_type === 'qr' ? 'QR' : row.original.payment_type === 'cash' ? 'Efectivo' : 'N/A'}
+            color={row.original.payment_type === 'qr' ? 'info' : 'warning'}
+            variant='tonal'
+            size='small'
+            icon={
+              <i
+                className={row.original.payment_type === 'qr' ? 'tabler-qrcode' : 'tabler-cash'}
+                style={{ fontSize: '14px' }}
+              />
+            }
+          />
+        )
+      }),
       columnHelper.accessor('status', {
         header: 'Estado',
         cell: ({ row }) => (
@@ -229,17 +247,10 @@ const TicketsTable = ({ initialTravelId }: TicketsTableProps) => {
         cell: ({ row }) => (
           <Box>
             <Typography variant='body2' fontWeight='medium'>
-              {new Date(row.original.createdAt.replace('Z', '')).toLocaleDateString('es-ES', {
-                day: '2-digit',
-                month: 'short',
-                year: 'numeric'
-              })}
+              {formatDate(row.original.createdAt)}
             </Typography>
             <Typography variant='caption' color='text.secondary'>
-              {new Date(row.original.createdAt.replace('Z', '')).toLocaleTimeString('es-ES', {
-                hour: '2-digit',
-                minute: '2-digit'
-              })}
+              {formatTime(row.original.createdAt)}
             </Typography>
           </Box>
         )
@@ -376,14 +387,7 @@ const TicketsTable = ({ initialTravelId }: TicketsTableProps) => {
                           </Typography>
                         </Box>
                         <Typography variant='caption' color='text.secondary'>
-                          {new Date(travel.departure_time.replace('Z', '')).toLocaleDateString('es-ES', {
-                            day: '2-digit',
-                            month: 'short',
-                            year: 'numeric',
-                            hour: '2-digit',
-                            minute: '2-digit'
-                          })}{' '}
-                          - {travel.bus.name} ({travel.bus.plaque})
+                          {formatDate(travel.departure_time)} {formatTime(travel.departure_time)} - {travel.bus.name} ({travel.bus.plaque})
                         </Typography>
                       </Box>
                     </MenuItem>

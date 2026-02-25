@@ -49,6 +49,7 @@ export interface TicketSeat {
 export interface Ticket {
   id: number
   type: string
+  payment_type?: 'qr' | 'cash'
   status: string
   total_price: string
   seats: TicketSeat[]

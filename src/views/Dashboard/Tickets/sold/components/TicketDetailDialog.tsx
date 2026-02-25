@@ -18,6 +18,7 @@ import Grid from '@mui/material/Grid'
 
 import type { Ticket } from '@/types/api/tickets'
 import { getStatusColor, getStatusLabel } from '../utils/ticketStatus'
+import { formatDate, formatTime } from '../../sale/utils/dateFormatters'
 
 interface TicketDetailDialogProps {
   open: boolean
@@ -155,6 +156,21 @@ const TicketDetailDialog = ({ open, onClose, ticket }: TicketDetailDialogProps) 
                 </Box>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                   <i
+                    className={ticket.payment_type === 'qr' ? 'tabler-qrcode' : 'tabler-cash'}
+                    style={{ fontSize: '18px', color: 'var(--mui-palette-primary-main)' }}
+                  />
+                  <Typography variant='body2' color='text.secondary'>
+                    Método de Pago:
+                  </Typography>
+                  <Chip
+                    label={ticket.payment_type === 'qr' ? 'QR' : ticket.payment_type === 'cash' ? 'Efectivo' : 'N/A'}
+                    color={ticket.payment_type === 'qr' ? 'info' : 'warning'}
+                    variant='tonal'
+                    size='small'
+                  />
+                </Box>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <i
                     className='tabler-calendar'
                     style={{ fontSize: '18px', color: 'var(--mui-palette-primary-main)' }}
                   />
@@ -162,7 +178,7 @@ const TicketDetailDialog = ({ open, onClose, ticket }: TicketDetailDialogProps) 
                     Fecha de Creación:
                   </Typography>
                   <Typography variant='body2' fontWeight={600}>
-                    {new Date(ticket.createdAt.replace('Z', '')).toLocaleString('es-ES')}
+                    {formatDate(ticket.createdAt)} {formatTime(ticket.createdAt)}
                   </Typography>
                 </Box>
                 {ticket.reserve_expiresAt && (
@@ -175,7 +191,7 @@ const TicketDetailDialog = ({ open, onClose, ticket }: TicketDetailDialogProps) 
                       Expira:
                     </Typography>
                     <Typography variant='body2' fontWeight={600} color='warning.main'>
-                      {new Date(ticket.reserve_expiresAt.replace('Z', '')).toLocaleString('es-ES')}
+                      {formatDate(ticket.reserve_expiresAt)} {formatTime(ticket.reserve_expiresAt)}
                     </Typography>
                   </Box>
                 )}
@@ -211,7 +227,7 @@ const TicketDetailDialog = ({ open, onClose, ticket }: TicketDetailDialogProps) 
                               />
                               <Box>
                                 <Typography variant='body2' fontWeight={500}>
-                                  Piso {seat.deck} | Fila {seat.row} | Columna {seat.column}
+                                  Piso {seat.deck}
                                 </Typography>
                                 {seat.passenger ? (
                                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 0.5 }}>

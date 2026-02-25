@@ -15,7 +15,7 @@ export interface GenerateQRResponse {
 }
 
 export interface VerifyQRResponse {
-  status: 'pending' | 'paid' | 'expired' | 'cancelled'
+  status: 'PENDING' | 'PAID' | 'EXPIRED' | 'CANCELLED'
   paidAt?: string
 }
 

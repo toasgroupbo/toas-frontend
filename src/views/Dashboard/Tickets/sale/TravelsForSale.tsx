@@ -379,27 +379,21 @@ const TravelsForSale = () => {
     setSelectedTravel(undefined)
   }
 
-  const handleQRPaymentSuccess = async () => {
+  const handleQRPaymentSuccess = () => {
     if (!pendingTicket || !selectedTravel) return
 
-    try {
-      // Confirmar el ticket después del pago exitoso
-      await confirmTicketMutation.mutateAsync(pendingTicket.id)
+    // El ticket ya fue confirmado por el backend cuando se pagó el QR
+    setSaleDetails({
+      ticket: pendingTicket,
+      travel: selectedTravel
+    })
 
-      setSaleDetails({
-        ticket: pendingTicket,
-        travel: selectedTravel
-      })
-
-      setOpenQRDialog(false)
-      setPendingTicket(null)
-      setPendingTicketData(null)
-      setPendingAssignments([])
-      setSelectedTravel(undefined)
-      setOpenSuccessDialog(true)
-    } catch (error) {
-      console.error('Error confirming ticket after QR payment:', error)
-    }
+    setOpenQRDialog(false)
+    setPendingTicket(null)
+    setPendingTicketData(null)
+    setPendingAssignments([])
+    setSelectedTravel(undefined)
+    setOpenSuccessDialog(true)
   }
 
   const handleQRPaymentCancel = async () => {
