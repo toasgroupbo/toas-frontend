@@ -10,8 +10,7 @@ export const formatDateHeader = (dateKey: string) => {
 }
 
 export const formatDate = (dateString: string) => {
-  const dateWithoutZ = dateString.replace('Z', '')
-  const date = new Date(dateWithoutZ)
+  const date = new Date(dateString)
 
   return date.toLocaleDateString('es-ES', {
     weekday: 'short',
@@ -22,8 +21,7 @@ export const formatDate = (dateString: string) => {
 }
 
 export const formatTime = (dateString: string) => {
-  const dateWithoutZ = dateString.replace('Z', '')
-  const date = new Date(dateWithoutZ)
+  const date = new Date(dateString)
 
   return date.toLocaleTimeString('es-ES', {
     hour: '2-digit',
