@@ -3,7 +3,6 @@
 import React, { useState, useMemo, useEffect } from 'react'
 
 import Card from '@mui/material/Card'
-import CardContent from '@mui/material/CardContent'
 import Box from '@mui/material/Box'
 import Typography from '@mui/material/Typography'
 import CircularProgress from '@mui/material/CircularProgress'
@@ -11,8 +10,8 @@ import Alert from '@mui/material/Alert'
 import Button from '@mui/material/Button'
 import Chip from '@mui/material/Chip'
 import MenuItem from '@mui/material/MenuItem'
-import Grid from '@mui/material/Grid'
-import Divider from '@mui/material/Divider'
+import IconButton from '@mui/material/IconButton'
+import Tooltip from '@mui/material/Tooltip'
 import Popover from '@mui/material/Popover'
 import { Pagination } from '@mui/material'
 
@@ -31,11 +30,11 @@ import ConfirmPaymentDialog from './components/ConfirmPaymentDialog'
 import { useCreateTicket, useConfirmTicket, useCancelTicket } from '@/hooks/useTickets'
 import { useAssignPassengers } from '@/hooks/usePassengers'
 import type { CreateTicketDto, Ticket } from '@/types/api/tickets'
-import { formatDateHeader, formatDate, formatTime } from './utils/dateFormatters'
+import { formatDateHeader, formatTime } from './utils/dateFormatters'
 import { equipmentConfig } from './utils/equipmentConfig'
 
-// Componente de Card para cada viaje
-interface TravelCardProps {
+// Componente de fila responsive para cada viaje
+interface TravelRowProps {
   travel: Travel
   onSellClick: (travel: Travel) => void
   onViewTickets: (travelId: number) => void
@@ -43,10 +42,10 @@ interface TravelCardProps {
   onCloseTravel: (travel: Travel) => void
 }
 
-const TravelCard = ({ travel, onSellClick, onViewTickets, onViewImages, onCloseTravel }: TravelCardProps) => {
-  const [equipmentAnchor, setEquipmentAnchor] = useState<HTMLElement | null>(null)
-  const [selectedEquipment, setSelectedEquipment] = useState<{ icon: string; label: string } | null>(null)
-  const [selectedEquipmentKey, setSelectedEquipmentKey] = useState<string | null>(null)
+const TravelRow = ({ travel, onSellClick, onViewTickets, onViewImages, onCloseTravel }: TravelRowProps) => {
+  const [equipmentAnchor, setEquipmentAnchor] = React.useState<HTMLElement | null>(null)
+  const [selectedEquipment, setSelectedEquipment] = React.useState<{ icon: string; label: string } | null>(null)
+  const [selectedEquipmentKey, setSelectedEquipmentKey] = React.useState<string | null>(null)
 
   const handleEquipmentClick = (event: React.MouseEvent<HTMLElement>, eq: string) => {
     event.stopPropagation()
@@ -67,14 +66,6 @@ const TravelCard = ({ travel, onSellClick, onViewTickets, onViewImages, onCloseT
     setEquipmentAnchor(event.currentTarget)
   }
 
-  const handleCardClick = () => {
-    if (equipmentAnchor) {
-      setEquipmentAnchor(null)
-      setSelectedEquipment(null)
-      setSelectedEquipmentKey(null)
-    }
-  }
-
   const seatsColor =
     travel.seatsAvailable && travel.seatsAvailable > 10
       ? 'success'
@@ -83,181 +74,86 @@ const TravelCard = ({ travel, onSellClick, onViewTickets, onViewImages, onCloseT
         : 'error'
 
   return (
-    <Card
+    <Box
+      onClick={() => {
+        if (equipmentAnchor) {
+          setEquipmentAnchor(null)
+          setSelectedEquipment(null)
+          setSelectedEquipmentKey(null)
+
+          return
+        }
+
+        if (travel.travel_status === 'active') {
+          onSellClick(travel)
+        }
+      }}
       sx={{
-        height: '100%',
-        transition: 'all 0.2s ease',
-        border: '1px solid',
+        p: 2,
+        borderBottom: '1px solid',
         borderColor: 'divider',
+        cursor: travel.travel_status === 'active' ? 'pointer' : 'default',
+        transition: 'all 0.2s ease',
         '&:hover': {
-          boxShadow: 3
+          bgcolor: 'action.hover'
         }
       }}
     >
-      {/* Header / Cabecera con color primario sólido */}
       <Box
         sx={{
-          p: 2,
-          bgcolor: 'primary.main',
-          color: 'primary.contrastText'
+          display: 'flex',
+          alignItems: 'center',
+          gap: { xs: 1.5, md: 2 },
+          flexWrap: 'wrap'
         }}
       >
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-            <Box
-              sx={{
-                width: 45,
-                height: 45,
-                borderRadius: 2,
-                bgcolor: 'rgba(255, 255, 255, 0.2)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center'
-              }}
-            >
-              <i className='tabler-bus' style={{ fontSize: '22px', color: 'white' }} />
-            </Box>
-            <Box>
-              <Typography variant='subtitle1' fontWeight={700} color='inherit'>
-                {travel.bus?.name || 'N/A'}
-              </Typography>
-              <Typography variant='caption' sx={{ color: 'rgba(255, 255, 255, 0.8)' }} fontWeight={500}>
-                {travel.bus?.plaque} • {travel.bus?.brand} {travel.bus?.model}
-              </Typography>
-            </Box>
-          </Box>
+        <Box
+          sx={{
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'center',
+            minWidth: { xs: 85, md: 100 },
+            p: 1,
+            bgcolor: 'primary.lighter',
+            borderRadius: 1
+          }}
+        >
+          <Typography variant='caption' color='text.secondary' fontWeight={500} sx={{ fontSize: { xs: '0.65rem', md: '0.75rem' } }}>
+            Salida
+          </Typography>
+          <Typography variant='h6' fontWeight={700} color='primary.main' sx={{ fontSize: { xs: '1rem', md: '1.25rem' } }}>
+            {formatTime(travel.departure_time)}
+          </Typography>
+          <i className='tabler-arrow-down' style={{ fontSize: '10px', color: 'var(--mui-palette-text-secondary)', margin: '1px 0' }} />
+          <Typography variant='caption' color='text.secondary' fontWeight={500} sx={{ fontSize: { xs: '0.65rem', md: '0.75rem' } }}>
+            Llegada
+          </Typography>
+          <Typography variant='body2' fontWeight={600} color='text.primary' sx={{ fontSize: { xs: '0.85rem', md: '1rem' } }}>
+            {formatTime(travel.arrival_time)}
+          </Typography>
+        </Box>
+
+        <Box
+          sx={{
+            display: 'flex',
+            flexDirection: 'column',
+            justifyContent: 'center',
+            gap: 0.5,
+            minWidth: { xs: 80, md: 100 }
+          }}
+        >
           <Chip
-            label={travel.travel_status === 'active' ? 'Activo' : travel.travel_status}
+            label={travel.type === 'normal' ? 'Normal' : 'Habilitada'}
             size='small'
-            color={travel.travel_status === 'active' ? 'success' : 'default'}
+            color={travel.type === 'normal' ? 'default' : 'warning'}
             variant='filled'
-            sx={{
-              fontWeight: 600,
-              bgcolor: travel.travel_status === 'active' ? 'success.main' : 'rgba(255, 255, 255, 0.2)',
-              color: 'white'
-            }}
+            sx={{ fontWeight: 600, fontSize: { xs: '0.7rem', md: '0.8rem' } }}
           />
-        </Box>
-      </Box>
 
-      <CardContent sx={{ p: 3 }}>
-        {/* Horarios de salida y llegada */}
-        <Box
-          sx={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: 2,
-            p: 2,
-            bgcolor: 'action.hover',
-            borderRadius: 2,
-            mb: 2
-          }}
-        >
-          <Box sx={{ flex: 1, textAlign: 'center' }}>
-            <Typography variant='caption' color='text.secondary' display='block'>
-              Salida
-            </Typography>
-            <Typography variant='h5' fontWeight={700} color='primary.main'>
-              {formatTime(travel.departure_time)}
-            </Typography>
-            <Typography variant='caption' color='text.secondary'>
-              {formatDate(travel.departure_time)}
-            </Typography>
-          </Box>
-
-          <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', px: 2 }}>
-            <i
-              className='tabler-arrow-right'
-              style={{ fontSize: '24px', color: 'var(--mui-palette-text-secondary)' }}
-            />
-          </Box>
-
-          <Box sx={{ flex: 1, textAlign: 'center' }}>
-            <Typography variant='caption' color='text.secondary' display='block'>
-              Llegada
-            </Typography>
-            <Typography variant='h5' fontWeight={700} color='secondary.main'>
-              {formatTime(travel.arrival_time)}
-            </Typography>
-            <Typography variant='caption' color='text.secondary'>
-              {formatDate(travel.arrival_time)}
-            </Typography>
-          </Box>
-        </Box>
-
-        {/* Info de precios y asientos */}
-        <Grid container spacing={2} sx={{ mb: 2 }}>
-          <Grid item xs={6}>
-            <Box sx={{ p: 1.5, bgcolor: 'success.lighter', borderRadius: 1, textAlign: 'center' }}>
-              <Typography variant='caption' color='text.secondary' display='block'>
-                Piso 1
-              </Typography>
-              <Typography variant='h6' fontWeight={700} color='success.main'>
-                Bs. {parseFloat(travel.price_deck_1).toFixed(2)}
-              </Typography>
-            </Box>
-          </Grid>
-          <Grid item xs={6}>
-            {travel.bus?.decks ? (
-              <Box sx={{ p: 1.5, bgcolor: 'success.lighter', borderRadius: 1, textAlign: 'center' }}>
-                <Typography variant='caption' color='text.secondary' display='block'>
-                  Piso 2
-                </Typography>
-                <Typography variant='h6' fontWeight={700} color='success.main'>
-                  Bs. {parseFloat(travel.price_deck_2).toFixed(2)}
-                </Typography>
-              </Box>
-            ) : (
-              <Box sx={{ p: 1.5, bgcolor: 'action.hover', borderRadius: 1, textAlign: 'center' }}>
-                <Typography variant='caption' color='text.secondary' display='block'>
-                  Piso 2
-                </Typography>
-                <Typography variant='body2' color='text.disabled'>
-                  N/A
-                </Typography>
-              </Box>
-            )}
-          </Grid>
-        </Grid>
-
-        {/* Asientos disponibles */}
-        <Box
-          sx={{
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            p: 2,
-            bgcolor: `${seatsColor}.lighter`,
-            borderRadius: 2,
-            mb: 2
-          }}
-        >
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-            <i
-              className='tabler-armchair'
-              style={{ fontSize: '20px', color: `var(--mui-palette-${seatsColor}-main)` }}
-            />
-            <Typography variant='body2' fontWeight={500}>
-              Asientos Disponibles
-            </Typography>
-          </Box>
-          <Chip
-            label={travel.seatsAvailable ?? 'N/A'}
-            color={seatsColor}
-            variant='tonal'
-            size='medium'
-            sx={{ fontWeight: 700, fontSize: '1rem', px: 1 }}
-          />
-        </Box>
-
-        {/* Equipamiento */}
-        {travel.bus?.equipment && travel.bus.equipment.length > 0 && (
-          <Box sx={{ mb: 2 }}>
-            <Typography variant='caption' color='text.secondary' sx={{ mb: 1, display: 'block' }}>
-              Equipamiento
-            </Typography>
-            <Box display='flex' gap={0.5} flexWrap='wrap'>
-              {travel.bus.equipment.map(eq => {
+          {travel.bus?.equipment && travel.bus.equipment.length > 0 && (
+            <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap' }}>
+              {travel.bus.equipment.slice(0, 4).map(eq => {
                 const config = equipmentConfig[eq] || { icon: 'tabler-question-mark', label: eq }
 
                 return (
@@ -265,143 +161,236 @@ const TravelCard = ({ travel, onSellClick, onViewTickets, onViewImages, onCloseT
                     key={eq}
                     onClick={e => handleEquipmentClick(e, eq)}
                     sx={{
-                      width: 28,
-                      height: 28,
-                      borderRadius: 1,
+                      width: { xs: 22, md: 24 },
+                      height: { xs: 22, md: 24 },
+                      borderRadius: 0.5,
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
-                      bgcolor: 'action.hover',
+                      bgcolor: selectedEquipmentKey === eq ? 'primary.main' : 'action.hover',
+                      color: selectedEquipmentKey === eq ? 'white' : 'inherit',
                       cursor: 'pointer',
-                      transition: 'all 0.2s ease',
                       '&:hover': {
                         bgcolor: 'primary.main',
                         color: 'white'
                       }
                     }}
                   >
-                    <i className={config.icon} style={{ fontSize: '14px' }} />
+                    <i className={config.icon} style={{ fontSize: '12px' }} />
                   </Box>
                 )
               })}
-            </Box>
 
-            {/* Popover para mostrar info del equipamiento */}
-            <Popover
-              open={Boolean(equipmentAnchor)}
-              anchorEl={equipmentAnchor}
-              onClose={() => {
-                setEquipmentAnchor(null)
-                setSelectedEquipment(null)
-                setSelectedEquipmentKey(null)
+              <Popover
+                open={Boolean(equipmentAnchor)}
+                anchorEl={equipmentAnchor}
+                onClose={() => {
+                  setEquipmentAnchor(null)
+                  setSelectedEquipment(null)
+                  setSelectedEquipmentKey(null)
+                }}
+                disableRestoreFocus
+                anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+                transformOrigin={{ vertical: 'top', horizontal: 'center' }}
+                slotProps={{ paper: { sx: { mt: 0.5 } } }}
+              >
+                {selectedEquipment && (
+                  <Box sx={{ px: 2, py: 1.5, display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                    <Box
+                      sx={{
+                        width: 32,
+                        height: 32,
+                        borderRadius: 1,
+                        bgcolor: 'primary.lighter',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center'
+                      }}
+                    >
+                      <i
+                        className={selectedEquipment.icon}
+                        style={{ fontSize: '18px', color: 'var(--mui-palette-primary-main)' }}
+                      />
+                    </Box>
+                    <Typography variant='body2' fontWeight={600}>
+                      {selectedEquipment.label}
+                    </Typography>
+                  </Box>
+                )}
+              </Popover>
+            </Box>
+          )}
+        </Box>
+
+        <Box
+          sx={{
+            display: 'flex',
+            flexDirection: 'column',
+            justifyContent: 'center',
+            flex: 1,
+            minWidth: { xs: 80, md: 120 },
+            maxWidth: { xs: 120, sm: 160, md: 200 },
+            overflow: 'hidden'
+          }}
+        >
+          <Typography
+            variant='body2'
+            fontWeight={600}
+            noWrap
+            sx={{
+              fontSize: { xs: '0.8rem', md: '1rem' },
+              overflow: 'hidden',
+              textOverflow: 'ellipsis'
+            }}
+          >
+            {travel.bus?.name || 'N/A'}
+          </Typography>
+          <Typography
+            variant='caption'
+            color='text.secondary'
+            noWrap
+            sx={{
+              fontSize: { xs: '0.6rem', md: '0.75rem' },
+              overflow: 'hidden',
+              textOverflow: 'ellipsis'
+            }}
+          >
+            {travel.bus?.plaque} • {travel.bus?.brand}
+          </Typography>
+        </Box>
+
+        <Box
+          sx={{
+            display: 'flex',
+            flexDirection: 'column',
+            justifyContent: 'center',
+            alignItems: 'center',
+            gap: 0.25,
+            minWidth: { xs: 70, md: 85 }
+          }}
+        >
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+            <Typography variant='caption' color='text.secondary' sx={{ fontSize: { xs: '0.65rem', md: '0.75rem' } }}>
+              P1:
+            </Typography>
+            <Typography variant='body2' fontWeight={700} color='success.main' sx={{ fontSize: { xs: '0.8rem', md: '0.9rem' } }}>
+              Bs.{parseFloat(travel.price_deck_1).toFixed(0)}
+            </Typography>
+          </Box>
+          {travel.bus?.decks && (
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+              <Typography variant='caption' color='text.secondary' sx={{ fontSize: { xs: '0.65rem', md: '0.75rem' } }}>
+                P2:
+              </Typography>
+              <Typography variant='body2' fontWeight={700} color='success.main' sx={{ fontSize: { xs: '0.8rem', md: '0.9rem' } }}>
+                Bs.{parseFloat(travel.price_deck_2).toFixed(0)}
+              </Typography>
+            </Box>
+          )}
+        </Box>
+
+        <Box
+          sx={{
+            display: 'flex',
+            flexDirection: 'column',
+            justifyContent: 'center',
+            alignItems: 'center',
+            minWidth: { xs: 55, md: 70 }
+          }}
+        >
+          <Box
+            sx={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              width: { xs: 40, md: 50 },
+              height: { xs: 40, md: 50 },
+              borderRadius: '50%',
+              bgcolor: `${seatsColor}.lighter`,
+              border: '2px solid',
+              borderColor: `${seatsColor}.main`
+            }}
+          >
+            <Typography
+              variant='h6'
+              fontWeight={700}
+              color={`${seatsColor}.main`}
+              sx={{ fontSize: { xs: '1rem', md: '1.25rem' } }}
+            >
+              {travel.seatsAvailable ?? 0}
+            </Typography>
+          </Box>
+          <Typography variant='caption' color='text.secondary' sx={{ fontSize: { xs: '0.6rem', md: '0.75rem' } }}>
+            asientos
+          </Typography>
+        </Box>
+
+        <Box
+          sx={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(2, 1fr)',
+            gap: 0.5,
+            ml: 'auto'
+          }}
+        >
+          <Tooltip title='Ver Tickets'>
+            <IconButton
+              onClick={e => {
+                e.stopPropagation()
+                onViewTickets(travel.id)
               }}
-              disableRestoreFocus
-              disableScrollLock
-              disableAutoFocus
-              disableEnforceFocus
-              anchorOrigin={{
-                vertical: 'bottom',
-                horizontal: 'center'
-              }}
-              transformOrigin={{
-                vertical: 'top',
-                horizontal: 'center'
-              }}
-              slotProps={{
-                paper: {
-                  sx: {
-                    mt: 0.5,
-                    boxShadow: 3
-                  }
-                }
+              sx={{
+                width: { xs: 34, md: 38 },
+                height: { xs: 34, md: 38 },
+                color: 'success.main',
+                bgcolor: 'success.lighter',
+                '&:hover': { bgcolor: 'success.main', color: 'white' }
               }}
             >
-              {selectedEquipment && (
-                <Box sx={{ px: 1.5, py: 1, display: 'flex', alignItems: 'center', gap: 1 }}>
-                  <i
-                    className={selectedEquipment.icon}
-                    style={{ fontSize: '16px', color: 'var(--mui-palette-primary-main)' }}
-                  />
-                  <Typography variant='body2' fontWeight={500}>
-                    {selectedEquipment.label}
-                  </Typography>
-                </Box>
-              )}
-            </Popover>
-          </Box>
-        )}
-
-        {/* Tipo de viaje */}
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
-          <Typography variant='caption' color='text.secondary'>
-            Tipo:
-          </Typography>
-          <Chip
-            label={travel.type === 'normal' ? 'Normal' : 'Habilitada'}
-            size='small'
-            color={travel.type === 'normal' ? 'default' : 'warning'}
-            variant='outlined'
-          />
+              <i className='tabler-ticket' style={{ fontSize: '18px' }} />
+            </IconButton>
+          </Tooltip>
+          <Tooltip title='Ver Imágenes'>
+            <IconButton
+              onClick={e => {
+                e.stopPropagation()
+                onViewImages(travel)
+              }}
+              sx={{
+                width: { xs: 34, md: 38 },
+                height: { xs: 34, md: 38 },
+                color: 'info.main',
+                bgcolor: 'info.lighter',
+                '&:hover': { bgcolor: 'info.main', color: 'white' }
+              }}
+            >
+              <i className='tabler-photo' style={{ fontSize: '18px' }} />
+            </IconButton>
+          </Tooltip>
+          <Tooltip title='Cerrar Viaje'>
+            <span>
+              <IconButton
+                onClick={e => {
+                  e.stopPropagation()
+                  onCloseTravel(travel)
+                }}
+                disabled={travel.travel_status !== 'active'}
+                sx={{
+                  width: { xs: 34, md: 38 },
+                  height: { xs: 34, md: 38 },
+                  color: 'error.main',
+                  bgcolor: 'error.lighter',
+                  '&:hover': { bgcolor: 'error.main', color: 'white' },
+                  '&.Mui-disabled': { color: 'action.disabled', bgcolor: 'action.hover' }
+                }}
+              >
+                <i className='tabler-lock' style={{ fontSize: '18px' }} />
+              </IconButton>
+            </span>
+          </Tooltip>
         </Box>
-
-        <Divider sx={{ my: 2 }} />
-
-        {/* Botones de acción */}
-        <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
-          <Button
-            variant='contained'
-            color='primary'
-            size='small'
-            startIcon={<i className='tabler-shopping-cart' />}
-            onClick={e => {
-              e.stopPropagation()
-              onSellClick(travel)
-            }}
-            disabled={travel.travel_status !== 'active'}
-            sx={{ flex: 1 }}
-          >
-            Vender
-          </Button>
-          <Button
-            variant='outlined'
-            color='success'
-            size='small'
-            onClick={e => {
-              e.stopPropagation()
-              onViewTickets(travel.id)
-            }}
-            sx={{ minWidth: 'auto', px: 2 }}
-          >
-            <i className='tabler-ticket' style={{ fontSize: '18px' }} />
-          </Button>
-          <Button
-            variant='outlined'
-            color='info'
-            size='small'
-            onClick={e => {
-              e.stopPropagation()
-              onViewImages(travel)
-            }}
-            sx={{ minWidth: 'auto', px: 2 }}
-          >
-            <i className='tabler-photo' style={{ fontSize: '18px' }} />
-          </Button>
-          <Button
-            variant='outlined'
-            color='error'
-            size='small'
-            onClick={e => {
-              e.stopPropagation()
-              onCloseTravel(travel)
-            }}
-            disabled={travel.travel_status !== 'active'}
-            sx={{ minWidth: 'auto', px: 2 }}
-          >
-            <i className='tabler-lock' style={{ fontSize: '18px' }} />
-          </Button>
-        </Box>
-      </CardContent>
-    </Card>
+      </Box>
+    </Box>
   )
 }
 
@@ -409,7 +398,7 @@ const TravelsForSale = () => {
   const [departureTimeFilter, setDepartureTimeFilter] = useState<string>('')
   const [destinationPlaceIdFilter, setDestinationPlaceIdFilter] = useState<string>('')
   const [currentPage, setCurrentPage] = useState(1)
-  const [pageSize, setPageSize] = useState(12)
+  const [pageSize, setPageSize] = useState(10)
   const [showTicketsList, setShowTicketsList] = useState(false)
   const [selectedTravel, setSelectedTravel] = useState<Travel | undefined>(undefined)
   const [openSellDialog, setOpenSellDialog] = useState(false)
@@ -494,7 +483,8 @@ const TravelsForSale = () => {
     const grouped: Record<string, typeof activeTravels> = {}
 
     activeTravels.forEach(travel => {
-      const date = new Date(travel.departure_time)
+      const dateWithoutZ = travel.departure_time.replace('Z', '')
+      const date = new Date(dateWithoutZ)
       const dateKey = date.toISOString().split('T')[0]
 
       if (!grouped[dateKey]) {
@@ -506,8 +496,8 @@ const TravelsForSale = () => {
 
     Object.keys(grouped).forEach(key => {
       grouped[key].sort((a, b) => {
-        const dateA = new Date(a.departure_time)
-        const dateB = new Date(b.departure_time)
+        const dateA = new Date(a.departure_time.replace('Z', ''))
+        const dateB = new Date(b.departure_time.replace('Z', ''))
 
         return dateA.getTime() - dateB.getTime()
       })
@@ -520,8 +510,7 @@ const TravelsForSale = () => {
     return Object.keys(travelsByDate).sort((a, b) => new Date(a).getTime() - new Date(b).getTime())
   }, [travelsByDate])
 
-  // Paginación
-  const paginatedDates = useMemo(() => {
+  const paginatedTravels = useMemo(() => {
     const startIndex = (currentPage - 1) * pageSize
     let count = 0
     const result: { dateKey: string; travels: Travel[] }[] = []
@@ -553,12 +542,13 @@ const TravelsForSale = () => {
     setPendingTicketData(data)
     setSelectedTravel(travel)
 
+    // Construir pseudo-ticket para mostrar en AssignPassengersDialog
     const selectedSeatsData = travel.travelSeats.filter(seat =>
       data.seatSelections.some(sel => sel.seatId === String(seat.id))
     )
 
     const pseudoTicket: Ticket = {
-      id: 0,
+      id: 0, // ID temporal
       type: 'IN_OFFICE',
       status: 'pending',
       total_price: data.seatSelections.reduce((sum, sel) => sum + parseFloat(sel.price || '0'), 0).toFixed(2),
@@ -624,6 +614,7 @@ const TravelsForSale = () => {
 
       const createdTicket = await createTicketMutation.mutateAsync(ticketData)
 
+      // Asignar pasajeros (una sola llamada con todos)
       await assignPassengersMutation.mutateAsync({
         ticketId: createdTicket.id,
         customerId: assignments[0]?.customerId || pendingTicketData.customerId,
@@ -825,8 +816,7 @@ const TravelsForSale = () => {
 
   return (
     <Box>
-      {/* Header y filtros */}
-      <Card sx={{ mb: 4 }}>
+      <Card>
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '20px' }}>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, flexGrow: 1 }}>
             <i className='tabler-bus' style={{ fontSize: '32px', color: 'var(--mui-palette-primary-main)' }} />
@@ -841,9 +831,8 @@ const TravelsForSale = () => {
           </Box>
         </Box>
 
-        <Box sx={{ padding: '0 20px 20px', display: 'flex', flexDirection: 'column', gap: 2 }}>
+        <Box sx={{ padding: '0 20px', display: 'flex', flexDirection: 'column', gap: 2 }}>
           <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap', alignItems: 'center' }}>
-            {/* Origen estático del cajero */}
             <Box
               sx={{
                 display: 'flex',
@@ -925,56 +914,84 @@ const TravelsForSale = () => {
             />
           </Box>
         </Box>
-      </Card>
 
-      {/* Cards de viajes agrupados por fecha */}
-      {activeTravels.length === 0 ? (
-        <Card>
+        {activeTravels.length === 0 ? (
           <Box sx={{ py: 8, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2 }}>
-            <i className='tabler-info-circle' style={{ fontSize: '48px', color: 'var(--mui-palette-text-disabled)' }} />
+            <i
+              className='tabler-info-circle'
+              style={{ fontSize: '48px', color: 'var(--mui-palette-text-disabled)' }}
+            />
             <Typography variant='h6' color='text.secondary'>
               No hay viajes disponibles en este momento
             </Typography>
           </Box>
-        </Card>
-      ) : (
-        <>
-          {paginatedDates.map(({ dateKey, travels: dateTravels }) => (
-            <Box key={dateKey} sx={{ mb: 4 }}>
-              {/* Encabezado de fecha */}
-              <Box
-                sx={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 1,
-                  mb: 2,
-                  p: 2,
-                  bgcolor: 'primary.lighter',
-                  borderRadius: 2,
-                  borderLeft: '4px solid',
-                  borderColor: 'primary.main'
-                }}
-              >
-                <i
-                  className='tabler-calendar-event'
-                  style={{ fontSize: '20px', color: 'var(--mui-palette-primary-main)' }}
-                />
-                <Typography variant='h6' fontWeight={600} color='primary.main' sx={{ textTransform: 'capitalize' }}>
-                  {formatDateHeader(dateKey)}
-                </Typography>
-                <Chip
-                  label={`${dateTravels.length} ${dateTravels.length === 1 ? 'viaje' : 'viajes'}`}
-                  size='small'
-                  color='primary'
-                  variant='tonal'
-                />
-              </Box>
+        ) : (
+          <>
+            {paginatedTravels.map(({ dateKey, travels: dateTravels }) => (
+              <Box key={dateKey} sx={{ mb: 3 }}>
+                <Box
+                  sx={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 2,
+                    px: 3,
+                    py: 2,
+                    bgcolor: 'primary.main',
+                    color: 'primary.contrastText',
+                    borderRadius: '8px 8px 0 0'
+                  }}
+                >
+                  <Box
+                    sx={{
+                      width: 44,
+                      height: 44,
+                      borderRadius: 2,
+                      bgcolor: 'rgba(255, 255, 255, 0.2)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center'
+                    }}
+                  >
+                    <i className='tabler-calendar-event' style={{ fontSize: '24px' }} />
+                  </Box>
+                  <Box sx={{ flex: 1 }}>
+                    <Typography variant='h6' fontWeight={700} sx={{ textTransform: 'capitalize' }}>
+                      {formatDateHeader(dateKey)}
+                    </Typography>
+                    <Typography
+                      variant='caption'
+                      sx={{
+                        color: 'rgba(255, 255, 255, 0.85)',
+                        fontWeight: 500
+                      }}
+                    >
+                      {dateTravels.length} {dateTravels.length === 1 ? 'viaje disponible' : 'viajes disponibles'}
+                    </Typography>
+                  </Box>
+                  <Chip
+                    label={dateTravels.length}
+                    size='medium'
+                    sx={{
+                      bgcolor: 'rgba(255, 255, 255, 0.2)',
+                      color: 'white',
+                      fontWeight: 700,
+                      fontSize: '1rem'
+                    }}
+                  />
+                </Box>
 
-              {/* Grid de cards */}
-              <Grid container spacing={3}>
-                {dateTravels.map(travel => (
-                  <Grid item xs={12} sm={6} md={4} lg={3} key={travel.id}>
-                    <TravelCard
+                <Box
+                  sx={{
+                    border: '1px solid',
+                    borderColor: 'divider',
+                    borderTop: 'none',
+                    borderRadius: '0 0 8px 8px',
+                    overflow: 'hidden'
+                  }}
+                >
+                  {dateTravels.map(travel => (
+                    <TravelRow
+                      key={travel.id}
                       travel={travel}
                       onSellClick={t => {
                         setSelectedTravel(t)
@@ -993,49 +1010,43 @@ const TravelsForSale = () => {
                         setOpenConfirmCloseDialog(true)
                       }}
                     />
-                  </Grid>
-                ))}
-              </Grid>
-            </Box>
-          ))}
-
-          {/* Paginación */}
-          {totalPages > 1 && (
-            <Card sx={{ mt: 4 }}>
-              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '20px' }}>
-                <Typography variant='body2' color='text.secondary'>
-                  Mostrando {(currentPage - 1) * pageSize + 1} a{' '}
-                  {Math.min(currentPage * pageSize, activeTravels.length)} de {activeTravels.length} viajes
-                </Typography>
-                <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
-                  <CustomTextField
-                    select
-                    value={pageSize}
-                    onChange={e => {
-                      setPageSize(Number(e.target.value))
-                      setCurrentPage(1)
-                    }}
-                    sx={{ width: '80px' }}
-                  >
-                    <MenuItem value={6}>6</MenuItem>
-                    <MenuItem value={12}>12</MenuItem>
-                    <MenuItem value={24}>24</MenuItem>
-                  </CustomTextField>
-                  <Pagination
-                    count={totalPages}
-                    page={currentPage}
-                    onChange={(_, page) => setCurrentPage(page)}
-                    color='primary'
-                    variant='tonal'
-                  />
+                  ))}
                 </Box>
               </Box>
-            </Card>
-          )}
-        </>
-      )}
+            ))}
 
-      {/* Dialogs */}
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '20px' }}>
+              <Typography variant='body2' color='text.secondary'>
+                Mostrando {(currentPage - 1) * pageSize + 1} a{' '}
+                {Math.min(currentPage * pageSize, activeTravels.length)} de {activeTravels.length} viajes
+              </Typography>
+              <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
+                <CustomTextField
+                  select
+                  value={pageSize}
+                  onChange={e => {
+                    setPageSize(Number(e.target.value))
+                    setCurrentPage(1)
+                  }}
+                  sx={{ width: '80px' }}
+                >
+                  <MenuItem value={10}>10</MenuItem>
+                  <MenuItem value={25}>25</MenuItem>
+                  <MenuItem value={50}>50</MenuItem>
+                </CustomTextField>
+                <Pagination
+                  count={totalPages}
+                  page={currentPage}
+                  onChange={(_, page) => setCurrentPage(page)}
+                  color='primary'
+                  variant='tonal'
+                />
+              </Box>
+            </Box>
+          </>
+        )}
+      </Card>
+
       <SellTicketDialog
         open={openSellDialog}
         onClose={() => {
