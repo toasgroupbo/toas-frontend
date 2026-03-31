@@ -319,7 +319,7 @@ const AddBuses = () => {
         finalExteriorImage = await uploadImageMutation.mutateAsync(exteriorImageFile)
       }
 
-      const builtDecks = decks.map(deck => ({
+      const builtDecks = decks.map((deck: DeckFormData) => ({
         deck: deck.deck,
         price: deck.price,
         deckType: deck.deckType,
@@ -366,7 +366,7 @@ const AddBuses = () => {
     )
   }
 
-  const totalSeats = decks.reduce((acc, deck) => acc + deck.seats.filter(s => s.type === SeatType.SEAT).length, 0)
+  const totalSeats = decks.reduce((acc: number, deck: DeckFormData) => acc + deck.seats.filter((s: Seat) => s.type === SeatType.SEAT).length, 0)
 
   return (
     <div className='space-y-6'>

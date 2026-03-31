@@ -51,9 +51,7 @@ export const filterMenuByRole = (
           'Reporte de Depósitos',
           'Reporte de Ventas',
           'Reporte de Usuarios',
-          'Clientes',
-          'CONFIGURACIÓN',
-          'Términos de Uso'
+          'Clientes'
         ]
 
         return adminOnlyMenus.includes(item.label)
@@ -102,8 +100,7 @@ export const filterMenuByRole = (
         'MÓDULO ADMINISTRACIÓN': ['COMPANY', 'USER', 'ROL'],
         'REPORTES GLOBALES': ['COMPANY', 'USER', 'CUSTOMER', 'TICKET', 'TRAVEL'],
         'GESTIÓN DE EMPRESA': ['BUS', 'ROUTE', 'OWNER', 'CASHIER', 'OFFICE', 'TRIP'],
-        OPERACIONES: ['TRAVEL', 'TICKET'],
-        CONFIGURACIÓN: ['COMPANY', 'USER', 'ROL']
+        OPERACIONES: ['TRAVEL', 'TICKET']
       }
 
       const companyMenus = [
@@ -151,12 +148,8 @@ export const filterMenuByRole = (
         return hasPermission(userPermissions, 'USER', 'READ')
       }
 
-      if (item.label === 'Términos de Uso') {
-        return (
-          hasPermission(userPermissions, 'COMPANY', 'READ') ||
-          hasPermission(userPermissions, 'USER', 'READ') ||
-          hasPermission(userPermissions, 'ROL', 'READ')
-        )
+      if (item.label === 'Términos de Uso' || item.label === 'CONFIGURACIÓN') {
+        return false
       }
 
       return false
