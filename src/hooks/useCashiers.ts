@@ -3,8 +3,14 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 
 import { api } from '@/libs/axios'
-import type { Cashier, CreateCashierDto, UpdateCashierDto, UpdateCashierOfficeDto } from '@/types/api/cashiers'
+import type { Cashier, CashierRole, CreateCashierDto, UpdateCashierDto, UpdateCashierOfficeDto } from '@/types/api/cashiers'
 import { useAuth } from '@/contexts/AuthContext'
+
+const fetchCashierRoles = async (): Promise<CashierRole[]> => {
+  const response = await api.get<CashierRole[]>('/api/roles/cashiers/all')
+
+  return response.data
+}
 
 const fetchCashiers = async (): Promise<Cashier[]> => {
   const actingAsCompany = localStorage.getItem('acting_as_company')
@@ -65,13 +71,13 @@ const createCashier = async (data: CreateCashierDto): Promise<Cashier> => {
 
 const updateCashier = async ({ id, data }: { id: number; data: UpdateCashierDto }): Promise<Cashier> => {
   const actingAsCompany = localStorage.getItem('acting_as_company')
-  let url = `/api/users/${id}`
+  let url = `/api/users/cashiers/${id}`
 
   if (actingAsCompany) {
     try {
       const company = JSON.parse(actingAsCompany)
 
-      url = `/api/users/${id}?companyId=${company.id}`
+      url = `/api/users/cashiers/${id}?companyId=${company.id}`
     } catch (error) {
       console.error('Error parsing acting_as_company:', error)
     }
@@ -134,6 +140,13 @@ const changePassword = async ({ id, password }: { id: number; password: string }
 }
 
 // Hooks
+export const useCashierRoles = () => {
+  return useQuery({
+    queryKey: ['cashierRoles'],
+    queryFn: fetchCashierRoles
+  })
+}
+
 export const useCashiers = () => {
   const { companyId, hasCompany, isImpersonating } = useAuth()
 

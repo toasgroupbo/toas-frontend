@@ -17,6 +17,7 @@ import InputAdornment from '@mui/material/InputAdornment'
 import CustomTextField from '@core/components/mui/TextField'
 import type { Cashier, CreateCashierDto, UpdateCashierDto } from '@/types/api/cashiers'
 import { useOffices } from '@/hooks/useOffices'
+import { useCashierRoles } from '@/hooks/useCashiers'
 
 interface CreateCashierDialogProps {
   open: boolean
@@ -34,7 +35,30 @@ interface FormData {
   fullName: string
   ci: string
   phone: string
+  cashierRol: number | ''
   officeId: number | ''
+}
+
+const ROLE_LABELS: Record<string, { label: string; description: string; icon: string }> = {
+  CASHIER: {
+    label: 'Cajero Completo',
+    description: 'Vende pasajes y crea salidas',
+    icon: 'tabler-star'
+  },
+  CASHIER_TRIPS: {
+    label: 'Cajero Creador',
+    description: 'Solo crea y gestiona salidas',
+    icon: 'tabler-bus'
+  },
+  CASHIER_SELLER: {
+    label: 'Cajero Vendedor',
+    description: 'Solo vende pasajes',
+    icon: 'tabler-ticket'
+  }
+}
+
+const getRoleInfo = (roleName: string) => {
+  return ROLE_LABELS[roleName] || { label: roleName, description: '', icon: 'tabler-shield' }
 }
 
 const CreateCashierDialog = ({
@@ -46,6 +70,7 @@ const CreateCashierDialog = ({
   isLoading = false
 }: CreateCashierDialogProps) => {
   const { data: offices, isLoading: officesLoading } = useOffices()
+  const { data: cashierRoles, isLoading: rolesLoading } = useCashierRoles()
   const [showPassword, setShowPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
 
@@ -63,6 +88,7 @@ const CreateCashierDialog = ({
       fullName: '',
       ci: '',
       phone: '',
+      cashierRol: '',
       officeId: ''
     }
   })
@@ -74,6 +100,7 @@ const CreateCashierDialog = ({
         fullName: cashier.fullName,
         ci: cashier.ci,
         phone: cashier.phone,
+        cashierRol: cashier.rol?.id || '',
         officeId: cashier.office?.id || '',
         password: '',
         confirmPassword: ''
@@ -86,6 +113,7 @@ const CreateCashierDialog = ({
         fullName: '',
         ci: '',
         phone: '',
+        cashierRol: '',
         officeId: ''
       })
     }
@@ -93,6 +121,7 @@ const CreateCashierDialog = ({
 
   const handleFormSubmit = async (data: FormData) => {
     const officeId = typeof data.officeId === 'number' ? data.officeId : Number(data.officeId)
+    const cashierRol = typeof data.cashierRol === 'number' ? data.cashierRol : Number(data.cashierRol)
 
     if (mode === 'create') {
       const createData: CreateCashierDto = {
@@ -101,6 +130,7 @@ const CreateCashierDialog = ({
         fullName: data.fullName,
         ci: data.ci,
         phone: data.phone,
+        cashierRol: cashierRol,
         officeId: officeId
       }
 
@@ -110,7 +140,8 @@ const CreateCashierDialog = ({
         email: data.email,
         fullName: data.fullName,
         ci: data.ci,
-        phone: data.phone
+        phone: data.phone,
+        rol: cashierRol
       }
 
       await onSubmit(updateData, officeId)
@@ -357,7 +388,63 @@ const CreateCashierDialog = ({
               </>
             )}
 
-            <Grid item xs={12}>
+            <Grid item xs={12} sm={6}>
+                <Controller
+                  name='cashierRol'
+                  control={control}
+                  rules={{
+                    required: 'El rol es requerido'
+                  }}
+                  render={({ field }) => (
+                    <CustomTextField
+                      {...field}
+                      select
+                      fullWidth
+                      label='Rol del Cajero'
+                      error={!!errors.cashierRol}
+                      helperText={errors.cashierRol?.message}
+                      disabled={isLoading || rolesLoading}
+                      onChange={e => field.onChange(Number(e.target.value))}
+                      InputProps={{
+                        startAdornment: (
+                          <InputAdornment position='start'>
+                            <i className='tabler-shield' />
+                          </InputAdornment>
+                        )
+                      }}
+                    >
+                      {rolesLoading ? (
+                        <MenuItem disabled>
+                          <CircularProgress size={20} />
+                          <span style={{ marginLeft: 8 }}>Cargando roles...</span>
+                        </MenuItem>
+                      ) : cashierRoles && cashierRoles.length > 0 ? (
+                        cashierRoles.map(role => {
+                          const roleInfo = getRoleInfo(role.name)
+
+                          return (
+                            <MenuItem key={role.id} value={Number(role.id)}>
+                              <div className='flex items-center gap-3'>
+                                <i className={roleInfo.icon} style={{ fontSize: '20px' }} />
+                                <div className='flex flex-col'>
+                                  <span className='font-medium'>{roleInfo.label}</span>
+                                  {roleInfo.description && (
+                                    <span className='text-xs text-gray-500'>{roleInfo.description}</span>
+                                  )}
+                                </div>
+                              </div>
+                            </MenuItem>
+                          )
+                        })
+                      ) : (
+                        <MenuItem disabled>No hay roles disponibles</MenuItem>
+                      )}
+                    </CustomTextField>
+                  )}
+                />
+              </Grid>
+
+            <Grid item xs={12} sm={6}>
               <Controller
                 name='officeId'
                 control={control}

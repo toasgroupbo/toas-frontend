@@ -40,6 +40,7 @@ export interface CreateCashierDto {
   fullName: string
   ci: string
   phone: string
+  cashierRol: number
   officeId: number
 }
 
@@ -48,6 +49,7 @@ export interface UpdateCashierDto {
   fullName?: string
   ci?: string
   phone?: string
+  rol?: number
 }
 
 export interface UpdateCashierOfficeDto {

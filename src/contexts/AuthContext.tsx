@@ -203,8 +203,10 @@ export const AuthProvider = ({ children }: ChildrenType) => {
   }, [])
 
   const clearImpersonation = useCallback(() => {
+    setIsTransitioning(true)
     setActingAsCompanyState(null)
     localStorage.removeItem(ACTING_AS_COMPANY_KEY)
+    window.location.href = '/companies/list'
   }, [])
 
   const hasRole = useCallback(
