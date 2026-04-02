@@ -15,17 +15,19 @@ import MenuItem from '@mui/material/MenuItem'
 import InputAdornment from '@mui/material/InputAdornment'
 import Typography from '@mui/material/Typography'
 import Box from '@mui/material/Box'
+import Alert from '@mui/material/Alert'
 
 import CustomTextField from '@core/components/mui/TextField'
 import type { CreateTravelDto, TravelType } from '@/types/api/travels'
-import { useBuses } from '@/hooks/useBuses'
-import { useRoutes } from '@/hooks/useRoutes'
+import { useBuses, useBusesForCashier } from '@/hooks/useBuses'
+import { useRoutes, useRoutesForCashier } from '@/hooks/useRoutes'
 
 interface CreateTravelDialogProps {
   open: boolean
   onClose: () => void
   onSubmit: (data: CreateTravelDto) => Promise<void>
   isLoading?: boolean
+  isCashier?: boolean
 }
 
 interface FormData {
@@ -38,9 +40,21 @@ interface FormData {
   arrival_time: string
 }
 
-const CreateTravelDialog = ({ open, onClose, onSubmit, isLoading = false }: CreateTravelDialogProps) => {
-  const { data: buses, isLoading: busesLoading } = useBuses()
-  const { data: routes, isLoading: routesLoading } = useRoutes()
+const CreateTravelDialog = ({ open, onClose, onSubmit, isLoading = false, isCashier = false }: CreateTravelDialogProps) => {
+  // Solo ejecutar los hooks según el rol - el componente solo se monta cuando está abierto
+  const busesForCashierQuery = useBusesForCashier(isCashier)
+  const routesForCashierQuery = useRoutesForCashier(isCashier)
+  const busesQuery = useBuses(!isCashier)
+  const routesQuery = useRoutes(!isCashier)
+
+  const buses = isCashier ? busesForCashierQuery.data : busesQuery.data
+  const busesLoading = isCashier ? busesForCashierQuery.isLoading : busesQuery.isLoading
+  const busesError = isCashier ? busesForCashierQuery.error : busesQuery.error
+  const routes = isCashier ? routesForCashierQuery.data : routesQuery.data
+  const routesLoading = isCashier ? routesForCashierQuery.isLoading : routesQuery.isLoading
+  const routesError = isCashier ? routesForCashierQuery.error : routesQuery.error
+
+  const hasError = busesError || routesError
 
   const {
     control,
@@ -158,6 +172,11 @@ const CreateTravelDialog = ({ open, onClose, onSubmit, isLoading = false }: Crea
 
       <form onSubmit={handleSubmit(handleFormSubmit)}>
         <DialogContent>
+          {hasError && (
+            <Alert severity='error' sx={{ mb: 3 }}>
+              Error al cargar los datos. Por favor, intente cerrar y abrir el diálogo nuevamente.
+            </Alert>
+          )}
           <Grid container spacing={4}>
             <Grid item xs={12}>
               <Controller

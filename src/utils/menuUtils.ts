@@ -58,9 +58,21 @@ export const filterMenuByRole = (
       }
 
       if (userRole === 'CASHIER') {
-        const cashierMenus = ['OPERACIONES', 'Venta de Tickets', 'Arqueo de Caja', 'Salidas']
+        const cashierMenus = ['OPERACIONES', 'Venta de Tickets', 'Arqueo de Caja', 'Salidas', 'Viajes']
 
         return cashierMenus.includes(item.label)
+      }
+
+      if (userRole === 'CASHIER_TRIPS') {
+        const cashierTripsMenus = ['OPERACIONES', 'Salidas', 'Viajes']
+
+        return cashierTripsMenus.includes(item.label)
+      }
+
+      if (userRole === 'CASHIER_SELLER') {
+        const cashierSellerMenus = ['OPERACIONES', 'Venta de Tickets', 'Arqueo de Caja', 'Salidas']
+
+        return cashierSellerMenus.includes(item.label)
       }
 
       if (userRole === 'ADMIN_EMPRESA' || userRole === 'COMPANY_ADMIN') {

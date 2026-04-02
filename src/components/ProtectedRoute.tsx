@@ -45,7 +45,9 @@ const STATIC_ROLE_PERMISSIONS: Record<string, string[]> = {
   ADMIN_APLICACION: ['/home', '/companies', '/usuarios', '/roles', '/clientes', '/reportes'],
   ADMIN_EMPRESA: ['/home', '/buses', '/rutas', '/duenos', '/cajeros', '/oficinas', '/viajes'],
   COMPANY_ADMIN: ['/home', '/buses', '/rutas', '/duenos', '/cajeros', '/oficinas', '/viajes'],
-  CASHIER: ['/home', '/arqueo', '/salidas', '/tickets']
+  CASHIER: ['/home', '/arqueo', '/salidas', '/tickets', '/viajes'],
+  CASHIER_TRIPS: ['/home', '/salidas', '/viajes'],
+  CASHIER_SELLER: ['/home', '/arqueo', '/salidas', '/tickets']
 }
 
 const hasPermissionForRoute = (
@@ -81,6 +83,22 @@ const hasPermissionForRoute = (
       if (!hasCompany) return false
 
       const allowedRoutes = STATIC_ROLE_PERMISSIONS.CASHIER
+
+      return allowedRoutes.some(route => pathname === route || pathname.startsWith(route + '/'))
+    }
+
+    if (userRole === 'CASHIER_TRIPS') {
+      if (!hasCompany) return false
+
+      const allowedRoutes = STATIC_ROLE_PERMISSIONS.CASHIER_TRIPS
+
+      return allowedRoutes.some(route => pathname === route || pathname.startsWith(route + '/'))
+    }
+
+    if (userRole === 'CASHIER_SELLER') {
+      if (!hasCompany) return false
+
+      const allowedRoutes = STATIC_ROLE_PERMISSIONS.CASHIER_SELLER
 
       return allowedRoutes.some(route => pathname === route || pathname.startsWith(route + '/'))
     }
@@ -158,8 +176,10 @@ const ProtectedRoute = ({ children, publicRoutes = ['/login', '/'] }: ProtectedR
           router.push('/home')
         } else if (isCompanyAdmin && hasCompany) {
           router.push('/home')
-        } else if (userRole === 'CASHIER') {
+        } else if (userRole === 'CASHIER' || userRole === 'CASHIER_SELLER') {
           router.push('/tickets/list')
+        } else if (userRole === 'CASHIER_TRIPS') {
+          router.push('/viajes/list')
         } else {
           router.push('/home')
         }

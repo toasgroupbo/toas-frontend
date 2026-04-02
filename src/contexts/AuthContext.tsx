@@ -236,9 +236,10 @@ export const AuthProvider = ({ children }: ChildrenType) => {
   const isCashier = userRole === 'CASHIER'
   const isCustomRole = user?.rol?.isStatic === false
 
-  // TEMPORAL: CASHIER siempre tiene compañía (a través de su oficina)
+  // TEMPORAL: Todos los cajeros siempre tienen compañía (a través de su oficina)
   // TODO: El backend debe retornar companyId para cajeros
-  const hasCompany = !!user?.companyId || userRole === 'CASHIER'
+  const isCashierRole = userRole === 'CASHIER' || userRole === 'CASHIER_TRIPS' || userRole === 'CASHIER_SELLER'
+  const hasCompany = !!user?.companyId || isCashierRole
 
   const isImpersonating = !!actingAsCompany
 

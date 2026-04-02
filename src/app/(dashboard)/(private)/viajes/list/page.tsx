@@ -2,7 +2,7 @@
 import Grid from '@mui/material/Grid2'
 import { Typography } from '@mui/material'
 
-import ViajesTable from '@/views/Dashboard/Viajes/list/ViajesListTable'
+import ViajesPageContent from '@/views/Dashboard/Viajes/ViajesPageContent'
 
 const ViajesPage = () => {
   return (
@@ -16,7 +16,7 @@ const ViajesPage = () => {
         </Typography>
       </Grid>
       <Grid size={{ xs: 12 }}>
-        <ViajesTable />
+        <ViajesPageContent />
       </Grid>
     </Grid>
   )

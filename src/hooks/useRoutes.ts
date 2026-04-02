@@ -6,6 +6,12 @@ import { api } from '@/libs/axios'
 import type { Route, CreateRouteDto, UpdateRouteDto } from '@/types/api/rutas'
 import { useAuth } from '@/contexts/AuthContext'
 
+const fetchRoutesForCashier = async (): Promise<Route[]> => {
+  const response = await api.get<Route[]>('/api/routes/for-cashier/all')
+
+  return response.data
+}
+
 const fetchRoutes = async (): Promise<Route[]> => {
   const actingAsCompany = localStorage.getItem('acting_as_company')
   let url = '/api/routes'
@@ -88,10 +94,20 @@ const deleteRoute = async (id: string): Promise<void> => {
 }
 
 // Hooks
-export const useRoutes = () => {
+export const useRoutesForCashier = (enabled: boolean = true) => {
+  return useQuery({
+    queryKey: ['routesForCashier'],
+    queryFn: fetchRoutesForCashier,
+    enabled,
+    retry: 1,
+    staleTime: 30000
+  })
+}
+
+export const useRoutes = (enabled: boolean = true) => {
   const { companyId, hasCompany, isImpersonating } = useAuth()
 
-  const shouldFetch = hasCompany || isImpersonating
+  const shouldFetch = (hasCompany || isImpersonating) && enabled
 
   return useQuery({
     queryKey: ['routes', companyId],

@@ -79,6 +79,12 @@ const createTravel = async (data: CreateTravelDto): Promise<Travel> => {
   return response.data
 }
 
+const createTravelForCashier = async (data: CreateTravelDto): Promise<Travel> => {
+  const response = await api.post<Travel>('/api/travels/for-cashier', data)
+
+  return response.data
+}
+
 const deleteTravel = async (id: number): Promise<void> => {
   const actingAsCompany = localStorage.getItem('acting_as_company')
   let url = `/api/travels/${id}`
@@ -94,6 +100,21 @@ const deleteTravel = async (id: number): Promise<void> => {
   }
 
   await api.delete(url)
+}
+
+// Cashier-specific functions
+const fetchTravelsForCashier = async (): Promise<Travel[]> => {
+  const response = await api.get<Travel[]>('/api/travels/for-cashier/all')
+
+  return response.data
+}
+
+const deleteTravelForCashier = async (id: number): Promise<void> => {
+  await api.delete(`/api/travels/for-cashier/${id}`)
+}
+
+const cancelTravelForCashier = async (id: number): Promise<void> => {
+  await api.post(`/api/travels/for-cashier/cancel/${id}`)
 }
 
 export const useTravels = (params: { page: number; limit: number; status?: string }) => {
@@ -131,6 +152,20 @@ export const useCreateTravel = () => {
   })
 }
 
+export const useCreateTravelForCashier = () => {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: createTravelForCashier,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['travelsForCashier'] })
+    },
+    onError: error => {
+      console.error('Error creating travel:', error)
+    }
+  })
+}
+
 export const useDeleteTravel = () => {
   const queryClient = useQueryClient()
 
@@ -138,6 +173,38 @@ export const useDeleteTravel = () => {
     mutationFn: deleteTravel,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['travels'] })
+    }
+  })
+}
+
+// Cashier hooks
+export const useTravelsForCashier = () => {
+  return useQuery({
+    queryKey: ['travelsForCashier'],
+    queryFn: fetchTravelsForCashier,
+    retry: 1,
+    staleTime: 30000
+  })
+}
+
+export const useDeleteTravelForCashier = () => {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: deleteTravelForCashier,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['travelsForCashier'] })
+    }
+  })
+}
+
+export const useCancelTravelForCashier = () => {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: cancelTravelForCashier,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['travelsForCashier'] })
     }
   })
 }

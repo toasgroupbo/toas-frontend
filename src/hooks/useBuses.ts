@@ -6,6 +6,12 @@ import { api } from '@/libs/axios'
 import type { Bus, CreateBusDto, UpdateBusDto } from '@/types/api/buses'
 import { useAuth } from '@/contexts/AuthContext'
 
+const fetchBusesForCashier = async (): Promise<Bus[]> => {
+  const response = await api.get<Bus[]>('/api/buses/for-cashier/all')
+
+  return response.data
+}
+
 const fetchBuses = async (): Promise<Bus[]> => {
   const actingAsCompany = localStorage.getItem('acting_as_company')
   let url = '/api/buses'
@@ -100,10 +106,20 @@ const deleteBus = async (id: string): Promise<void> => {
 }
 
 // Hooks
-export const useBuses = () => {
+export const useBusesForCashier = (enabled: boolean = true) => {
+  return useQuery({
+    queryKey: ['busesForCashier'],
+    queryFn: fetchBusesForCashier,
+    enabled,
+    retry: 1,
+    staleTime: 30000
+  })
+}
+
+export const useBuses = (enabled: boolean = true) => {
   const { companyId, hasCompany, isImpersonating } = useAuth()
 
-  const shouldFetch = hasCompany || isImpersonating
+  const shouldFetch = (hasCompany || isImpersonating) && enabled
 
   return useQuery({
     queryKey: ['buses', companyId],

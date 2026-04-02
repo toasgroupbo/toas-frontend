@@ -3,14 +3,16 @@
 import { useEffect, useMemo, useState } from 'react'
 
 import Card from '@mui/material/Card'
+import Button from '@mui/material/Button'
 import Chip from '@mui/material/Chip'
 import Checkbox from '@mui/material/Checkbox'
-import TablePagination from '@mui/material/TablePagination'
 import MenuItem from '@mui/material/MenuItem'
 import Typography from '@mui/material/Typography'
 import Box from '@mui/material/Box'
 import CircularProgress from '@mui/material/CircularProgress'
 import Alert from '@mui/material/Alert'
+import IconButton from '@mui/material/IconButton'
+import Tooltip from '@mui/material/Tooltip'
 import type { TextFieldProps } from '@mui/material/TextField'
 import classnames from 'classnames'
 import { rankItem } from '@tanstack/match-sorter-utils'
@@ -23,6 +25,7 @@ import {
   getFacetedRowModel,
   getFacetedUniqueValues,
   getFacetedMinMaxValues,
+  getPaginationRowModel,
   getSortedRowModel
 } from '@tanstack/react-table'
 import type { ColumnDef, FilterFn } from '@tanstack/react-table'
@@ -30,8 +33,16 @@ import { Pagination } from '@mui/material'
 
 import CustomTextField from '@core/components/mui/TextField'
 import tableStyles from '@core/styles/table.module.css'
-import { useTravels } from '@/hooks/useTravels'
+import {
+  useTravelsForCashier,
+  useCreateTravelForCashier,
+  useCancelTravelForCashier
+} from '@/hooks/useTravels'
 import type { Travel } from '@/types/api/travels'
+import CreateTravelDialog from '@/views/Dashboard/Viajes/components/CreateTravelDialog'
+import CancelTravelDialog from '@/views/Dashboard/Viajes/components/CancelTravelDialog'
+import { useSnackbar } from '@/contexts/SnackbarContext'
+import { useAuth } from '@/contexts/AuthContext'
 
 type TravelWithActionsType = Travel & {
   actions?: string
@@ -74,25 +85,91 @@ const DebouncedInput = ({
 
 const columnHelper = createColumnHelper<TravelWithActionsType>()
 
-const ViajesListTable = () => {
+const ViajesCashierListTable = () => {
   const [rowSelection, setRowSelection] = useState({})
-  const [currentPage, setCurrentPage] = useState(1)
-  const [pageSize, setPageSize] = useState(10)
   const [searchQuery, setSearchQuery] = useState('')
   const [statusFilter, setStatusFilter] = useState<string>('all')
+  const [createDialogOpen, setCreateDialogOpen] = useState(false)
+  const [cancelDialogOpen, setCancelDialogOpen] = useState(false)
+  const [selectedTravel, setSelectedTravel] = useState<Travel | null>(null)
 
-  const queryParams = useMemo(
-    () => ({
-      page: currentPage,
-      limit: pageSize,
-      status: statusFilter
-    }),
-    [currentPage, pageSize, statusFilter]
-  )
+  const { data: travels, isLoading, error } = useTravelsForCashier()
+  const createMutation = useCreateTravelForCashier()
+  const cancelMutation = useCancelTravelForCashier()
+  const { showSuccess, showError } = useSnackbar()
+  const { userRole } = useAuth()
 
-  const { data: travelsResponse, isLoading, error } = useTravels(queryParams)
-  const travels = travelsResponse?.data || []
-  const totalRecords = travelsResponse?.meta?.total || 0
+  // Solo CASHIER y CASHIER_TRIPS pueden crear/cancelar viajes
+  const canCreateTravel = userRole === 'CASHIER' || userRole === 'CASHIER_TRIPS'
+
+  // Filtrar viajes por estado (client-side)
+  const filteredTravels = useMemo(() => {
+    if (!travels) return []
+    if (statusFilter === 'all') return travels
+
+    return travels.filter(travel => travel.travel_status === statusFilter)
+  }, [travels, statusFilter])
+
+  const handleOpenCreateDialog = () => {
+    setCreateDialogOpen(true)
+  }
+
+  const handleCloseCreateDialog = () => {
+    setCreateDialogOpen(false)
+  }
+
+  const handleSubmitCreate = async (data: any) => {
+    try {
+      await createMutation.mutateAsync(data)
+      showSuccess('Viaje creado correctamente')
+      handleCloseCreateDialog()
+    } catch (error: any) {
+      console.error('Error al crear viaje:', error)
+
+      const errorMessage = error?.response?.data?.message || 'Error desconocido'
+
+      const errorMessages: Record<string, string> = {
+        'The bus is already assigned to an active travel':
+          'El bus ya está asignado a un viaje activo. Por favor, seleccione otro bus o espere a que el viaje actual finalice.',
+        'Bus not found': 'El bus seleccionado no existe.',
+        'Route not found': 'La ruta seleccionada no existe.',
+        'Invalid departure time': 'La fecha y hora de salida no es válida.',
+        'Invalid arrival time': 'La fecha y hora de llegada no es válida.',
+        'Arrival time must be after departure time': 'La hora de llegada debe ser posterior a la hora de salida.',
+        Unauthorized: 'No tienes permiso para crear viajes.',
+        Forbidden: 'Acceso denegado.',
+        'The bus already has a travel scheduled that overlaps with the selected departure or arrival time':
+          'El bus ya tiene un viaje para este horario. Por favor, seleccione otro horario o bus.'
+      }
+
+      const translatedMessage = errorMessages[errorMessage] || `Error al crear el viaje: ${errorMessage}`
+
+      showError(translatedMessage)
+    }
+  }
+
+  const handleOpenCancelDialog = (travel: Travel) => {
+    setSelectedTravel(travel)
+    setCancelDialogOpen(true)
+  }
+
+  const handleCloseCancelDialog = () => {
+    setCancelDialogOpen(false)
+    setSelectedTravel(null)
+  }
+
+  const handleConfirmCancel = async () => {
+    if (!selectedTravel) return
+
+    try {
+      await cancelMutation.mutateAsync(selectedTravel.id)
+      showSuccess('Viaje cancelado correctamente')
+      handleCloseCancelDialog()
+    } catch (error: any) {
+      console.error('Error al cancelar viaje:', error)
+      showError(error?.response?.data?.message || 'Error al cancelar el viaje')
+    }
+  }
 
   const formatDateTime = (dateString: string) => {
     const dateWithoutZ = dateString.replace('Z', '')
@@ -131,6 +208,32 @@ const ViajesListTable = () => {
           />
         )
       },
+      columnHelper.accessor('actions', {
+        header: 'Acciones',
+        cell: ({ row }) => {
+          const isActive = row.original.travel_status === 'active'
+
+          return (
+            <div className='flex items-center gap-2'>
+              {canCreateTravel && isActive && (
+                <Tooltip title='Cancelar Viaje'>
+                  <IconButton
+                    size='small'
+                    onClick={() => handleOpenCancelDialog(row.original)}
+                    sx={{
+                      color: 'warning.main',
+                      '&:hover': { backgroundColor: 'warning.light', color: 'white' }
+                    }}
+                  >
+                    <i className='tabler-ban' style={{ fontSize: '18px' }} />
+                  </IconButton>
+                </Tooltip>
+              )}
+            </div>
+          )
+        },
+        enableSorting: false
+      }),
       columnHelper.accessor('bus', {
         header: 'Bus',
         cell: ({ row }) => (
@@ -252,11 +355,11 @@ const ViajesListTable = () => {
         )
       })
     ],
-    []
+    [canCreateTravel]
   )
 
   const table = useReactTable({
-    data: travels,
+    data: filteredTravels,
     columns,
     filterFns: {
       fuzzy: fuzzyFilter
@@ -272,9 +375,15 @@ const ViajesListTable = () => {
     getCoreRowModel: getCoreRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
     getSortedRowModel: getSortedRowModel(),
+    getPaginationRowModel: getPaginationRowModel(),
     getFacetedRowModel: getFacetedRowModel(),
     getFacetedUniqueValues: getFacetedUniqueValues(),
-    getFacetedMinMaxValues: getFacetedMinMaxValues()
+    getFacetedMinMaxValues: getFacetedMinMaxValues(),
+    initialState: {
+      pagination: {
+        pageSize: 10
+      }
+    }
   })
 
   if (isLoading) {
@@ -289,13 +398,30 @@ const ViajesListTable = () => {
     return <Alert severity='error'>Error al cargar los viajes. Por favor, intenta nuevamente.</Alert>
   }
 
+  const totalRows = table.getFilteredRowModel().rows.length
+  const pageIndex = table.getState().pagination.pageIndex
+  const pageSize = table.getState().pagination.pageSize
+
   return (
     <Box>
       <Card>
         <div className='flex flex-wrap justify-between gap-4 p-6'>
           <div className='flex flex-col gap-2'>
-            <Typography variant='h4'>Lista de Viajes</Typography>
+            <Typography variant='h4'>Mis Viajes</Typography>
           </div>
+
+          {canCreateTravel && (
+            <div className='flex max-sm:flex-col items-start sm:items-center gap-4 max-sm:is-full'>
+              <Button
+                variant='contained'
+                color='primary'
+                onClick={handleOpenCreateDialog}
+                startIcon={<i className='tabler-plus' />}
+              >
+                Nuevo Viaje
+              </Button>
+            </div>
+          )}
         </div>
 
         <div className='flex flex-wrap justify-between gap-4 px-6 pb-6'>
@@ -304,7 +430,7 @@ const ViajesListTable = () => {
               value={searchQuery}
               onChange={value => {
                 setSearchQuery(String(value))
-                setCurrentPage(1)
+                table.setPageIndex(0)
               }}
               placeholder='Buscar viajes...'
               className='max-sm:is-full min-w-[300px] flex-1 max-w-md'
@@ -314,7 +440,7 @@ const ViajesListTable = () => {
               value={statusFilter}
               onChange={e => {
                 setStatusFilter(e.target.value)
-                setCurrentPage(1)
+                table.setPageIndex(0)
               }}
               className='max-sm:is-full sm:is-[150px]'
             >
@@ -330,8 +456,7 @@ const ViajesListTable = () => {
               select
               value={pageSize}
               onChange={e => {
-                setPageSize(Number(e.target.value))
-                setCurrentPage(1)
+                table.setPageSize(Number(e.target.value))
               }}
               className='flex-auto max-sm:is-full sm:is-[70px]'
             >
@@ -370,7 +495,7 @@ const ViajesListTable = () => {
               ))}
             </thead>
 
-            {table.getFilteredRowModel().rows.length === 0 ? (
+            {table.getRowModel().rows.length === 0 ? (
               <tbody>
                 <tr>
                   <td colSpan={table.getVisibleFlatColumns().length} className='text-center py-8'>
@@ -392,32 +517,44 @@ const ViajesListTable = () => {
           </table>
         </div>
 
-        <TablePagination
-          component={() => (
-            <div className='flex justify-between items-center flex-wrap pli-6 border-bs bs-auto plb-[12.5px] gap-2'>
-              <Typography color='text.disabled'>
-                {`Mostrando ${(currentPage - 1) * pageSize + 1} a ${Math.min(currentPage * pageSize, totalRecords)} de ${totalRecords} viajes`}
-              </Typography>
-              <Pagination
-                shape='rounded'
-                color='primary'
-                variant='tonal'
-                count={Math.ceil(totalRecords / pageSize)}
-                page={currentPage}
-                onChange={(_, page) => setCurrentPage(page)}
-                showFirstButton
-                showLastButton
-              />
-            </div>
-          )}
-          count={totalRecords}
-          rowsPerPage={pageSize}
-          page={currentPage - 1}
-          onPageChange={() => {}}
-        />
+        <div className='flex justify-between items-center flex-wrap pli-6 border-bs bs-auto plb-[12.5px] gap-2'>
+          <Typography color='text.disabled'>
+            {totalRows > 0
+              ? `Mostrando ${pageIndex * pageSize + 1} a ${Math.min((pageIndex + 1) * pageSize, totalRows)} de ${totalRows} viajes`
+              : 'No hay viajes'}
+          </Typography>
+          <Pagination
+            shape='rounded'
+            color='primary'
+            variant='tonal'
+            count={table.getPageCount()}
+            page={pageIndex + 1}
+            onChange={(_, page) => table.setPageIndex(page - 1)}
+            showFirstButton
+            showLastButton
+          />
+        </div>
       </Card>
+
+      {createDialogOpen && (
+        <CreateTravelDialog
+          open={createDialogOpen}
+          onClose={handleCloseCreateDialog}
+          onSubmit={handleSubmitCreate}
+          isLoading={createMutation.isPending}
+          isCashier={true}
+        />
+      )}
+
+      <CancelTravelDialog
+        open={cancelDialogOpen}
+        onClose={handleCloseCancelDialog}
+        onConfirm={handleConfirmCancel}
+        travel={selectedTravel}
+        isLoading={cancelMutation.isPending}
+      />
     </Box>
   )
 }
 
-export default ViajesListTable
+export default ViajesCashierListTable
