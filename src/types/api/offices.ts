@@ -21,6 +21,8 @@ export interface Office {
   id: number
   url_gps: string
   city: string
+  name: string | null
+  address: string | null
   subsidiary: string
   place: Place
   createdAt?: string
@@ -33,6 +35,8 @@ export interface Office {
 export interface CreateOfficeDto {
   url_gps: string
   city: string
+  name: string
+  address: string
   subsidiary: string
   placeId: number
 }
@@ -40,6 +44,8 @@ export interface CreateOfficeDto {
 export interface UpdateOfficeDto {
   url_gps?: string
   city?: string
+  name?: string
+  address?: string
   subsidiary?: string
   placeId?: number
 }

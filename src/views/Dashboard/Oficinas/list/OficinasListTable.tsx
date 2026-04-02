@@ -229,8 +229,31 @@ const OfficesListTable = () => {
         enableSorting: false
       }),
 
+      columnHelper.accessor('name', {
+        header: 'Nombre',
+        cell: ({ row }) => (
+          <div className='flex items-center gap-2'>
+            <i className='tabler-building' style={{ fontSize: '18px', color: 'var(--mui-palette-info-main)' }} />
+            <Typography variant='body2' color='text.primary'>
+              {row.original.name || '—'}
+            </Typography>
+          </div>
+        )
+      }),
+
+      columnHelper.accessor('address', {
+        header: 'Dirección',
+        cell: ({ row }) => (
+          <div className='flex items-center gap-2'>
+            <i className='tabler-address-book' style={{ fontSize: '18px', color: 'var(--mui-palette-success-main)' }} />
+            <Typography variant='body2' color='text.primary'>
+              {row.original.address || '—'}
+            </Typography>
+          </div>
+        )
+      }),
       columnHelper.accessor('place', {
-        header: 'Subidiaria ',
+        header: 'Sucursal',
         cell: ({ row }) => (
           <div className='flex items-center gap-2'>
             <i className='tabler-map-pin' style={{ fontSize: '18px', color: 'var(--mui-palette-secondary-main)' }} />

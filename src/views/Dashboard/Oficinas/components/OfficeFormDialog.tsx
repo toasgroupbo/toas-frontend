@@ -30,7 +30,8 @@ interface OfficeFormDialogProps {
 
 interface FormData {
   url_gps: string
-
+  name: string // Nuevo campo
+  address: string // Nuevo campo
   placeId: number
 }
 
@@ -52,6 +53,8 @@ const OfficeFormDialog = ({
   } = useForm<FormData>({
     defaultValues: {
       url_gps: '',
+      name: '',
+      address: '',
       placeId: 0
     }
   })
@@ -60,11 +63,15 @@ const OfficeFormDialog = ({
     if (office && isEditMode) {
       reset({
         url_gps: office.url_gps,
+        name: office.name || '', // Manejar null/undefined
+        address: office.address || '', // Manejar null/undefined
         placeId: office.place.id
       })
     } else {
       reset({
         url_gps: '',
+        name: '',
+        address: '',
         placeId: 0
       })
     }
@@ -96,12 +103,69 @@ const OfficeFormDialog = ({
       <form onSubmit={handleSubmit(handleFormSubmit)}>
         <DialogContent>
           <Grid container spacing={4}>
+            {/* Nuevo campo: Nombre de la oficina */}
+            <Grid item xs={12}>
+              <Controller
+                name='name'
+                control={control}
+                rules={{
+                  required: 'El nombre de la oficina es requerido'
+                }}
+                render={({ field }) => (
+                  <CustomTextField
+                    {...field}
+                    fullWidth
+                    label='Nombre de la Oficina'
+                    placeholder='Ej: Oficina Central'
+                    error={!!errors.name}
+                    helperText={errors.name?.message}
+                    disabled={isLoading}
+                    InputProps={{
+                      startAdornment: <i className='tabler-building' style={{ marginRight: '8px' }} />
+                    }}
+                  />
+                )}
+              />
+            </Grid>
+
+            {/* Nuevo campo: Dirección */}
+            <Grid item xs={12}>
+              <Controller
+                name='address'
+                control={control}
+                rules={{
+                  required: 'La dirección es requerida'
+                }}
+                render={({ field }) => (
+                  <CustomTextField
+                    {...field}
+                    fullWidth
+                    label='Dirección'
+                    placeholder='Ej: Av. Libertador #123, Edificio Centro'
+                    error={!!errors.address}
+                    helperText={errors.address?.message}
+                    disabled={isLoading}
+                    multiline
+                    rows={2}
+                    InputProps={{
+                      startAdornment: <i className='tabler-address-book' style={{ marginRight: '8px' }} />
+                    }}
+                  />
+                )}
+              />
+            </Grid>
+
+            {/* Campo URL GPS */}
             <Grid item xs={12}>
               <Controller
                 name='url_gps'
                 control={control}
                 rules={{
-                  required: 'La URL de GPS es requerida'
+                  required: 'La URL de GPS es requerida',
+                  pattern: {
+                    value: /^(https?:\/\/)?([\da-z\.-]+)\.([a-z\.]{2,6})([\/\w \.-]*)*\/?$/,
+                    message: 'Ingrese una URL válida'
+                  }
                 }}
                 render={({ field }) => (
                   <CustomTextField
@@ -120,17 +184,18 @@ const OfficeFormDialog = ({
               />
             </Grid>
 
+            {/* Campo Lugar/Subsidiaria */}
             <Grid item xs={12}>
               <Controller
                 name='placeId'
                 control={control}
-                rules={{ required: 'El lugar es requerido' }}
+                rules={{ required: 'La ubicación es requerida' }}
                 render={({ field }) => (
                   <CustomTextField
                     {...field}
                     select
                     fullWidth
-                    label='Subsidiaria (Ubicación)'
+                    label='Ciudad / Ubicación'
                     error={!!errors.placeId}
                     helperText={errors.placeId?.message}
                     disabled={isLoading || placesLoading}
