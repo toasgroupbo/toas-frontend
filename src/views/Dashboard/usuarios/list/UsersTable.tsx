@@ -267,9 +267,7 @@ const UsersTable = () => {
                   </IconButton>
                 </Tooltip>
               )}
-              {noActions && (
-                <Chip label='Sin acciones' size='small' variant='outlined' color='default' />
-              )}
+              {noActions && <Chip label='Sin acciones' size='small' variant='outlined' color='default' />}
             </div>
           )
         },

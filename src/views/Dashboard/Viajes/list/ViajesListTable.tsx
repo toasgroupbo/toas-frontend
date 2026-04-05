@@ -250,6 +250,23 @@ const ViajesListTable = () => {
             }
           />
         )
+      }),
+      columnHelper.accessor('enabled', {
+        header: 'Habilitado',
+        cell: ({ row }) => (
+          <Chip
+            label={row.original.enabled ? 'Habilitado' : 'Deshabilitado'}
+            color={row.original.enabled ? 'success' : 'error'}
+            variant='tonal'
+            size='small'
+            icon={
+              <i
+                className={row.original.enabled ? 'tabler-toggle-right' : 'tabler-toggle-left'}
+                style={{ fontSize: '14px' }}
+              />
+            }
+          />
+        )
       })
     ],
     []
@@ -380,13 +397,24 @@ const ViajesListTable = () => {
               </tbody>
             ) : (
               <tbody>
-                {table.getRowModel().rows.map(row => (
-                  <tr key={row.id} className={classnames({ selected: row.getIsSelected() })}>
-                    {row.getVisibleCells().map(cell => (
-                      <td key={cell.id}>{flexRender(cell.column.columnDef.cell, cell.getContext())}</td>
-                    ))}
-                  </tr>
-                ))}
+                {table.getRowModel().rows.map(row => {
+                  const isDisabled = !row.original.enabled
+
+                  return (
+                    <tr
+                      key={row.id}
+                      className={classnames({ selected: row.getIsSelected() })}
+                      style={{
+                        opacity: isDisabled ? 0.5 : 1,
+                        backgroundColor: isDisabled ? 'var(--mui-palette-action-disabledBackground)' : undefined
+                      }}
+                    >
+                      {row.getVisibleCells().map(cell => (
+                        <td key={cell.id}>{flexRender(cell.column.columnDef.cell, cell.getContext())}</td>
+                      ))}
+                    </tr>
+                  )
+                })}
               </tbody>
             )}
           </table>

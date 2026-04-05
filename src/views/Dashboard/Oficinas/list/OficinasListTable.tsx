@@ -253,7 +253,7 @@ const OfficesListTable = () => {
         )
       }),
       columnHelper.accessor('place', {
-        header: 'Sucursal',
+        header: 'Lugar',
         cell: ({ row }) => (
           <div className='flex items-center gap-2'>
             <i className='tabler-map-pin' style={{ fontSize: '18px', color: 'var(--mui-palette-secondary-main)' }} />

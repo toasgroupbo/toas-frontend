@@ -203,7 +203,10 @@ const StepConfiguracion = ({
         }
       }
 
-      setDecks([...decks, { deck: 2, price: '50.00', deckType: 'SEMICAMA' as DeckType, rows: 10, columns: 4, seats: newSeats }])
+      setDecks([
+        ...decks,
+        { deck: 2, price: '50.00', deckType: 'SEMICAMA' as DeckType, rows: 10, columns: 4, seats: newSeats }
+      ])
     }
   }
 
@@ -360,7 +363,7 @@ const StepConfiguracion = ({
                     <CustomTextField
                       fullWidth
                       type='number'
-                      label='Precio'
+                      label='Precio Predeterminado'
                       placeholder='Ej: 50.00'
                       value={deck.price}
                       onChange={e => updateDeck(deckIndex, 'price', e.target.value)}

@@ -38,6 +38,7 @@ export interface Travel {
   price_deck_2: string
   type: TravelType
   travel_status: string
+  enabled: boolean
   bus: TravelBus
   travelSeats: TravelSeat[]
   route: Route

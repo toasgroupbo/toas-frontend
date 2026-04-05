@@ -147,7 +147,7 @@ const verticalMenuData = (): VerticalMenuDataType[] => [
     label: 'CONFIGURACIÓN'
   },
   {
-    label: 'Términos de Uso',
+    label: 'Configuraciones y términos de uso',
     icon: 'tabler-file-text',
     href: '/terminos'
   }
