@@ -30,8 +30,8 @@ interface OfficeFormDialogProps {
 
 interface FormData {
   url_gps: string
-  name: string // Nuevo campo
-  address: string // Nuevo campo
+  name: string
+  address: string
   placeId: number
 }
 
@@ -63,8 +63,8 @@ const OfficeFormDialog = ({
     if (office && isEditMode) {
       reset({
         url_gps: office.url_gps,
-        name: office.name || '', // Manejar null/undefined
-        address: office.address || '', // Manejar null/undefined
+        name: office.name || '',
+        address: office.address || '',
         placeId: office.place.id
       })
     } else {
@@ -103,7 +103,6 @@ const OfficeFormDialog = ({
       <form onSubmit={handleSubmit(handleFormSubmit)}>
         <DialogContent>
           <Grid container spacing={4}>
-            {/* Nuevo campo: Nombre de la oficina */}
             <Grid item xs={12}>
               <Controller
                 name='name'
@@ -128,7 +127,6 @@ const OfficeFormDialog = ({
               />
             </Grid>
 
-            {/* Nuevo campo: Dirección */}
             <Grid item xs={12}>
               <Controller
                 name='address'
@@ -155,7 +153,6 @@ const OfficeFormDialog = ({
               />
             </Grid>
 
-            {/* Campo URL GPS */}
             <Grid item xs={12}>
               <Controller
                 name='url_gps'
@@ -184,7 +181,6 @@ const OfficeFormDialog = ({
               />
             </Grid>
 
-            {/* Campo Lugar/Subsidiaria */}
             <Grid item xs={12}>
               <Controller
                 name='placeId'

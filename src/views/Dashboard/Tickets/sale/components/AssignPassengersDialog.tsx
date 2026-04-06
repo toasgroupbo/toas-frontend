@@ -33,8 +33,7 @@ interface AssignPassengersDialogProps {
 
 export interface SeatAssignment {
   seatId: number
-  passengerId: number
-  customerId: number
+
   passengerName: string
   passengerCI: string
 }
@@ -190,14 +189,13 @@ const AssignPassengersDialog = ({
   }
 
   const handlePayment = async (paymentMethod: 'cash' | 'qr') => {
-    if (!ticket || !customerId) return
+    if (!ticket) return
 
     const seatAssignments: SeatAssignment[] = ticket.seats
       .filter(seat => assignments[seat.seatNumber] !== null)
       .map(seat => ({
         seatId: seat.id || Number(seat.seatNumber),
-        passengerId: assignments[seat.seatNumber]!.id,
-        customerId: Number(customerId),
+
         passengerName: assignments[seat.seatNumber]!.fullName,
         passengerCI: assignments[seat.seatNumber]!.ci
       }))

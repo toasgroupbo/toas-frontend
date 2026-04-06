@@ -19,7 +19,7 @@ import Chip from '@mui/material/Chip'
 import Alert from '@mui/material/Alert'
 
 import CustomTextField from '@core/components/mui/TextField'
-import type { CreateTicketDto, SeatSelection } from '@/types/api/tickets'
+import type { CreateTicketDto, SeatSelection, BillingInfo } from '@/types/api/tickets'
 import type { Travel, TravelSeat } from '@/types/api/travels'
 import { useCashierTravels, useCashierTravelById } from '@/hooks/useCashierTravels'
 import BusSeatMap from './BusSeatMap'
@@ -35,7 +35,7 @@ interface SellTicketDialogProps {
 
 interface FormData {
   travelId: number | ''
-  customerId: number | ''
+  billing: BillingInfo | null
   selectedSeats: string[]
 }
 
@@ -59,16 +59,16 @@ const SellTicketDialog = ({ open, onClose, onSubmit, isLoading = false, preSelec
   } = useForm<FormData>({
     defaultValues: {
       travelId: '',
-      customerId: '',
+      billing: null,
       selectedSeats: []
     }
   })
 
   useEffect(() => {
-    if (errors.customerId && customerFieldRef.current) {
+    if (errors.billing && customerFieldRef.current) {
       customerFieldRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' })
     }
-  }, [errors.customerId])
+  }, [errors.billing])
 
   const travelId = watch('travelId')
 
@@ -182,9 +182,16 @@ const SellTicketDialog = ({ open, onClose, onSubmit, isLoading = false, preSelec
       }
     })
 
+    if (!data.billing) {
+      return
+    }
+
     const createData: Omit<CreateTicketDto, 'payment_type'> = {
       travelId: typeof data.travelId === 'number' ? data.travelId : Number(data.travelId),
-      customerId: typeof data.customerId === 'number' ? data.customerId : Number(data.customerId),
+      billing: {
+        ci: data.billing.ci,
+        nombre: data.billing.nombre
+      },
       seatSelections: seatSelections
     }
 
@@ -325,19 +332,19 @@ const SellTicketDialog = ({ open, onClose, onSubmit, isLoading = false, preSelec
 
             <Grid item xs={12} sm={preSelectedTravel ? 12 : 6} ref={customerFieldRef}>
               <Controller
-                name='customerId'
+                name='billing'
                 control={control}
                 rules={{
                   required: 'El cliente es requerido'
                 }}
                 render={({ field }) => (
                   <CustomerSearchField
-                    onCustomerSelect={customer => {
-                      field.onChange(customer.id)
+                    onBillingSelect={billing => {
+                      field.onChange(billing)
                     }}
                     disabled={isLoading}
-                    hasError={!!errors.customerId}
-                    helperText={errors.customerId?.message}
+                    hasError={!!errors.billing}
+                    helperText={errors.billing?.message}
                   />
                 )}
               />

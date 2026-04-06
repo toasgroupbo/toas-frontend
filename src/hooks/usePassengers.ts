@@ -27,7 +27,7 @@ export interface PassengerAssignment {
 
 export interface AssignPassengersDto {
   ticketId: number
-  customerId: number
+
   passengers: PassengerAssignment[]
 }
 

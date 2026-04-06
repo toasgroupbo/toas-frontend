@@ -39,7 +39,7 @@ const DeleteRouteDialog = ({ open, onClose, onConfirm, route, isLoading = false 
         </Alert>
 
         <Typography variant='body1' gutterBottom>
-          ¿Estás seguro que deseas eliminar la siguiente ruta?
+          ¿Estás seguro que deseas eliminar la siguiente ruta? Esta accion deshabilitaran todos lo viajes de esta ruta
         </Typography>
 
         {route && (

@@ -119,17 +119,40 @@ const TravelRow = ({ travel, onSellClick, onViewTickets, onViewImages, onCloseTr
             borderRadius: 1
           }}
         >
-          <Typography variant='caption' color='text.secondary' fontWeight={500} sx={{ fontSize: { xs: '0.65rem', md: '0.75rem' } }}>
+          <Typography
+            variant='caption'
+            color='text.secondary'
+            fontWeight={500}
+            sx={{ fontSize: { xs: '0.65rem', md: '0.75rem' } }}
+          >
             Salida
           </Typography>
-          <Typography variant='h6' fontWeight={700} color='primary.main' sx={{ fontSize: { xs: '1rem', md: '1.25rem' } }}>
+          <Typography
+            variant='h6'
+            fontWeight={700}
+            color='primary.main'
+            sx={{ fontSize: { xs: '1rem', md: '1.25rem' } }}
+          >
             {formatTime(travel.departure_time)}
           </Typography>
-          <i className='tabler-arrow-down' style={{ fontSize: '10px', color: 'var(--mui-palette-text-secondary)', margin: '1px 0' }} />
-          <Typography variant='caption' color='text.secondary' fontWeight={500} sx={{ fontSize: { xs: '0.65rem', md: '0.75rem' } }}>
+          <i
+            className='tabler-arrow-down'
+            style={{ fontSize: '10px', color: 'var(--mui-palette-text-secondary)', margin: '1px 0' }}
+          />
+          <Typography
+            variant='caption'
+            color='text.secondary'
+            fontWeight={500}
+            sx={{ fontSize: { xs: '0.65rem', md: '0.75rem' } }}
+          >
             Llegada
           </Typography>
-          <Typography variant='body2' fontWeight={600} color='text.primary' sx={{ fontSize: { xs: '0.85rem', md: '1rem' } }}>
+          <Typography
+            variant='body2'
+            fontWeight={600}
+            color='text.primary'
+            sx={{ fontSize: { xs: '0.85rem', md: '1rem' } }}
+          >
             {formatTime(travel.arrival_time)}
           </Typography>
         </Box>
@@ -273,7 +296,12 @@ const TravelRow = ({ travel, onSellClick, onViewTickets, onViewImages, onCloseTr
             <Typography variant='caption' color='text.secondary' sx={{ fontSize: { xs: '0.65rem', md: '0.75rem' } }}>
               P1:
             </Typography>
-            <Typography variant='body2' fontWeight={700} color='success.main' sx={{ fontSize: { xs: '0.8rem', md: '0.9rem' } }}>
+            <Typography
+              variant='body2'
+              fontWeight={700}
+              color='success.main'
+              sx={{ fontSize: { xs: '0.8rem', md: '0.9rem' } }}
+            >
               Bs.{parseFloat(travel.price_deck_1).toFixed(0)}
             </Typography>
           </Box>
@@ -282,7 +310,12 @@ const TravelRow = ({ travel, onSellClick, onViewTickets, onViewImages, onCloseTr
               <Typography variant='caption' color='text.secondary' sx={{ fontSize: { xs: '0.65rem', md: '0.75rem' } }}>
                 P2:
               </Typography>
-              <Typography variant='body2' fontWeight={700} color='success.main' sx={{ fontSize: { xs: '0.8rem', md: '0.9rem' } }}>
+              <Typography
+                variant='body2'
+                fontWeight={700}
+                color='success.main'
+                sx={{ fontSize: { xs: '0.8rem', md: '0.9rem' } }}
+              >
                 Bs.{parseFloat(travel.price_deck_2).toFixed(0)}
               </Typography>
             </Box>
@@ -582,7 +615,7 @@ const TravelsForSale = () => {
         }
       }),
       buyer: {
-        id: data.customerId,
+        id: 0,
         email: null,
         name: 'Cliente',
         ci: '',
@@ -614,10 +647,8 @@ const TravelsForSale = () => {
 
       const createdTicket = await createTicketMutation.mutateAsync(ticketData)
 
-      // Asignar pasajeros (una sola llamada con todos)
       await assignPassengersMutation.mutateAsync({
         ticketId: createdTicket.id,
-        customerId: assignments[0]?.customerId || pendingTicketData.customerId,
         passengers: assignments.map(a => ({
           seatId: a.seatId,
           passenger: {
@@ -697,7 +728,7 @@ const TravelsForSale = () => {
 
       await assignPassengersMutation.mutateAsync({
         ticketId: createdTicket.id,
-        customerId: assignments[0]?.customerId || pendingTicketData.customerId,
+
         passengers: assignments.map(a => ({
           seatId: a.seatId,
           passenger: {
@@ -917,10 +948,7 @@ const TravelsForSale = () => {
 
         {activeTravels.length === 0 ? (
           <Box sx={{ py: 8, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2 }}>
-            <i
-              className='tabler-info-circle'
-              style={{ fontSize: '48px', color: 'var(--mui-palette-text-disabled)' }}
-            />
+            <i className='tabler-info-circle' style={{ fontSize: '48px', color: 'var(--mui-palette-text-disabled)' }} />
             <Typography variant='h6' color='text.secondary'>
               No hay viajes disponibles en este momento
             </Typography>
@@ -1017,8 +1045,8 @@ const TravelsForSale = () => {
 
             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '20px' }}>
               <Typography variant='body2' color='text.secondary'>
-                Mostrando {(currentPage - 1) * pageSize + 1} a{' '}
-                {Math.min(currentPage * pageSize, activeTravels.length)} de {activeTravels.length} viajes
+                Mostrando {(currentPage - 1) * pageSize + 1} a {Math.min(currentPage * pageSize, activeTravels.length)}{' '}
+                de {activeTravels.length} viajes
               </Typography>
               <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
                 <CustomTextField

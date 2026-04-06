@@ -63,10 +63,15 @@ export interface Ticket {
   customer?: Customer
 }
 
+export interface BillingInfo {
+  ci: string
+  nombre: string
+}
+
 export interface CreateTicketDto {
   travelId: number
   seatSelections: SeatSelection[]
-  customerId: number
+  billing: BillingInfo
   payment_type: 'qr' | 'cash'
 }
 

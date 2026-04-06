@@ -21,18 +21,18 @@ import {
   IconButton
 } from '@mui/material'
 
-import { useSearchCustomerByCi, useCreateCustomerForCashier } from '@/hooks/useCustomersByCi'
-import type { Customer } from '@/types/api/customers'
+import { useSearchBillingByCi } from '@/hooks/useCustomersByCi'
+import type { BillingInfo } from '@/types/api/tickets'
 
 interface CustomerSearchFieldProps {
-  onCustomerSelect: (customer: Customer) => void
+  onBillingSelect: (billing: BillingInfo) => void
   disabled?: boolean
   hasError?: boolean
   helperText?: string
 }
 
 const CustomerSearchField = ({
-  onCustomerSelect,
+  onBillingSelect,
   disabled = false,
   hasError = false,
   helperText
@@ -42,22 +42,20 @@ const CustomerSearchField = ({
   const [showResults, setShowResults] = useState(false)
   const [openCreateDialog, setOpenCreateDialog] = useState(false)
   const [newCustomerName, setNewCustomerName] = useState('')
-  const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null)
+  const [selectedBilling, setSelectedBilling] = useState<BillingInfo | null>(null)
   const [shouldSearch, setShouldSearch] = useState(false)
 
   const {
-    data: customer,
+    data: billingData,
     isLoading,
     error
-  } = useSearchCustomerByCi(searchQuery, shouldSearch && searchQuery.length > 0)
-
-  const createCustomerMutation = useCreateCustomerForCashier()
+  } = useSearchBillingByCi(searchQuery, shouldSearch && searchQuery.length > 0)
 
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value
 
     setSearchTerm(value)
-    setSelectedCustomer(null)
+    setSelectedBilling(null)
     setShowResults(false)
     setShouldSearch(false)
   }
@@ -72,12 +70,11 @@ const CustomerSearchField = ({
     setShouldSearch(true)
   }
 
-  // Resetear shouldSearch cuando se obtienen resultados
   useEffect(() => {
-    if (customer || error) {
+    if (billingData || error) {
       setShouldSearch(false)
     }
-  }, [customer, error])
+  }, [billingData, error])
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter') {
@@ -86,27 +83,27 @@ const CustomerSearchField = ({
     }
   }
 
-  const handleSelectCustomer = (selectedCustomer: Customer) => {
-    setSelectedCustomer(selectedCustomer)
-    setSearchTerm(selectedCustomer.ci || '')
+  const handleSelectBilling = (billing: BillingInfo) => {
+    setSelectedBilling(billing)
+    setSearchTerm(billing.ci || '')
     setShowResults(false)
-    onCustomerSelect(selectedCustomer)
+    onBillingSelect(billing)
   }
 
-  const handleCreateCustomer = async () => {
+  const handleCreateBilling = async () => {
     if (!newCustomerName.trim() || !searchTerm.trim()) return
 
     try {
-      const newCustomer = await createCustomerMutation.mutateAsync({
-        name: newCustomerName.trim(),
-        ci: searchTerm.trim()
-      })
+      const newBilling: BillingInfo = {
+        ci: searchTerm.trim(),
+        nombre: newCustomerName.trim()
+      }
 
-      handleSelectCustomer(newCustomer)
+      handleSelectBilling(newBilling)
       setOpenCreateDialog(false)
       setNewCustomerName('')
     } catch (error) {
-      console.error('Error creating customer:', error)
+      console.error('Error creating billing:', error)
     }
   }
 
@@ -143,7 +140,7 @@ const CustomerSearchField = ({
       )
     }
 
-    if (error || !customer) {
+    if (error || !billingData) {
       return (
         <Paper
           elevation={3}
@@ -188,7 +185,7 @@ const CustomerSearchField = ({
       >
         <List disablePadding>
           <ListItem
-            onClick={() => handleSelectCustomer(customer)}
+            onClick={() => handleSelectBilling(billingData)}
             sx={{
               cursor: 'pointer',
               '&:hover': {
@@ -200,10 +197,10 @@ const CustomerSearchField = ({
               primary={
                 <Box display='flex' alignItems='center' gap={1}>
                   <i className='tabler-user' />
-                  <Typography fontWeight={600}>{customer.name}</Typography>
+                  <Typography fontWeight={600}>{billingData.nombre}</Typography>
                 </Box>
               }
-              secondary={`CI: ${customer.ci}`}
+              secondary={`CI: ${billingData.ci}`}
             />
           </ListItem>
         </List>
@@ -225,14 +222,14 @@ const CustomerSearchField = ({
               onKeyDown={handleKeyDown}
               disabled={disabled}
               error={hasError}
-              helperText={hasError && !selectedCustomer ? helperText : ''}
+              helperText={hasError && !selectedBilling ? helperText : ''}
               InputProps={{
                 startAdornment: (
                   <InputAdornment position='start'>
                     <i className='tabler-id' />
                   </InputAdornment>
                 ),
-                endAdornment: selectedCustomer ? (
+                endAdornment: selectedBilling ? (
                   <InputAdornment position='end'>
                     <i className='tabler-check' style={{ color: 'green' }} />
                   </InputAdornment>
@@ -252,14 +249,13 @@ const CustomerSearchField = ({
           {renderSearchResults()}
         </Box>
 
-        {selectedCustomer && (
+        {selectedBilling && (
           <Alert severity='success' icon={<i className='tabler-user-check' />} sx={{ mt: 1 }}>
-            Cliente seleccionado: <strong>{selectedCustomer.name}</strong>
+            Cliente seleccionado: <strong>{selectedBilling.nombre}</strong>
           </Alert>
         )}
       </Box>
 
-      {/* Create Customer Dialog */}
       <Dialog open={openCreateDialog} onClose={() => setOpenCreateDialog(false)} maxWidth='sm' fullWidth>
         <DialogTitle>
           <Box display='flex' alignItems='center' gap={1}>
@@ -285,15 +281,13 @@ const CustomerSearchField = ({
             Cancelar
           </Button>
           <Button
-            onClick={handleCreateCustomer}
+            onClick={handleCreateBilling}
             variant='contained'
             color='primary'
-            disabled={!newCustomerName.trim() || createCustomerMutation.isPending}
-            startIcon={
-              createCustomerMutation.isPending ? <CircularProgress size={20} /> : <i className='tabler-check' />
-            }
+            disabled={!newCustomerName.trim()}
+            startIcon={<i className='tabler-check' />}
           >
-            {createCustomerMutation.isPending ? 'Creando...' : 'Crear Cliente'}
+            Usar Datos
           </Button>
         </DialogActions>
       </Dialog>
