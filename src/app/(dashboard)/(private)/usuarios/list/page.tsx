@@ -9,10 +9,10 @@ const PageUsuarios = () => {
     <Grid container spacing={6}>
       <Grid size={{ xs: 12 }}>
         <Typography variant='h4' sx={{ paddingLeft: '20px' }}>
-          Usuarios
+          Administradores
         </Typography>
         <Typography sx={{ paddingLeft: '20px' }}>
-          Lista de <code>Usuarios</code>.
+          Lista de <code>Administradores</code>.
         </Typography>
       </Grid>
       <Grid size={{ xs: 12 }}>

@@ -18,6 +18,8 @@ export const filterMenuByRole = (
       return true
     }
 
+    const operationsMenus = ['OPERACIONES', 'Venta de Tickets', 'Arqueo de Caja', 'Salidas']
+
     if (isStaticRole) {
       if (userRole === 'SUPER_ADMIN') {
         if (!isImpersonating && !hasCompany) {
@@ -30,12 +32,17 @@ export const filterMenuByRole = (
             'Reporte de Depósitos',
             'Reporte de Ventas',
             'Reporte de Usuarios',
-            'Clientes',
+            'Usuarios de Aplicación',
             'CONFIGURACIÓN',
-            'Términos de Uso'
+            'Configuraciones y términos de uso'
           ]
 
           return adminOnlyMenus.includes(item.label)
+        }
+
+        // Si está impersonando, excluir menús de operaciones (son solo para cajeros)
+        if (isImpersonating && operationsMenus.includes(item.label)) {
+          return false
         }
 
         return true
@@ -51,7 +58,7 @@ export const filterMenuByRole = (
           'Reporte de Depósitos',
           'Reporte de Ventas',
           'Reporte de Usuarios',
-          'Clientes'
+          'Usuarios de Aplicación'
         ]
 
         return adminOnlyMenus.includes(item.label)
@@ -76,15 +83,7 @@ export const filterMenuByRole = (
       }
 
       if (userRole === 'ADMIN_EMPRESA' || userRole === 'COMPANY_ADMIN') {
-        const empresaMenus = [
-          'GESTIÓN DE EMPRESA',
-          'Buses',
-          'Rutas',
-          'Dueños',
-          'Cajeros',
-          'Oficinas',
-          'Viajes'
-        ]
+        const empresaMenus = ['GESTIÓN DE EMPRESA', 'Buses', 'Rutas', 'Dueños', 'Cajeros', 'Oficinas', 'Viajes']
 
         return empresaMenus.includes(item.label)
       }
@@ -97,7 +96,7 @@ export const filterMenuByRole = (
         COMPANY: 'Empresas',
         USER: 'Administradores',
         ROL: 'Roles',
-        CUSTOMER: 'Clientes',
+        CUSTOMER: 'Usuarios de Aplicación',
         BUS: 'Buses',
         ROUTE: 'Rutas',
         OWNER: 'Dueños',
@@ -110,29 +109,21 @@ export const filterMenuByRole = (
 
       const sectionToResourcesMap: Record<string, string[]> = {
         'MÓDULO ADMINISTRACIÓN': ['COMPANY', 'USER', 'ROL'],
-        'REPORTES GLOBALES': ['COMPANY', 'USER', 'CUSTOMER', 'TICKET', 'TRAVEL'],
         'GESTIÓN DE EMPRESA': ['BUS', 'ROUTE', 'OWNER', 'CASHIER', 'OFFICE', 'TRIP'],
         OPERACIONES: ['TRAVEL', 'TICKET']
       }
 
-      const companyMenus = [
-        'GESTIÓN DE EMPRESA',
-        'Buses',
-        'Rutas',
-        'Dueños',
-        'Cajeros',
-        'OPERACIONES',
-        'Venta de Tickets',
-        'Arqueo de Caja',
-        'Salidas',
-        'Oficinas',
-        'Viajes'
-      ]
+      // Menús que requieren empresa
+      const companyMenus = ['GESTIÓN DE EMPRESA', 'Buses', 'Rutas', 'Dueños', 'Cajeros', 'Oficinas', 'Viajes']
 
       if (!hasCompany && !isImpersonating) {
-        if (companyMenus.includes(item.label)) {
+        if (companyMenus.includes(item.label) || operationsMenus.includes(item.label)) {
           return false
         }
+      }
+
+      if (isImpersonating && operationsMenus.includes(item.label)) {
+        return false
       }
 
       if (item.isSection) {
@@ -152,12 +143,10 @@ export const filterMenuByRole = (
         }
       }
 
-      if (item.label === 'Reporte de Depósitos' || item.label === 'Reporte de Ventas') {
-        return hasPermission(userPermissions, 'COMPANY', 'READ') || hasPermission(userPermissions, 'TICKET', 'READ')
-      }
+      const reportLabels = ['Reporte de Depósitos', 'Reporte de Ventas', 'Reporte de Usuarios', 'REPORTES GLOBALES']
 
-      if (item.label === 'Reporte de Usuarios') {
-        return hasPermission(userPermissions, 'USER', 'READ')
+      if (reportLabels.includes(item.label) || item.label?.startsWith('Reporte')) {
+        return false
       }
 
       if (item.label === 'Términos de Uso' || item.label === 'CONFIGURACIÓN') {

@@ -335,43 +335,6 @@ const UsersTable = () => {
           ) : (
             <Chip label='Sin Rol' color='default' variant='outlined' size='small' />
           )
-      }),
-      columnHelper.accessor('company', {
-        header: 'Empresa',
-        cell: ({ row }) =>
-          row.original.company ? (
-            <div className='flex items-center gap-2'>
-              {row.original.company.logo && (
-                <Box
-                  sx={{
-                    width: 30,
-                    height: 30,
-                    borderRadius: 1,
-                    overflow: 'hidden',
-                    border: '1px solid',
-                    borderColor: 'divider'
-                  }}
-                >
-                  <img
-                    src={
-                      row.original.company.logo.startsWith('http')
-                        ? row.original.company.logo
-                        : `${process.env.NEXT_PUBLIC_API_URL}${row.original.company.logo}`
-                    }
-                    alt={row.original.company.name}
-                    style={{
-                      width: '100%',
-                      height: '100%',
-                      objectFit: 'cover'
-                    }}
-                  />
-                </Box>
-              )}
-              <Typography variant='body2'>{row.original.company.name}</Typography>
-            </div>
-          ) : (
-            <Chip label='Sin Empresa' color='default' variant='outlined' size='small' />
-          )
       })
     ],
     [canUpdate, canDelete]
@@ -419,7 +382,7 @@ const UsersTable = () => {
       <Card>
         <div className='flex flex-wrap justify-between gap-4 p-6'>
           <div className='flex flex-col gap-2'>
-            <Typography variant='h4'>Gestión de Usuarios</Typography>
+            <Typography variant='h4'>Gestión de Administradores</Typography>
             <Typography variant='body2' color='text.secondary'>
               Administra los usuarios administradores del sistema
             </Typography>

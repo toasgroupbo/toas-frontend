@@ -38,13 +38,13 @@ const EcommerceDashboard = async () => {
       <Grid size={{ xs: 12, md: 4 }}>
         <CongratulationsJohn />
       </Grid>
-      <Grid size={{ xs: 12, md: 8 }}>
+      {/* <Grid size={{ xs: 12, md: 8 }}>
         <StatisticsCard />
       </Grid>
 
       <Grid size={{ xs: 12, xl: 8 }}>
         <RevenueReport />
-      </Grid>
+      </Grid> */}
     </Grid>
   )
 }

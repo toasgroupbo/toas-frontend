@@ -9,26 +9,11 @@ import Skeleton from '@mui/material/Skeleton'
 import Chip from '@mui/material/Chip'
 import Divider from '@mui/material/Divider'
 
+// Context
+import { useAuth } from '@/contexts/AuthContext'
+
 const WelcomeFleetCard = () => {
-  const user = { usuario: 'Invitado' }
-
-  const cargandoPerfil = false
-
-  const perfilNegocio = {
-    nombre_publicador: 'Terminal Sur',
-    lugar: { nombre_es: 'Santiago, Chile' }
-  }
-
-  const getMainInfo = () => {
-    if (perfilNegocio) {
-      return {
-        publicador: perfilNegocio.nombre_publicador,
-        lugar: perfilNegocio.lugar.nombre_es
-      }
-    }
-
-    return null
-  }
+  const { user, isLoading, userRole, actingAsCompany } = useAuth()
 
   const getGreeting = () => {
     const hour = new Date().getHours()
@@ -39,8 +24,22 @@ const WelcomeFleetCard = () => {
     return '¡Buenas noches'
   }
 
-  const mainInfo = getMainInfo()
+  const getRoleLabel = (role: string) => {
+    const roleLabels: Record<string, string> = {
+      SUPER_ADMIN: 'Super Administrador',
+      COMPANY_ADMIN: 'Administrador de Empresa',
+      CASHIER: 'Cajero',
+      CASHIER_TRIPS: 'Cajero de Viajes',
+      CASHIER_SELLER: 'Cajero Vendedor'
+    }
+
+    return roleLabels[role] || role
+  }
+
   const greeting = getGreeting()
+  const userName = user?.fullName || 'Invitado'
+  const companyName = actingAsCompany?.name || user?.company?.name
+  const officeName = user?.office?.place?.name
 
   return (
     <Card>
@@ -48,34 +47,39 @@ const WelcomeFleetCard = () => {
         <Grid size={{ xs: 12, sm: 8 }}>
           <CardContent>
             <Typography variant='h5' className='mbe-4'>
-              {greeting} {user.usuario}! 👋
+              {greeting} {userName}!
             </Typography>
 
-            {cargandoPerfil ? (
+            {isLoading ? (
               <>
                 <Skeleton variant='text' width={180} height={32} className='mbe-1' />
                 <Skeleton variant='text' width={220} height={24} className='mbe-2' />
               </>
-            ) : mainInfo ? (
-              <>
-                <Typography variant='h4' color='primary.main' className='mbe-1'>
-                  {mainInfo.publicador}
-                </Typography>
-                <Typography variant='h6' color='text.secondary' className='mbe-3'>
-                  📍 {mainInfo.lugar}
-                </Typography>
-              </>
             ) : (
-              <Typography variant='h4' color='primary.main' className='mbe-3'>
-                Terminal de Buses
-              </Typography>
+              <>
+                {companyName && (
+                  <Typography variant='h4' color='primary.main' className='mbe-1'>
+                    {companyName}
+                  </Typography>
+                )}
+                {officeName && (
+                  <Typography variant='h6' color='text.secondary' className='mbe-3'>
+                    {officeName}
+                  </Typography>
+                )}
+                {!companyName && !officeName && (
+                  <Typography variant='h4' color='primary.main' className='mbe-3'>
+                    Panel de Administración
+                  </Typography>
+                )}
+              </>
             )}
 
             <Divider className='mbe-3' />
 
             <div className='flex flex-wrap gap-3 mbe-3'>
-              <Chip label='5 Empresas Activas' color='primary' variant='tonal' size='small' />
-              <Chip label='110 Buses Operando' color='info' variant='tonal' size='small' />
+              {userRole && <Chip label={getRoleLabel(userRole)} color='primary' variant='tonal' size='small' />}
+              {user?.email && <Chip label={user.email} color='default' variant='tonal' size='small' />}
             </div>
           </CardContent>
         </Grid>

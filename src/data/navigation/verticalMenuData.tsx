@@ -54,7 +54,7 @@ const verticalMenuData = (): VerticalMenuDataType[] => [
     href: '/reportes/usuarios'
   },
   {
-    label: 'Clientes',
+    label: 'Usuarios de Aplicación',
     icon: 'tabler-user-check',
     href: '/clientes/list',
     permission: {
