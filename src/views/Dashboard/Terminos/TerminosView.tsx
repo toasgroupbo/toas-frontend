@@ -12,6 +12,8 @@ import CircularProgress from '@mui/material/CircularProgress'
 import Alert from '@mui/material/Alert'
 import Tabs from '@mui/material/Tabs'
 import Tab from '@mui/material/Tab'
+import TextField from '@mui/material/TextField'
+import InputAdornment from '@mui/material/InputAdornment'
 
 import { useAuth } from '@/contexts/AuthContext'
 import { useSettings, useUpdateSettings } from '@/hooks/useSettings'
@@ -35,6 +37,7 @@ const TerminosView = () => {
   const router = useRouter()
   const { isSuperAdmin, isLoading: authLoading } = useAuth()
   const [activeTab, setActiveTab] = useState(0)
+  const [commission, setCommission] = useState('')
   const [terminosContent, setTerminosContent] = useState('')
   const [politicasContent, setPoliticasContent] = useState('')
   const [hasChanges, setHasChanges] = useState(false)
@@ -50,10 +53,16 @@ const TerminosView = () => {
 
   useEffect(() => {
     if (settings) {
+      setCommission(settings.commission || '')
       setTerminosContent(settings.terminos_y_condiciones || '')
       setPoliticasContent(settings.politicas_de_privacidad || '')
     }
   }, [settings])
+
+  const handleCommissionChange = (value: string) => {
+    setCommission(value)
+    setHasChanges(true)
+  }
 
   const handleTerminosChange = (html: string) => {
     setTerminosContent(html)
@@ -67,6 +76,7 @@ const TerminosView = () => {
 
   const handleSave = async () => {
     await updateSettingsMutation.mutateAsync({
+      commission,
       terminos_y_condiciones: terminosContent,
       politicas_de_privacidad: politicasContent
     })
@@ -138,6 +148,27 @@ const TerminosView = () => {
             >
               {updateSettingsMutation.isPending ? 'Guardando...' : 'Guardar Cambios'}
             </Button>
+          </Box>
+        </Box>
+
+        <Box sx={{ px: 3, py: 3, borderBottom: '1px solid', borderColor: 'divider' }}>
+          <Typography variant='subtitle1' fontWeight={600} gutterBottom>
+            Configuración General
+          </Typography>
+          <Box sx={{ mt: 2, maxWidth: '400px' }}>
+            <TextField
+              fullWidth
+              label='Comisión de Plataforma'
+              type='number'
+              value={commission}
+              onChange={e => handleCommissionChange(e.target.value)}
+              slotProps={{
+                input: {
+                  endAdornment: <InputAdornment position='end'>%</InputAdornment>
+                }
+              }}
+              helperText='Porcentaje de comisión '
+            />
           </Box>
         </Box>
 

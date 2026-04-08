@@ -23,8 +23,11 @@ const fetchCustomers = async (params: CustomersQueryParams): Promise<CustomersRe
 
 export const useCustomers = (params: CustomersQueryParams, enabled: boolean = true) => {
   return useQuery<CustomersResponse>({
-    queryKey: ['customers', params],
+    queryKey: ['customers', params.page, params.limit, params.search, params.is_verified],
     queryFn: () => fetchCustomers(params),
-    enabled
+    enabled,
+    placeholderData: previousData => previousData,
+    staleTime: 5 * 60 * 1000,
+    retry: 2
   })
 }

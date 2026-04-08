@@ -77,12 +77,17 @@ const ClientsTable = () => {
   const [searchQuery, setSearchQuery] = useState('')
   const [verificationFilter, setVerificationFilter] = useState<boolean | 'all'>('all')
 
-  const { data: customersResponse, isLoading, error } = useCustomers({
-    page: currentPage,
-    limit: pageSize,
-    search: searchQuery,
-    is_verified: verificationFilter
-  })
+  const queryParams = useMemo(
+    () => ({
+      page: currentPage,
+      limit: pageSize,
+      search: searchQuery,
+      is_verified: verificationFilter
+    }),
+    [currentPage, pageSize, searchQuery, verificationFilter]
+  )
+
+  const { data: customersResponse, isLoading, error } = useCustomers(queryParams)
 
   const customers = customersResponse?.data || []
   const meta = customersResponse?.meta
@@ -142,6 +147,20 @@ const ClientsTable = () => {
         cell: ({ row }) => (
           <Typography variant='body2' color='text.secondary'>
             {row.original.phone || '-'}
+          </Typography>
+        )
+      }),
+      columnHelper.accessor('birthDate', {
+        header: 'Fecha de Nacimiento',
+        cell: ({ row }) => (
+          <Typography variant='body2' color='text.secondary'>
+            {row.original.birthDate
+              ? new Date(row.original.birthDate).toLocaleDateString('es-ES', {
+                  year: 'numeric',
+                  month: 'short',
+                  day: 'numeric'
+                })
+              : '-'}
           </Typography>
         )
       }),

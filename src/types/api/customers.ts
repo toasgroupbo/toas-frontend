@@ -7,6 +7,7 @@ export interface Customer {
   is_verified: boolean
   provider: 'google' | 'email' | string
   idProvider: string | null
+  birthDate: string | null
 }
 
 export interface CustomersResponse {
