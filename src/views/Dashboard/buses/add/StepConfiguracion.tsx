@@ -362,11 +362,17 @@ const StepConfiguracion = ({
                   <Grid size={{ xs: 12, sm: 3 }}>
                     <CustomTextField
                       fullWidth
-                      type='number'
+                      type='text'
                       label='Precio Predeterminado'
                       placeholder='Ej: 50.00'
                       value={deck.price}
-                      onChange={e => updateDeck(deckIndex, 'price', e.target.value)}
+                      onChange={e => {
+                        const value = e.target.value
+
+                        if (value === '' || /^\d*\.?\d*$/.test(value)) {
+                          updateDeck(deckIndex, 'price', value)
+                        }
+                      }}
                       InputProps={{
                         startAdornment: (
                           <InputAdornment position='start'>
@@ -374,51 +380,47 @@ const StepConfiguracion = ({
                           </InputAdornment>
                         )
                       }}
-                      inputProps={{
-                        min: 0,
-                        step: 0.01
-                      }}
                     />
                   </Grid>
                   <Grid size={{ xs: 12, sm: 3 }}>
                     <CustomTextField
                       fullWidth
-                      type='number'
+                      type='text'
                       label='Filas'
                       placeholder='Ej: 10'
-                      value={deck.rows}
+                      value={deck.rows || ''}
                       onChange={e => {
                         const value = e.target.value
-                        const numValue = value === '' ? 1 : parseInt(value, 10) || 1
 
-                        updateDeckDimensions(deckIndex, numValue, deck.columns)
+                        if (value === '' || /^\d+$/.test(value)) {
+                          const numValue = value === '' ? 0 : parseInt(value, 10)
+
+                          updateDeckDimensions(deckIndex, numValue, deck.columns)
+                        }
                       }}
-                      inputProps={{
-                        min: 1,
-                        step: 1
-                      }}
-                      helperText='Ingrese cualquier número'
+                      error={deck.rows === 0}
+                      helperText={deck.rows === 0 ? 'Debe ingresar al menos 1 fila' : ''}
                     />
                   </Grid>
 
                   <Grid size={{ xs: 12, sm: 3 }}>
                     <CustomTextField
                       fullWidth
-                      type='number'
+                      type='text'
                       label='Columnas'
                       placeholder='Ej: 4'
-                      value={deck.columns}
+                      value={deck.columns || ''}
                       onChange={e => {
                         const value = e.target.value
-                        const numValue = value === '' ? 1 : parseInt(value, 10) || 1
 
-                        updateDeckDimensions(deckIndex, deck.rows, numValue)
+                        if (value === '' || /^\d+$/.test(value)) {
+                          const numValue = value === '' ? 0 : parseInt(value, 10)
+
+                          updateDeckDimensions(deckIndex, deck.rows, numValue)
+                        }
                       }}
-                      inputProps={{
-                        min: 1,
-                        step: 1
-                      }}
-                      helperText='Ingrese cualquier número'
+                      error={deck.columns === 0}
+                      helperText={deck.columns === 0 ? 'Debe ingresar al menos 1 columna' : ''}
                     />
                   </Grid>
                 </Grid>

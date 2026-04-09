@@ -108,14 +108,13 @@ const AddBuses = () => {
     }
   }, [bus, isEditMode])
 
-  // Inicializar grid de asientos cuando cambien las dimensiones
   useEffect(() => {
     setDecks(prevDecks =>
       prevDecks.map(deck => {
-        // Si ya tiene asientos configurados, no reinicializar
         if (deck.seats.length > 0) return deck
 
-        // Crear grid vacío
+        if (deck.rows === 0 || deck.columns === 0) return deck
+
         const seats: Seat[] = []
 
         for (let row = 1; row <= deck.rows; row++) {
@@ -149,14 +148,34 @@ const AddBuses = () => {
         if (selectedSeatTool === SeatType.SEAT) {
           const isAlreadySeat = deck.seats[seatIndex].type === SeatType.SEAT
 
-          const seatCount = deck.seats.filter(s => s.type === SeatType.SEAT).length
-          const newSeatNumber = isAlreadySeat ? deck.seats[seatIndex].seatNumber : `${seatCount + 1}`
+          if (isAlreadySeat) {
+            deck.seats[seatIndex] = {
+              row: rowIndex + 1,
+              column: colIndex + 1,
+              seatNumber: deck.seats[seatIndex].seatNumber,
+              type: SeatType.SEAT
+            }
+          } else {
+            let maxSeatNumber = 0
 
-          deck.seats[seatIndex] = {
-            row: rowIndex + 1,
-            column: colIndex + 1,
-            seatNumber: newSeatNumber,
-            type: SeatType.SEAT
+            for (const currentDeck of newDecks) {
+              for (const seat of currentDeck.seats) {
+                if (seat.type === SeatType.SEAT && seat.seatNumber) {
+                  const num = parseInt(seat.seatNumber, 10)
+
+                  if (!isNaN(num) && num > maxSeatNumber) {
+                    maxSeatNumber = num
+                  }
+                }
+              }
+            }
+
+            deck.seats[seatIndex] = {
+              row: rowIndex + 1,
+              column: colIndex + 1,
+              seatNumber: `${maxSeatNumber + 1}`,
+              type: SeatType.SEAT
+            }
           }
         } else {
           deck.seats[seatIndex] = {
@@ -176,12 +195,10 @@ const AddBuses = () => {
       const newDecks = [...prevDecks]
       const deck = newDecks[deckIndex]
 
-      // Crear nuevo grid con las nuevas dimensiones
       const newSeats: Seat[] = []
 
       for (let row = 1; row <= rows; row++) {
         for (let col = 1; col <= columns; col++) {
-          // Buscar si ya existe un asiento en esta posición
           const existingSeat = deck.seats.find(s => s.row === row && s.column === col)
 
           if (existingSeat) {
@@ -297,6 +314,15 @@ const AddBuses = () => {
 
         return
       }
+
+      // Validar que todos los pisos tengan filas y columnas válidas
+      const invalidDeck = decks.find(deck => deck.rows === 0 || deck.columns === 0)
+
+      if (invalidDeck) {
+        showError('Por favor configure las filas y columnas de todos los pisos ')
+
+        return
+      }
     }
 
     setActiveStep(prev => prev + 1)
@@ -366,7 +392,10 @@ const AddBuses = () => {
     )
   }
 
-  const totalSeats = decks.reduce((acc: number, deck: DeckFormData) => acc + deck.seats.filter((s: Seat) => s.type === SeatType.SEAT).length, 0)
+  const totalSeats = decks.reduce(
+    (acc: number, deck: DeckFormData) => acc + deck.seats.filter((s: Seat) => s.type === SeatType.SEAT).length,
+    0
+  )
 
   return (
     <div className='space-y-6'>

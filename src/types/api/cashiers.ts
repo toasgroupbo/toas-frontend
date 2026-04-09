@@ -15,11 +15,20 @@ export interface CashierRole {
   permissions: Permission[]
 }
 
+export interface CashierPlace {
+  id: number
+  name: string
+  createdAt: string
+}
+
 export interface CashierOffice {
   id: number
   url_gps: string
-  city: string
+  name: string
+  address: string
+  enabled: boolean
   createdAt: string
+  place: CashierPlace
 }
 
 export interface Cashier {

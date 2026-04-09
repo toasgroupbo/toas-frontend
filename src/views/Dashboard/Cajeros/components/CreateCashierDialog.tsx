@@ -389,60 +389,60 @@ const CreateCashierDialog = ({
             )}
 
             <Grid item xs={12} sm={6}>
-                <Controller
-                  name='cashierRol'
-                  control={control}
-                  rules={{
-                    required: 'El rol es requerido'
-                  }}
-                  render={({ field }) => (
-                    <CustomTextField
-                      {...field}
-                      select
-                      fullWidth
-                      label='Rol del Cajero'
-                      error={!!errors.cashierRol}
-                      helperText={errors.cashierRol?.message}
-                      disabled={isLoading || rolesLoading}
-                      onChange={e => field.onChange(Number(e.target.value))}
-                      InputProps={{
-                        startAdornment: (
-                          <InputAdornment position='start'>
-                            <i className='tabler-shield' />
-                          </InputAdornment>
-                        )
-                      }}
-                    >
-                      {rolesLoading ? (
-                        <MenuItem disabled>
-                          <CircularProgress size={20} />
-                          <span style={{ marginLeft: 8 }}>Cargando roles...</span>
-                        </MenuItem>
-                      ) : cashierRoles && cashierRoles.length > 0 ? (
-                        cashierRoles.map(role => {
-                          const roleInfo = getRoleInfo(role.name)
+              <Controller
+                name='cashierRol'
+                control={control}
+                rules={{
+                  required: 'El rol es requerido'
+                }}
+                render={({ field }) => (
+                  <CustomTextField
+                    {...field}
+                    select
+                    fullWidth
+                    label='Rol del Cajero'
+                    error={!!errors.cashierRol}
+                    helperText={errors.cashierRol?.message}
+                    disabled={isLoading || rolesLoading}
+                    onChange={e => field.onChange(Number(e.target.value))}
+                    InputProps={{
+                      startAdornment: (
+                        <InputAdornment position='start'>
+                          <i className='tabler-shield' />
+                        </InputAdornment>
+                      )
+                    }}
+                  >
+                    {rolesLoading ? (
+                      <MenuItem disabled>
+                        <CircularProgress size={20} />
+                        <span style={{ marginLeft: 8 }}>Cargando roles...</span>
+                      </MenuItem>
+                    ) : cashierRoles && cashierRoles.length > 0 ? (
+                      cashierRoles.map(role => {
+                        const roleInfo = getRoleInfo(role.name)
 
-                          return (
-                            <MenuItem key={role.id} value={Number(role.id)}>
-                              <div className='flex items-center gap-3'>
-                                <i className={roleInfo.icon} style={{ fontSize: '20px' }} />
-                                <div className='flex flex-col'>
-                                  <span className='font-medium'>{roleInfo.label}</span>
-                                  {roleInfo.description && (
-                                    <span className='text-xs text-gray-500'>{roleInfo.description}</span>
-                                  )}
-                                </div>
+                        return (
+                          <MenuItem key={role.id} value={Number(role.id)}>
+                            <div className='flex items-center gap-3'>
+                              <i className={roleInfo.icon} style={{ fontSize: '20px' }} />
+                              <div className='flex flex-col'>
+                                <span className='font-medium'>{roleInfo.label}</span>
+                                {roleInfo.description && (
+                                  <span className='text-xs text-gray-500'>{roleInfo.description}</span>
+                                )}
                               </div>
-                            </MenuItem>
-                          )
-                        })
-                      ) : (
-                        <MenuItem disabled>No hay roles disponibles</MenuItem>
-                      )}
-                    </CustomTextField>
-                  )}
-                />
-              </Grid>
+                            </div>
+                          </MenuItem>
+                        )
+                      })
+                    ) : (
+                      <MenuItem disabled>No hay roles disponibles</MenuItem>
+                    )}
+                  </CustomTextField>
+                )}
+              />
+            </Grid>
 
             <Grid item xs={12} sm={6}>
               <Controller
@@ -456,7 +456,7 @@ const CreateCashierDialog = ({
                     {...field}
                     select
                     fullWidth
-                    label='Subsidiaria'
+                    label='Lugar'
                     error={!!errors.officeId}
                     helperText={errors.officeId?.message}
                     disabled={isLoading || officesLoading}

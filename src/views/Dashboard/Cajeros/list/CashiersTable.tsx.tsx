@@ -294,51 +294,22 @@ const CashiersTable = () => {
         header: 'Oficina',
         cell: ({ row }) =>
           row.original.office ? (
-            <div className='flex items-center gap-2'>
-              <i className='tabler-building' style={{ fontSize: '18px', color: 'var(--mui-palette-primary-main)' }} />
-              <Typography variant='body2' fontWeight='medium'>
-                {row.original.office.city}
-              </Typography>
+            <div className='flex flex-col gap-1'>
+              <div className='flex items-center gap-1'>
+                <i className='tabler-building' style={{ fontSize: '16px', color: 'var(--mui-palette-primary-main)' }} />
+                <Typography variant='body2' fontWeight='medium'>
+                  {row.original.office.name}
+                </Typography>
+              </div>
+              <div className='flex items-center gap-1 ml-5'>
+                <i className='tabler-map-pin' style={{ fontSize: '14px', color: 'var(--mui-palette-text-secondary)' }} />
+                <Typography variant='caption' color='text.secondary'>
+                  {row.original.office.place.name}
+                </Typography>
+              </div>
             </div>
           ) : (
             <Chip label='Sin Oficina' color='default' variant='outlined' size='small' />
-          )
-      }),
-      columnHelper.accessor('company', {
-        header: 'Empresa',
-        cell: ({ row }) =>
-          row.original.company ? (
-            <div className='flex items-center gap-2'>
-              {row.original.company.logo && (
-                <Box
-                  sx={{
-                    width: 30,
-                    height: 30,
-                    borderRadius: 1,
-                    overflow: 'hidden',
-                    border: '1px solid',
-                    borderColor: 'divider'
-                  }}
-                >
-                  <img
-                    src={
-                      row.original.company.logo.startsWith('http')
-                        ? row.original.company.logo
-                        : `${process.env.NEXT_PUBLIC_API_URL}${row.original.company.logo}`
-                    }
-                    alt={row.original.company.name}
-                    style={{
-                      width: '100%',
-                      height: '100%',
-                      objectFit: 'cover'
-                    }}
-                  />
-                </Box>
-              )}
-              <Typography variant='body2'>{row.original.company.name}</Typography>
-            </div>
-          ) : (
-            <Chip label='Sin Empresa' color='default' variant='outlined' size='small' />
           )
       })
     ],
