@@ -1,8 +1,5 @@
 'use client'
 
-// Next Imports
-import Link from 'next/link'
-
 // Third-party Imports
 import classnames from 'classnames'
 
@@ -17,22 +14,22 @@ const FooterContent = () => {
   const { isBreakpointReached } = useVerticalNav()
 
   return (
-    <div
-      className={classnames(verticalLayoutClasses.footerContent, 'flex items-center justify-between flex-wrap gap-4')}
-    >
-      <p>
-        <span className='text-textSecondary'>{`${new Date().getFullYear()}.  SISTEMA DE AUTOBUSES `}</span>
-      </p>
-      {!isBreakpointReached && (
-        <div className='flex items-center gap-4'>
-          <Link href='' target='_blank' className='text-primary'>
-            Documentación
-          </Link>
-          <Link href='' target='_blank' className='text-primary'>
-            Soporte
-          </Link>
+    <div className='w-full'>
+      {/* Línea superior */}
+      <div className='border-t border-divider' />
+
+      <div
+        className={classnames(
+          verticalLayoutClasses.footerContent,
+          'flex items-center justify-center flex-wrap gap-4 text-center py-4'
+        )}
+      >
+        <div>
+          <p className='text-textSecondary'>info@toasgroup.com</p>
+          <p className='text-textSecondary'>Santa Cruz - Bolivia | Telf. 3260654 | Cel. 74604441</p>
+          <p className='text-textSecondary'>Derechos Reservados © {new Date().getFullYear()}</p>
         </div>
-      )}
+      </div>
     </div>
   )
 }

@@ -48,11 +48,12 @@ const verticalMenuData = (): VerticalMenuDataType[] => [
     icon: 'tabler-chart-line',
     href: '/reportes/ventas'
   },
-  {
+
+  /* {
     label: 'Reporte de Usuarios',
     icon: 'tabler-users-group',
     href: '/reportes/usuarios'
-  },
+  }, */
   {
     label: 'Usuarios de Aplicación',
     icon: 'tabler-user-check',
