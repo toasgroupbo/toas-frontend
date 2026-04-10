@@ -24,7 +24,13 @@ import { useUploadImage } from '@/hooks/useUploadImage'
 import { updateCompanySchema, type UpdateCompanyFormData } from '@/schemas/companySchemas'
 import { api } from '@/libs/axios'
 
-import { BANCOS_BOLIVIA, TIPOS_CUENTA, type Company } from '@/types/api/company'
+import {
+  BANCOS_OPTIONS,
+  BRANCH_OFFICE_OPTIONS,
+  DOCUMENT_TYPE_OPTIONS,
+  DOCUMENT_EXTENSION_OPTIONS,
+  type Company
+} from '@/types/api/company'
 
 interface UpdateCompanyDialogProps {
   open: boolean
@@ -60,9 +66,13 @@ const UpdateCompanyDialog = ({ open, onClose, onSubmit, isLoading, company }: Up
       commission: 10,
       hours_before_closing: 3,
       bankAccount: {
-        bank: '',
-        typeAccount: 'caja_ahorro',
-        account: ''
+        bankCode: '',
+        account: '',
+        titularName: '',
+        branchOfficeId: 0,
+        documentNumber: '',
+        documentType: '',
+        documentExtension: ''
       },
       admin: {
         email: '',
@@ -83,9 +93,13 @@ const UpdateCompanyDialog = ({ open, onClose, onSubmit, isLoading, company }: Up
         commission: company.commission,
         hours_before_closing: company.hours_before_closing,
         bankAccount: {
-          bank: company.bankAccount.bank,
-          typeAccount: company.bankAccount.typeAccount,
-          account: company.bankAccount.account
+          bankCode: company.bankAccount.bankCode || '',
+          account: company.bankAccount.account || '',
+          titularName: company.bankAccount.titularName || '',
+          branchOfficeId: company.bankAccount.branchOfficeId || 0,
+          documentNumber: company.bankAccount.documentNumber || '',
+          documentType: company.bankAccount.documentType || '',
+          documentExtension: company.bankAccount.documentExtension || ''
         },
         admin: {
           email: company.admin.email,
@@ -210,9 +224,13 @@ const UpdateCompanyDialog = ({ open, onClose, onSubmit, isLoading, company }: Up
       }
 
       const bankAccountData = {
-        bank: data.bankAccount.bank,
-        typeAccount: data.bankAccount.typeAccount,
-        account: data.bankAccount.account
+        bankCode: data.bankAccount.bankCode,
+        account: data.bankAccount.account,
+        titularName: data.bankAccount.titularName,
+        branchOfficeId: data.bankAccount.branchOfficeId,
+        documentNumber: data.bankAccount.documentNumber,
+        documentType: data.bankAccount.documentType,
+        documentExtension: data.bankAccount.documentExtension
       }
 
       // Actualizar datos del administrador
@@ -436,7 +454,7 @@ const UpdateCompanyDialog = ({ open, onClose, onSubmit, isLoading, company }: Up
             </Grid>
             <Grid size={{ xs: 12, sm: 6 }}>
               <Controller
-                name='bankAccount.bank'
+                name='bankAccount.bankCode'
                 control={control}
                 render={({ field }) => (
                   <CustomTextField
@@ -444,8 +462,8 @@ const UpdateCompanyDialog = ({ open, onClose, onSubmit, isLoading, company }: Up
                     fullWidth
                     label='Banco *'
                     {...field}
-                    error={!!errors.bankAccount?.bank}
-                    helperText={errors.bankAccount?.bank?.message}
+                    error={!!errors.bankAccount?.bankCode}
+                    helperText={errors.bankAccount?.bankCode?.message}
                     disabled={isProcessing}
                     InputProps={{
                       startAdornment: (
@@ -455,9 +473,9 @@ const UpdateCompanyDialog = ({ open, onClose, onSubmit, isLoading, company }: Up
                       )
                     }}
                   >
-                    {BANCOS_BOLIVIA.map(banco => (
-                      <MenuItem key={banco} value={banco}>
-                        {banco}
+                    {BANCOS_OPTIONS.map(banco => (
+                      <MenuItem key={banco.value} value={banco.value}>
+                        {banco.label}
                       </MenuItem>
                     ))}
                   </CustomTextField>
@@ -467,35 +485,37 @@ const UpdateCompanyDialog = ({ open, onClose, onSubmit, isLoading, company }: Up
 
             <Grid size={{ xs: 12, sm: 6 }}>
               <Controller
-                name='bankAccount.typeAccount'
+                name='bankAccount.branchOfficeId'
                 control={control}
                 render={({ field }) => (
                   <CustomTextField
                     select
                     fullWidth
-                    label='Tipo de Cuenta *'
+                    label='Sucursal *'
                     {...field}
-                    error={!!errors.bankAccount?.typeAccount}
-                    helperText={errors.bankAccount?.typeAccount?.message}
+                    onChange={e => field.onChange(Number(e.target.value))}
+                    error={!!errors.bankAccount?.branchOfficeId}
+                    helperText={errors.bankAccount?.branchOfficeId?.message}
                     disabled={isProcessing}
                     InputProps={{
                       startAdornment: (
                         <InputAdornment position='start'>
-                          <i className='tabler-wallet' />
+                          <i className='tabler-building' />
                         </InputAdornment>
                       )
                     }}
                   >
-                    {TIPOS_CUENTA.map(tipo => (
-                      <MenuItem key={tipo.value} value={tipo.value}>
-                        {tipo.label}
+                    {BRANCH_OFFICE_OPTIONS.map(office => (
+                      <MenuItem key={office.value} value={office.value}>
+                        {office.label}
                       </MenuItem>
                     ))}
                   </CustomTextField>
                 )}
               />
             </Grid>
-            <Grid size={12}>
+
+            <Grid size={{ xs: 12, sm: 6 }}>
               <CustomTextField
                 fullWidth
                 label='Número de Cuenta *'
@@ -511,6 +531,106 @@ const UpdateCompanyDialog = ({ open, onClose, onSubmit, isLoading, company }: Up
                     </InputAdornment>
                   )
                 }}
+              />
+            </Grid>
+
+            <Grid size={{ xs: 12, sm: 6 }}>
+              <CustomTextField
+                fullWidth
+                label='Nombre del Titular *'
+                placeholder='Juan Pérez'
+                {...register('bankAccount.titularName')}
+                error={!!errors.bankAccount?.titularName}
+                helperText={errors.bankAccount?.titularName?.message}
+                disabled={isProcessing}
+                InputProps={{
+                  startAdornment: (
+                    <InputAdornment position='start'>
+                      <i className='tabler-user' />
+                    </InputAdornment>
+                  )
+                }}
+              />
+            </Grid>
+
+            <Grid size={{ xs: 12, sm: 6 }}>
+              <Controller
+                name='bankAccount.documentType'
+                control={control}
+                render={({ field }) => (
+                  <CustomTextField
+                    select
+                    fullWidth
+                    label='Tipo de Documento *'
+                    {...field}
+                    error={!!errors.bankAccount?.documentType}
+                    helperText={errors.bankAccount?.documentType?.message}
+                    disabled={isProcessing}
+                    InputProps={{
+                      startAdornment: (
+                        <InputAdornment position='start'>
+                          <i className='tabler-file-text' />
+                        </InputAdornment>
+                      )
+                    }}
+                  >
+                    {DOCUMENT_TYPE_OPTIONS.map(type => (
+                      <MenuItem key={type.value} value={type.value}>
+                        {type.label}
+                      </MenuItem>
+                    ))}
+                  </CustomTextField>
+                )}
+              />
+            </Grid>
+
+            <Grid size={{ xs: 12, sm: 6 }}>
+              <CustomTextField
+                fullWidth
+                label='Número de Documento *'
+                placeholder='1234567890'
+                {...register('bankAccount.documentNumber')}
+                error={!!errors.bankAccount?.documentNumber}
+                helperText={errors.bankAccount?.documentNumber?.message}
+                disabled={isProcessing}
+                InputProps={{
+                  startAdornment: (
+                    <InputAdornment position='start'>
+                      <i className='tabler-id' />
+                    </InputAdornment>
+                  )
+                }}
+              />
+            </Grid>
+
+            <Grid size={{ xs: 12, sm: 6 }}>
+              <Controller
+                name='bankAccount.documentExtension'
+                control={control}
+                render={({ field }) => (
+                  <CustomTextField
+                    select
+                    fullWidth
+                    label='Extensión de Documento *'
+                    {...field}
+                    error={!!errors.bankAccount?.documentExtension}
+                    helperText={errors.bankAccount?.documentExtension?.message}
+                    disabled={isProcessing}
+                    InputProps={{
+                      startAdornment: (
+                        <InputAdornment position='start'>
+                          <i className='tabler-map-pin' />
+                        </InputAdornment>
+                      )
+                    }}
+                  >
+                    {DOCUMENT_EXTENSION_OPTIONS.map(ext => (
+                      <MenuItem key={ext.value} value={ext.value}>
+                        {ext.label}
+                      </MenuItem>
+                    ))}
+                  </CustomTextField>
+                )}
               />
             </Grid>
 

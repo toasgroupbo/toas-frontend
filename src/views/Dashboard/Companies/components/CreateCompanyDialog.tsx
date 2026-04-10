@@ -25,7 +25,12 @@ import type { CreateCompanyDto } from '@/types/api/company'
 import { useUploadImage } from '@/hooks/useUploadImage'
 import { createCompanySchema, type CreateCompanyFormData } from '@/schemas/companySchemas'
 
-import { BANCOS_BOLIVIA, TIPOS_CUENTA } from '@/types/api/company'
+import {
+  BANCOS_OPTIONS,
+  BRANCH_OFFICE_OPTIONS,
+  DOCUMENT_TYPE_OPTIONS,
+  DOCUMENT_EXTENSION_OPTIONS
+} from '@/types/api/company'
 
 interface CreateCompanyDialogProps {
   open: boolean
@@ -57,9 +62,13 @@ const CreateCompanyDialog = ({ open, onClose, onSubmit, isLoading }: CreateCompa
       commission: 10,
       hours_before_closing: 3,
       bankAccount: {
-        bank: '',
-        typeAccount: 'caja_ahorro',
-        account: ''
+        bankCode: '',
+        account: '',
+        titularName: '',
+        branchOfficeId: 201, // La Paz por defecto
+        documentNumber: '',
+        documentType: '',
+        documentExtension: ''
       },
       manager: {
         email: '',
@@ -319,7 +328,7 @@ const CreateCompanyDialog = ({ open, onClose, onSubmit, isLoading }: CreateCompa
            
             <Grid size={{ xs: 12, sm: 6 }}>
               <Controller
-                name='bankAccount.bank'
+                name='bankAccount.bankCode'
                 control={control}
                 render={({ field }) => (
                   <CustomTextField
@@ -327,8 +336,8 @@ const CreateCompanyDialog = ({ open, onClose, onSubmit, isLoading }: CreateCompa
                     fullWidth
                     label='Banco *'
                     {...field}
-                    error={!!errors.bankAccount?.bank}
-                    helperText={errors.bankAccount?.bank?.message}
+                    error={!!errors.bankAccount?.bankCode}
+                    helperText={errors.bankAccount?.bankCode?.message}
                     disabled={isLoading}
                     InputProps={{
                       startAdornment: (
@@ -338,9 +347,9 @@ const CreateCompanyDialog = ({ open, onClose, onSubmit, isLoading }: CreateCompa
                       )
                     }}
                   >
-                    {BANCOS_BOLIVIA.map(banco => (
-                      <MenuItem key={banco} value={banco}>
-                        {banco}
+                    {BANCOS_OPTIONS.map(banco => (
+                      <MenuItem key={banco.value} value={banco.value}>
+                        {banco.label}
                       </MenuItem>
                     ))}
                   </CustomTextField>
@@ -348,38 +357,39 @@ const CreateCompanyDialog = ({ open, onClose, onSubmit, isLoading }: CreateCompa
               />
             </Grid>
 
-        
             <Grid size={{ xs: 12, sm: 6 }}>
               <Controller
-                name='bankAccount.typeAccount'
+                name='bankAccount.branchOfficeId'
                 control={control}
                 render={({ field }) => (
                   <CustomTextField
                     select
                     fullWidth
-                    label='Tipo de Cuenta *'
+                    label='Sucursal *'
                     {...field}
-                    error={!!errors.bankAccount?.typeAccount}
-                    helperText={errors.bankAccount?.typeAccount?.message}
+                    onChange={e => field.onChange(Number(e.target.value))}
+                    error={!!errors.bankAccount?.branchOfficeId}
+                    helperText={errors.bankAccount?.branchOfficeId?.message}
                     disabled={isLoading}
                     InputProps={{
                       startAdornment: (
                         <InputAdornment position='start'>
-                          <i className='tabler-wallet' />
+                          <i className='tabler-building' />
                         </InputAdornment>
                       )
                     }}
                   >
-                    {TIPOS_CUENTA.map(tipo => (
-                      <MenuItem key={tipo.value} value={tipo.value}>
-                        {tipo.label}
+                    {BRANCH_OFFICE_OPTIONS.map(office => (
+                      <MenuItem key={office.value} value={office.value}>
+                        {office.label}
                       </MenuItem>
                     ))}
                   </CustomTextField>
                 )}
               />
             </Grid>
-            <Grid size={12}>
+
+            <Grid size={{ xs: 12, sm: 6 }}>
               <CustomTextField
                 fullWidth
                 label='Número de Cuenta *'
@@ -395,6 +405,106 @@ const CreateCompanyDialog = ({ open, onClose, onSubmit, isLoading }: CreateCompa
                     </InputAdornment>
                   )
                 }}
+              />
+            </Grid>
+
+            <Grid size={{ xs: 12, sm: 6 }}>
+              <CustomTextField
+                fullWidth
+                label='Nombre del Titular *'
+                placeholder='Juan Pérez'
+                {...register('bankAccount.titularName')}
+                error={!!errors.bankAccount?.titularName}
+                helperText={errors.bankAccount?.titularName?.message}
+                disabled={isLoading}
+                InputProps={{
+                  startAdornment: (
+                    <InputAdornment position='start'>
+                      <i className='tabler-user' />
+                    </InputAdornment>
+                  )
+                }}
+              />
+            </Grid>
+
+            <Grid size={{ xs: 12, sm: 6 }}>
+              <Controller
+                name='bankAccount.documentType'
+                control={control}
+                render={({ field }) => (
+                  <CustomTextField
+                    select
+                    fullWidth
+                    label='Tipo de Documento *'
+                    {...field}
+                    error={!!errors.bankAccount?.documentType}
+                    helperText={errors.bankAccount?.documentType?.message}
+                    disabled={isLoading}
+                    InputProps={{
+                      startAdornment: (
+                        <InputAdornment position='start'>
+                          <i className='tabler-file-text' />
+                        </InputAdornment>
+                      )
+                    }}
+                  >
+                    {DOCUMENT_TYPE_OPTIONS.map(type => (
+                      <MenuItem key={type.value} value={type.value}>
+                        {type.label}
+                      </MenuItem>
+                    ))}
+                  </CustomTextField>
+                )}
+              />
+            </Grid>
+
+            <Grid size={{ xs: 12, sm: 6 }}>
+              <CustomTextField
+                fullWidth
+                label='Número de Documento *'
+                placeholder='1234567890'
+                {...register('bankAccount.documentNumber')}
+                error={!!errors.bankAccount?.documentNumber}
+                helperText={errors.bankAccount?.documentNumber?.message}
+                disabled={isLoading}
+                InputProps={{
+                  startAdornment: (
+                    <InputAdornment position='start'>
+                      <i className='tabler-id' />
+                    </InputAdornment>
+                  )
+                }}
+              />
+            </Grid>
+
+            <Grid size={{ xs: 12, sm: 6 }}>
+              <Controller
+                name='bankAccount.documentExtension'
+                control={control}
+                render={({ field }) => (
+                  <CustomTextField
+                    select
+                    fullWidth
+                    label='Extensión de Documento *'
+                    {...field}
+                    error={!!errors.bankAccount?.documentExtension}
+                    helperText={errors.bankAccount?.documentExtension?.message}
+                    disabled={isLoading}
+                    InputProps={{
+                      startAdornment: (
+                        <InputAdornment position='start'>
+                          <i className='tabler-map-pin' />
+                        </InputAdornment>
+                      )
+                    }}
+                  >
+                    {DOCUMENT_EXTENSION_OPTIONS.map(ext => (
+                      <MenuItem key={ext.value} value={ext.value}>
+                        {ext.label}
+                      </MenuItem>
+                    ))}
+                  </CustomTextField>
+                )}
               />
             </Grid>
 

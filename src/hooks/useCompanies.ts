@@ -46,9 +46,13 @@ const updateBankAccount = async ({
 }: {
   bankAccountId: string
   data: {
-    bank: string
-    typeAccount: string
+    bankCode: string
     account: string
+    titularName: string
+    branchOfficeId: number
+    documentNumber: string
+    documentType: string
+    documentExtension: string
   }
 }): Promise<void> => {
   await api.patch(`/api/bank-accounts/${bankAccountId}`, data)
@@ -104,23 +108,35 @@ export const useUpdateCompany = () => {
         hours_before_closing: number
       }
       bankAccountData: {
-        bank: string
-        typeAccount: string
+        bankCode: string
         account: string
+        titularName: string
+        branchOfficeId: number
+        documentNumber: string
+        documentType: string
+        documentExtension: string
       }
       originalBankAccount?: {
-        bank: string
-        typeAccount: string
+        bankCode: string
         account: string
+        titularName: string
+        branchOfficeId: number
+        documentNumber: string
+        documentType: string
+        documentExtension: string
       }
     }) => {
       await updateCompany({ id: companyId, data: companyData })
 
       const bankChanged =
         !originalBankAccount ||
-        originalBankAccount.bank !== bankAccountData.bank ||
-        originalBankAccount.typeAccount !== bankAccountData.typeAccount ||
-        originalBankAccount.account !== bankAccountData.account
+        originalBankAccount.bankCode !== bankAccountData.bankCode ||
+        originalBankAccount.account !== bankAccountData.account ||
+        originalBankAccount.titularName !== bankAccountData.titularName ||
+        originalBankAccount.branchOfficeId !== bankAccountData.branchOfficeId ||
+        originalBankAccount.documentNumber !== bankAccountData.documentNumber ||
+        originalBankAccount.documentType !== bankAccountData.documentType ||
+        originalBankAccount.documentExtension !== bankAccountData.documentExtension
 
       if (bankChanged) {
         await updateBankAccount({ bankAccountId, data: bankAccountData })

@@ -89,6 +89,15 @@ const DebouncedInput = ({
 
 const columnHelper = createColumnHelper<CashierWithActionsType>()
 
+// Mapeo de roles a etiquetas en español (igual que en CreateCashierDialog)
+const roleLabels: Record<string, string> = {
+  CASHIER: 'Cajero Completo',
+  CASHIER_TRIPS: 'Cajero Creador',
+  CASHIER_SELLER: 'Cajero Vendedor',
+  COMPANY_ADMIN: 'Administrador de Empresa',
+  SUPER_ADMIN: 'Super Administrador'
+}
+
 const CashiersTable = () => {
   const [rowSelection, setRowSelection] = useState({})
   const [currentPage, setCurrentPage] = useState(1)
@@ -289,6 +298,20 @@ const CashiersTable = () => {
             <Typography variant='body2'>{row.original.phone}</Typography>
           </div>
         )
+      }),
+      columnHelper.accessor('rol', {
+        header: 'Rol',
+        cell: ({ row }) =>
+          row.original.rol ? (
+            <Chip
+              label={roleLabels[row.original.rol.name] || row.original.rol.name}
+              color={row.original.rol.isStatic ? 'primary' : 'secondary'}
+              variant='tonal'
+              size='small'
+            />
+          ) : (
+            <Chip label='Sin Rol' color='default' variant='outlined' size='small' />
+          )
       }),
       columnHelper.accessor('office', {
         header: 'Oficina',

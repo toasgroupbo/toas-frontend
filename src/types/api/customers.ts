@@ -8,6 +8,8 @@ export interface Customer {
   provider: 'google' | 'email' | string
   idProvider: string | null
   birthDate: string | null
+  ticketsBought: number
+  availableBalance: number
 }
 
 export interface CustomersResponse {

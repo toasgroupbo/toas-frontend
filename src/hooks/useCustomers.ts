@@ -1,6 +1,7 @@
+// hooks/useCustomers.ts
 'use client'
 
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 
 import { api } from '@/libs/axios'
 import type { CustomersResponse, CustomersQueryParams } from '@/types/api/customers'
@@ -21,8 +22,31 @@ const fetchCustomers = async (params: CustomersQueryParams): Promise<CustomersRe
   return response.data
 }
 
+export interface RechargeRequest {
+  customerIds: number[]
+  amountPerCustomer: number
+}
+
+export interface RechargeResponse {
+  message: string
+  qrImage: string
+  expiresAt: string
+  totalAmount: number
+  amountPerCustomer: number
+  customerIds: number[]
+  correlationId: string
+}
+
+const generateRechargeQR = async (data: RechargeRequest): Promise<RechargeResponse> => {
+  const response = await api.post<RechargeResponse>('/api/payments/recharge/qr', data)
+
+  return response.data
+}
+
 export const useCustomers = (params: CustomersQueryParams, enabled: boolean = true) => {
-  return useQuery<CustomersResponse>({
+  const queryClient = useQueryClient()
+
+  const query = useQuery<CustomersResponse>({
     queryKey: ['customers', params.page, params.limit, params.search, params.is_verified],
     queryFn: () => fetchCustomers(params),
     enabled,
@@ -30,4 +54,17 @@ export const useCustomers = (params: CustomersQueryParams, enabled: boolean = tr
     staleTime: 5 * 60 * 1000,
     retry: 2
   })
+
+  const rechargeMutation = useMutation({
+    mutationFn: generateRechargeQR,
+    onSuccess: () => {}
+  })
+
+  return {
+    ...query,
+    generateRechargeQR: rechargeMutation.mutateAsync,
+    isGeneratingQR: rechargeMutation.isPending,
+    qrError: rechargeMutation.error,
+    qrData: rechargeMutation.data
+  }
 }

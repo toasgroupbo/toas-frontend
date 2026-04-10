@@ -1,9 +1,16 @@
 import * as z from 'zod'
 
-import { BANCOS_BOLIVIA, TIPOS_CUENTA } from '@/types/api/company'
+import {
+  BANCOS_OPTIONS,
+  BRANCH_OFFICE_OPTIONS,
+  DOCUMENT_TYPE_OPTIONS,
+  DOCUMENT_EXTENSION_OPTIONS
+} from '@/types/api/company'
 
-const BANCOS_MUTABLE = [...BANCOS_BOLIVIA] as [string, ...string[]]
-const TIPOS_CUENTA_VALUES = TIPOS_CUENTA.map(t => t.value) as [string, ...string[]]
+const BANCOS_VALUES = BANCOS_OPTIONS.map(b => b.value) as [string, ...string[]]
+const BRANCH_OFFICE_VALUES = BRANCH_OFFICE_OPTIONS.map(b => b.value.toString()) as [string, ...string[]]
+const DOCUMENT_TYPE_VALUES = DOCUMENT_TYPE_OPTIONS.map(d => d.value) as [string, ...string[]]
+const DOCUMENT_EXTENSION_VALUES = DOCUMENT_EXTENSION_OPTIONS.map(d => d.value) as [string, ...string[]]
 
 export const createCompanySchema = z
   .object({
@@ -12,13 +19,21 @@ export const createCompanySchema = z
     commission: z.number(),
     hours_before_closing: z.number(),
     bankAccount: z.object({
-      bank: z.enum(BANCOS_MUTABLE, {
+      bankCode: z.enum(BANCOS_VALUES, {
         message: 'Seleccione un banco'
       }),
-      typeAccount: z.enum(TIPOS_CUENTA_VALUES, {
-        message: 'Seleccione un tipo de cuenta'
+      account: z.string().min(8, 'El número de cuenta debe tener al menos 8 dígitos'),
+      titularName: z.string().min(3, 'El nombre del titular es requerido'),
+      branchOfficeId: z.number({
+        required_error: 'Seleccione una sucursal'
       }),
-      account: z.string().min(8, 'El número de cuenta debe tener al menos 8 dígitos')
+      documentNumber: z.string().min(5, 'El número de documento es requerido'),
+      documentType: z.enum(DOCUMENT_TYPE_VALUES, {
+        message: 'Seleccione un tipo de documento'
+      }),
+      documentExtension: z.enum(DOCUMENT_EXTENSION_VALUES, {
+        message: 'Seleccione una extensión de documento'
+      })
     }),
     manager: z.object({
       email: z.string().email('Email inválido'),
@@ -41,13 +56,21 @@ export const updateCompanySchema = z
     commission: z.number().optional(),
     hours_before_closing: z.number().optional(),
     bankAccount: z.object({
-      bank: z.enum(BANCOS_MUTABLE, {
+      bankCode: z.enum(BANCOS_VALUES, {
         message: 'Seleccione un banco'
       }),
-      typeAccount: z.enum(TIPOS_CUENTA_VALUES, {
-        message: 'Seleccione un tipo de cuenta'
+      account: z.string().min(8, 'El número de cuenta debe tener al menos 8 dígitos'),
+      titularName: z.string().min(3, 'El nombre del titular es requerido'),
+      branchOfficeId: z.number({
+        required_error: 'Seleccione una sucursal'
       }),
-      account: z.string().min(8, 'El número de cuenta debe tener al menos 8 dígitos')
+      documentNumber: z.string().min(5, 'El número de documento es requerido'),
+      documentType: z.enum(DOCUMENT_TYPE_VALUES, {
+        message: 'Seleccione un tipo de documento'
+      }),
+      documentExtension: z.enum(DOCUMENT_EXTENSION_VALUES, {
+        message: 'Seleccione una extensión de documento'
+      })
     }),
     admin: z.object({
       email: z.string().email('Email inválido'),

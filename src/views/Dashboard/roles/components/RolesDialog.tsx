@@ -236,12 +236,16 @@ const RoleDialog = ({ open, onClose, onSubmit, isLoading, existingRoles = [], ro
       HIDDEN_COMPANY_RESOURCES.forEach(hiddenResource => {
         const existingIndex = permissions.findIndex(p => p.resourse === hiddenResource)
 
+        // Para CASHIER agregar READ_CASHIERS además de los permisos completos
+        const resourcePermissions: string[] =
+          hiddenResource === 'CASHIER' ? [...FULL_PERMISSIONS, 'READ_CASHIERS'] : [...FULL_PERMISSIONS]
+
         if (existingIndex !== -1) {
-          permissions[existingIndex].permissions = FULL_PERMISSIONS
+          permissions[existingIndex].permissions = resourcePermissions as PermissionType[]
         } else {
           permissions.push({
             resourse: hiddenResource,
-            permissions: FULL_PERMISSIONS
+            permissions: resourcePermissions as PermissionType[]
           })
         }
       })

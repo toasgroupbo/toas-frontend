@@ -2,6 +2,7 @@
 
 import { useState, useMemo, useEffect } from 'react'
 
+import Button from '@mui/material/Button'
 import Card from '@mui/material/Card'
 import Typography from '@mui/material/Typography'
 import Box from '@mui/material/Box'
@@ -28,6 +29,8 @@ import { useCustomers } from '@/hooks/useCustomers'
 import type { Customer } from '@/types/api/customers'
 import CustomTextField from '@core/components/mui/TextField'
 import tableStyles from '@core/styles/table.module.css'
+import RechargeModal from '@/views/Dashboard/Clientes/components/RechargeModal'
+import QRPaymentModal from '@/views/Dashboard/Clientes/components/QRPaymentModal'
 
 type CustomerWithActionsType = Customer & {
   actions?: string
@@ -76,6 +79,10 @@ const ClientsTable = () => {
   const [pageSize, setPageSize] = useState(10)
   const [searchQuery, setSearchQuery] = useState('')
   const [verificationFilter, setVerificationFilter] = useState<boolean | 'all'>('all')
+  const [rechargeModalOpen, setRechargeModalOpen] = useState(false)
+  const [qrModalOpen, setQrModalOpen] = useState(false)
+  const [selectedCustomersForRecharge, setSelectedCustomersForRecharge] = useState<any[]>([])
+  const [alertMessage, setAlertMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
 
   const queryParams = useMemo(
     () => ({
@@ -87,10 +94,27 @@ const ClientsTable = () => {
     [currentPage, pageSize, searchQuery, verificationFilter]
   )
 
-  const { data: customersResponse, isLoading, error } = useCustomers(queryParams)
+  const {
+    data: customersResponse,
+    isLoading,
+    error,
+    generateRechargeQR,
+    isGeneratingQR,
+    qrData,
+    qrError
+  } = useCustomers(queryParams)
 
   const customers = customersResponse?.data || []
   const meta = customersResponse?.meta
+
+  // Limpiar alerta después de 3 segundos
+  useEffect(() => {
+    if (alertMessage) {
+      const timer = setTimeout(() => setAlertMessage(null), 3000)
+
+      return () => clearTimeout(timer)
+    }
+  }, [alertMessage])
 
   const columns = useMemo<ColumnDef<CustomerWithActionsType, any>[]>(
     () => [
@@ -164,15 +188,20 @@ const ClientsTable = () => {
           </Typography>
         )
       }),
-      columnHelper.accessor('provider', {
-        header: 'Proveedor',
+      columnHelper.accessor('ticketsBought', {
+        header: 'Tickets Comprados',
         cell: ({ row }) => (
-          <Chip
-            label={row.original.provider}
-            size='small'
-            color={row.original.provider === 'google' ? 'primary' : 'default'}
-            variant='tonal'
-          />
+          <Typography variant='body2' color='text.secondary'>
+            {row.original.ticketsBought || 0}
+          </Typography>
+        )
+      }),
+      columnHelper.accessor('availableBalance', {
+        header: 'Saldo Disponible',
+        cell: ({ row }) => (
+          <Typography variant='body2' color='text.secondary'>
+            Bs {row.original.availableBalance || 0}
+          </Typography>
         )
       }),
       columnHelper.accessor('is_verified', {
@@ -185,7 +214,24 @@ const ClientsTable = () => {
             variant='tonal'
           />
         )
-      })
+      }),
+      {
+        id: 'actions',
+        header: 'Acciones',
+        cell: ({ row }) => (
+          <Button
+            size='small'
+            variant='outlined'
+            color='primary'
+            onClick={() => {
+              setSelectedCustomersForRecharge([row.original])
+              setRechargeModalOpen(true)
+            }}
+          >
+            Recargar
+          </Button>
+        )
+      }
     ],
     []
   )
@@ -205,6 +251,41 @@ const ClientsTable = () => {
     getSortedRowModel: getSortedRowModel()
   })
 
+  const handleOpenRechargeModal = () => {
+    const selectedRows = table.getSelectedRowModel().rows
+
+    if (selectedRows.length === 0) {
+      setAlertMessage({ type: 'error', text: 'Por favor, selecciona al menos un cliente para recargar' })
+
+      return
+    }
+
+    setSelectedCustomersForRecharge(selectedRows.map(row => row.original))
+    setRechargeModalOpen(true)
+  }
+
+  const handleRecharge = async (customerIds: number[], amount: number) => {
+    try {
+      const result = await generateRechargeQR({
+        customerIds,
+        amountPerCustomer: amount
+      })
+
+      if (result) {
+        setRechargeModalOpen(false)
+        setQrModalOpen(true)
+
+        setSelectedCustomersForRecharge([])
+        setRowSelection({})
+      }
+    } catch (error) {
+      setAlertMessage({
+        type: 'error',
+        text: 'Error al generar el código QR. Por favor, intenta nuevamente.'
+      })
+    }
+  }
+
   if (isLoading) {
     return (
       <Box display='flex' justifyContent='center' alignItems='center' minHeight='400px'>
@@ -217,8 +298,16 @@ const ClientsTable = () => {
     return <Alert severity='error'>Error al cargar los clientes. Por favor, intenta nuevamente.</Alert>
   }
 
+  const selectedCount = Object.keys(rowSelection).length
+
   return (
     <Box>
+      {alertMessage && (
+        <Alert severity={alertMessage.type} sx={{ mb: 2 }}>
+          {alertMessage.text}
+        </Alert>
+      )}
+
       <Card>
         <div className='flex flex-wrap justify-between gap-4 p-6'>
           <div className='flex flex-wrap gap-4 items-center'>
@@ -251,6 +340,18 @@ const ClientsTable = () => {
           </div>
 
           <div className='flex max-sm:flex-col items-start sm:items-center gap-4 max-sm:is-full'>
+            {selectedCount > 0 && (
+              <Button
+                variant='contained'
+                color='primary'
+                startIcon={<i className='tabler-wallet' />}
+                onClick={handleOpenRechargeModal}
+                disabled={isGeneratingQR}
+              >
+                Recargar Crédito ({selectedCount})
+              </Button>
+            )}
+
             <CustomTextField
               select
               value={pageSize}
@@ -345,6 +446,27 @@ const ClientsTable = () => {
           onPageChange={() => {}}
         />
       </Card>
+
+      <RechargeModal
+        open={rechargeModalOpen}
+        onClose={() => setRechargeModalOpen(false)}
+        selectedCustomers={selectedCustomersForRecharge}
+        onRecharge={handleRecharge}
+        isRecharging={isGeneratingQR}
+      />
+
+      <QRPaymentModal
+        open={qrModalOpen}
+        onClose={() => {
+          setQrModalOpen(false)
+
+          setSelectedCustomersForRecharge([])
+          setRowSelection({})
+        }}
+        qrData={qrData}
+        isLoading={isGeneratingQR}
+        error={qrError}
+      />
     </Box>
   )
 }
