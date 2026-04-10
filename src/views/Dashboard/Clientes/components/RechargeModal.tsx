@@ -19,28 +19,39 @@ interface RechargeModalProps {
   open: boolean
   onClose: () => void
   selectedCustomers: any[]
-  onRecharge: (customerIds: number[], amount: number) => void
+  onRecharge: (customerIds: number[], amount: number) => Promise<void>
   isRecharging: boolean
 }
 
 const RechargeModal = ({ open, onClose, selectedCustomers, onRecharge, isRecharging }: RechargeModalProps) => {
-  const [amount, setAmount] = useState<number>(0)
+  const [amount, setAmount] = useState<string>('')
   const [error, setError] = useState<string>('')
 
   const handleAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = parseFloat(e.target.value)
+    const value = e.target.value
 
-    if (value < 0) {
-      setError('El monto no puede ser negativo')
-    } else {
-      setError('')
+    // Solo permitir números
+    if (value === '' || /^\d+$/.test(value)) {
+      setAmount(value)
+
+      if (value === '') {
+        setError('')
+      } else {
+        const numValue = parseInt(value, 10)
+
+        if (numValue <= 0) {
+          setError('El monto debe ser mayor a 0')
+        } else {
+          setError('')
+        }
+      }
     }
-
-    setAmount(value || 0)
   }
 
-  const handleSubmit = () => {
-    if (amount <= 0) {
+  const handleSubmit = async () => {
+    const numAmount = parseInt(amount, 10)
+
+    if (!amount || numAmount <= 0) {
       setError('El monto debe ser mayor a 0')
 
       return
@@ -48,10 +59,10 @@ const RechargeModal = ({ open, onClose, selectedCustomers, onRecharge, isRecharg
 
     const customerIds = selectedCustomers.map(c => parseInt(c.id))
 
-    onRecharge(customerIds, amount)
+    await onRecharge(customerIds, numAmount)
   }
 
-  const totalAmount = amount * selectedCustomers.length
+  const totalAmount = amount ? parseInt(amount, 10) * selectedCustomers.length : 0
 
   return (
     <Dialog open={open} onClose={onClose} maxWidth='sm' fullWidth>
@@ -80,16 +91,17 @@ const RechargeModal = ({ open, onClose, selectedCustomers, onRecharge, isRecharg
 
           <TextField
             autoFocus
-            label='Monto por cliente'
-            type='number'
+            label='Monto por cliente (Bs.)'
+            type='text'
             fullWidth
             value={amount}
             onChange={handleAmountChange}
             error={!!error}
             helperText={error}
+            placeholder='Ej: 100'
             sx={{ mb: 2 }}
             InputProps={{
-              startAdornment: <Typography sx={{ mr: 1 }}>$</Typography>
+              startAdornment: <Typography sx={{ mr: 1, color: 'text.secondary' }}>Bs.</Typography>
             }}
           />
 
@@ -98,10 +110,10 @@ const RechargeModal = ({ open, onClose, selectedCustomers, onRecharge, isRecharg
               Resumen:
             </Typography>
             <Typography variant='body2' color='white'>
-              Monto por cliente: ${amount}
+              Monto por cliente: Bs. {amount || '0'}
             </Typography>
             <Typography variant='body2' color='white'>
-              Total a recargar: ${totalAmount}
+              Total a pagar: Bs. {totalAmount}
             </Typography>
           </Box>
         </Box>
@@ -114,9 +126,9 @@ const RechargeModal = ({ open, onClose, selectedCustomers, onRecharge, isRecharg
           onClick={handleSubmit}
           variant='contained'
           color='primary'
-          disabled={amount <= 0 || isRecharging || !!error}
+          disabled={!amount || parseInt(amount, 10) <= 0 || isRecharging || !!error}
         >
-          {isRecharging ? <CircularProgress size={24} /> : 'Recargar'}
+          {isRecharging ? <CircularProgress size={24} /> : 'Generar QR'}
         </Button>
       </DialogActions>
     </Dialog>

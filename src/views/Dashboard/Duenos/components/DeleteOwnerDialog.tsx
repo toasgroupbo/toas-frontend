@@ -10,6 +10,7 @@ import Alert from '@mui/material/Alert'
 import IconButton from '@mui/material/IconButton'
 
 import type { Owner } from '@/types/api/owners'
+import { BANCOS_OPTIONS } from '@/types/api/company'
 
 interface DeleteOwnerDialogProps {
   open: boolean
@@ -21,6 +22,8 @@ interface DeleteOwnerDialogProps {
 
 const DeleteOwnerDialog = ({ open, onClose, onConfirm, owner, isLoading }: DeleteOwnerDialogProps) => {
   if (!owner) return null
+
+  const banco = BANCOS_OPTIONS.find(b => b.value === owner.bankAccount.bankCode)
 
   return (
     <Dialog open={open} onClose={onClose} maxWidth='sm' fullWidth>
@@ -47,7 +50,7 @@ const DeleteOwnerDialog = ({ open, onClose, onConfirm, owner, isLoading }: Delet
           <br />
           Teléfono: {owner.phone}
           <br />
-          Banco: {owner.bankAccount.bank}
+          Banco: {banco?.label || owner.bankAccount.bankCode}
         </Typography>
       </DialogContent>
 

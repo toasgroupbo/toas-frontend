@@ -36,6 +36,7 @@ import CustomTextField from '@core/components/mui/TextField'
 import tableStyles from '@core/styles/table.module.css'
 import { useOwners, useCreateOwner, useUpdateOwner, useDeleteOwner } from '@/hooks/useOwners'
 import type { Owner, CreateOwnerDto } from '@/types/api/owners'
+import { BANCOS_OPTIONS } from '@/types/api/company'
 import OwnerDialog from '@/views/Dashboard/Duenos/components/OwnerDialog'
 import DeleteOwnerDialog from '@/views/Dashboard/Duenos/components/DeleteOwnerDialog'
 import { useSnackbar } from '@/contexts/SnackbarContext'
@@ -107,21 +108,9 @@ const OwnersTable = () => {
     }
   }, [owners])
 
-  const handleCreateOwner = async (
-    ownerData: { name: string; ci: string; phone: string },
-    bankAccountData: { bank: string; typeAccount: 'caja_ahorro' | 'cuenta_corriente' | 'otro'; account: string }
-  ) => {
+  const handleCreateOwner = async (data: CreateOwnerDto) => {
     try {
-      const createData: CreateOwnerDto = {
-        name: ownerData.name,
-        ci: ownerData.ci,
-        phone: ownerData.phone,
-        bankAccount: bankAccountData
-      }
-
-      /*   console.log('Datos que se envían al backend:', JSON.stringify(createData, null, 2)) */
-
-      await createMutation.mutateAsync(createData)
+      await createMutation.mutateAsync(data)
       setCreateDialogOpen(false)
       showSuccess('Dueño creado correctamente')
     } catch (error: any) {
@@ -136,22 +125,17 @@ const OwnersTable = () => {
     setUpdateDialogOpen(true)
   }
 
-  const handleUpdateOwner = async (
-    ownerData: { name: string; ci: string; phone: string },
-    bankAccountData: { bank: string; typeAccount: 'caja_ahorro' | 'cuenta_corriente' | 'otro'; account: string }
-  ) => {
+  const handleUpdateOwner = async (data: { name: string; ci: string; phone: string; bankAccount: any }) => {
     if (!selectedOwner) return
 
     try {
       await updateMutation.mutateAsync({
-        ownerId: selectedOwner.id,
-        bankAccountId: selectedOwner.bankAccount.id,
-        ownerData,
-        bankAccountData,
-        originalBankAccount: {
-          bank: selectedOwner.bankAccount.bank,
-          typeAccount: selectedOwner.bankAccount.typeAccount,
-          account: selectedOwner.bankAccount.account
+        id: selectedOwner.id,
+        data: {
+          name: data.name,
+          ci: data.ci,
+          phone: data.phone,
+          bankAccount: data.bankAccount
         }
       })
 
@@ -272,18 +256,7 @@ const OwnersTable = () => {
       columnHelper.accessor('bankAccount', {
         header: 'Banco',
         cell: ({ row }) => {
-          const getTypeLabel = (type: string) => {
-            switch (type) {
-              case 'caja_ahorro':
-                return 'Caja de Ahorro'
-              case 'cuenta_corriente':
-                return 'Cuenta Corriente'
-              case 'otro':
-                return 'Otro'
-              default:
-                return type
-            }
-          }
+          const banco = BANCOS_OPTIONS.find(b => b.value === row.original.bankAccount.bankCode)
 
           return (
             <div className='flex flex-col gap-1'>
@@ -293,11 +266,11 @@ const OwnersTable = () => {
                   style={{ fontSize: '16px', color: 'var(--mui-palette-primary-main)' }}
                 />
                 <Typography variant='body2' color='text.primary'>
-                  {row.original.bankAccount.bank}
+                  {banco?.label || row.original.bankAccount.bankCode}
                 </Typography>
               </div>
               <Typography variant='caption' color='text.secondary'>
-                {getTypeLabel(row.original.bankAccount.typeAccount)}
+                {row.original.bankAccount.titularName}
               </Typography>
               <Typography variant='caption' color='text.secondary'>
                 Cta: {row.original.bankAccount.account}

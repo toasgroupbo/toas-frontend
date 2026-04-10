@@ -1,4 +1,3 @@
-// hooks/useCustomers.ts
 'use client'
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
@@ -22,6 +21,10 @@ const fetchCustomers = async (params: CustomersQueryParams): Promise<CustomersRe
   return response.data
 }
 
+export interface VerifyPaymentRequest {
+  IdCorrelation: string
+}
+
 export interface RechargeRequest {
   customerIds: number[]
   amountPerCustomer: number
@@ -39,6 +42,9 @@ export interface RechargeResponse {
 
 const generateRechargeQR = async (data: RechargeRequest): Promise<RechargeResponse> => {
   const response = await api.post<RechargeResponse>('/api/payments/recharge/qr', data)
+
+  console.log('📥 generateRechargeQR - respuesta del servidor:', response.data)
+  console.log('📥 correlationId recibido:', response.data.correlationId, 'tipo:', typeof response.data.correlationId)
 
   return response.data
 }
@@ -60,11 +66,31 @@ export const useCustomers = (params: CustomersQueryParams, enabled: boolean = tr
     onSuccess: () => {}
   })
 
+  const verifyPayment = async (correlationId: string): Promise<boolean> => {
+    console.log('🔍 verifyPayment - correlationId recibido:', correlationId, 'tipo:', typeof correlationId)
+
+    const payload = {
+      IdCorrelation: correlationId
+    }
+
+    console.log('📤 verifyPayment - payload a enviar:', payload)
+
+    const response = await api.post<boolean>('/api/payments/verify-qr-recharge', payload)
+
+    return response.data
+  }
+
+  const verifyMutation = useMutation({
+    mutationFn: verifyPayment
+  })
+
   return {
     ...query,
     generateRechargeQR: rechargeMutation.mutateAsync,
     isGeneratingQR: rechargeMutation.isPending,
+    qrData: rechargeMutation.data,
     qrError: rechargeMutation.error,
-    qrData: rechargeMutation.data
+    verifyPayment: verifyMutation.mutateAsync,
+    isVerifying: verifyMutation.isPending
   }
 }

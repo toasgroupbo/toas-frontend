@@ -75,6 +75,8 @@ const columnHelper = createColumnHelper<CustomerWithActionsType>()
 
 const ClientsTable = () => {
   const [rowSelection, setRowSelection] = useState({})
+  const [selectedCustomerIds, setSelectedCustomerIds] = useState<Set<string>>(new Set())
+  const [selectedCustomersMap, setSelectedCustomersMap] = useState<Map<string, Customer>>(new Map())
   const [currentPage, setCurrentPage] = useState(1)
   const [pageSize, setPageSize] = useState(10)
   const [searchQuery, setSearchQuery] = useState('')
@@ -98,14 +100,31 @@ const ClientsTable = () => {
     data: customersResponse,
     isLoading,
     error,
+    refetch,
     generateRechargeQR,
     isGeneratingQR,
     qrData,
-    qrError
+    qrError,
+    verifyPayment,
+    isVerifying
   } = useCustomers(queryParams)
 
   const customers = customersResponse?.data || []
   const meta = customersResponse?.meta
+
+  useEffect(() => {
+    if (customers.length > 0) {
+      const newRowSelection: Record<string, boolean> = {}
+
+      customers.forEach((customer, index) => {
+        if (selectedCustomerIds.has(customer.id)) {
+          newRowSelection[index] = true
+        }
+      })
+
+      setRowSelection(newRowSelection)
+    }
+  }, [customers, selectedCustomerIds])
 
   // Limpiar alerta después de 3 segundos
   useEffect(() => {
@@ -246,21 +265,54 @@ const ClientsTable = () => {
       rowSelection
     },
     enableRowSelection: true,
-    onRowSelectionChange: setRowSelection,
+    onRowSelectionChange: updater => {
+      setRowSelection(prev => {
+        const newValue = typeof updater === 'function' ? updater(prev) : updater
+
+        // Actualizar el Set de IDs seleccionados y el Map de objetos completos
+        const newSelectedIds = new Set(selectedCustomerIds)
+        const newSelectedCustomersMap = new Map(selectedCustomersMap)
+
+        Object.keys(newValue).forEach(index => {
+          const rowIndex = parseInt(index)
+          const customer = customers[rowIndex]
+
+          if (customer && newValue[index]) {
+            newSelectedIds.add(customer.id)
+            newSelectedCustomersMap.set(customer.id, customer)
+          }
+        })
+
+        customers.forEach(customer => {
+          const customerIndex = customers.indexOf(customer)
+
+          if (!newValue[customerIndex]) {
+            newSelectedIds.delete(customer.id)
+            newSelectedCustomersMap.delete(customer.id)
+          }
+        })
+
+        setSelectedCustomerIds(newSelectedIds)
+        setSelectedCustomersMap(newSelectedCustomersMap)
+
+        return newValue
+      })
+    },
     getCoreRowModel: getCoreRowModel(),
     getSortedRowModel: getSortedRowModel()
   })
 
   const handleOpenRechargeModal = () => {
-    const selectedRows = table.getSelectedRowModel().rows
-
-    if (selectedRows.length === 0) {
+    if (selectedCustomerIds.size === 0) {
       setAlertMessage({ type: 'error', text: 'Por favor, selecciona al menos un cliente para recargar' })
 
       return
     }
 
-    setSelectedCustomersForRecharge(selectedRows.map(row => row.original))
+    // Obtener los objetos completos de los clientes seleccionados desde el Map
+    const selectedCustomers = Array.from(selectedCustomersMap.values())
+
+    setSelectedCustomersForRecharge(selectedCustomers)
     setRechargeModalOpen(true)
   }
 
@@ -277,6 +329,8 @@ const ClientsTable = () => {
 
         setSelectedCustomersForRecharge([])
         setRowSelection({})
+        setSelectedCustomerIds(new Set())
+        setSelectedCustomersMap(new Map())
       }
     } catch (error) {
       setAlertMessage({
@@ -284,6 +338,13 @@ const ClientsTable = () => {
         text: 'Error al generar el código QR. Por favor, intenta nuevamente.'
       })
     }
+  }
+
+  const handlePaymentSuccess = () => {
+    setAlertMessage({ type: 'success', text: '¡Pago confirmado! El crédito ha sido recargado.' })
+    setQrModalOpen(false)
+
+    refetch()
   }
 
   if (isLoading) {
@@ -298,7 +359,7 @@ const ClientsTable = () => {
     return <Alert severity='error'>Error al cargar los clientes. Por favor, intenta nuevamente.</Alert>
   }
 
-  const selectedCount = Object.keys(rowSelection).length
+  const selectedCount = selectedCustomerIds.size
 
   return (
     <Box>
@@ -457,15 +518,12 @@ const ClientsTable = () => {
 
       <QRPaymentModal
         open={qrModalOpen}
-        onClose={() => {
-          setQrModalOpen(false)
-
-          setSelectedCustomersForRecharge([])
-          setRowSelection({})
-        }}
+        onClose={() => setQrModalOpen(false)}
+        onPaymentSuccess={handlePaymentSuccess}
         qrData={qrData}
         isLoading={isGeneratingQR}
         error={qrError}
+        verifyPayment={verifyPayment}
       />
     </Box>
   )

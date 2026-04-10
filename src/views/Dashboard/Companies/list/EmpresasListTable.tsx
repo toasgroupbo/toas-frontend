@@ -36,6 +36,7 @@ import CustomTextField from '@core/components/mui/TextField'
 import tableStyles from '@core/styles/table.module.css'
 import { useCompanies, useCreateCompany, useUpdateCompany, useDeleteCompany } from '@/hooks/useCompanies'
 import type { Company, CreateCompanyDto, UpdateCompanyDto } from '@/types/api/company'
+import { BANCOS_OPTIONS } from '@/types/api/company'
 import CreateCompanyDialog from '@/views/Dashboard/Companies/components/CreateCompanyDialog'
 import UpdateCompanyDialog from '@/views/Dashboard/Companies/components/UpdateCompanyDialog'
 import DeleteCompanyDialog from '@/views/Dashboard/Companies/components/DeleteCompanyDialog'
@@ -308,25 +309,29 @@ const EmpresaListTable = () => {
       }),
       columnHelper.accessor('bankAccount', {
         header: 'Banco',
-        cell: ({ row }) => (
-          <div className='flex flex-col gap-1'>
-            <div className='flex items-center gap-1'>
-              <i
-                className='tabler-building-bank'
-                style={{ fontSize: '16px', color: 'var(--mui-palette-primary-main)' }}
-              />
-              <Typography variant='body2' color='text.primary'>
-                {row.original.bankAccount.bank}
+        cell: ({ row }) => {
+          const banco = BANCOS_OPTIONS.find(b => b.value === row.original.bankAccount.bankCode)
+
+          return (
+            <div className='flex flex-col gap-1'>
+              <div className='flex items-center gap-1'>
+                <i
+                  className='tabler-building-bank'
+                  style={{ fontSize: '16px', color: 'var(--mui-palette-primary-main)' }}
+                />
+                <Typography variant='body2' color='text.primary'>
+                  {banco?.label || row.original.bankAccount.bankCode}
+                </Typography>
+              </div>
+              <Typography variant='caption' color='text.secondary'>
+                {row.original.bankAccount.titularName}
+              </Typography>
+              <Typography variant='caption' color='text.secondary'>
+                Cta: {row.original.bankAccount.account}
               </Typography>
             </div>
-            <Typography variant='caption' color='text.secondary'>
-              {row.original.bankAccount.typeAccount === 'caja_ahorro' ? 'Caja de Ahorro' : 'Cuenta Corriente'}
-            </Typography>
-            <Typography variant='caption' color='text.secondary'>
-              Cta: {row.original.bankAccount.account}
-            </Typography>
-          </div>
-        )
+          )
+        }
       }),
       columnHelper.accessor('hours_before_closing', {
         header: 'Horas Cancelar',

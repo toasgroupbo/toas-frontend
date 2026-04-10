@@ -24,9 +24,7 @@ export const createCompanySchema = z
       }),
       account: z.string().min(8, 'El número de cuenta debe tener al menos 8 dígitos'),
       titularName: z.string().min(3, 'El nombre del titular es requerido'),
-      branchOfficeId: z.number({
-        required_error: 'Seleccione una sucursal'
-      }),
+      branchOfficeId: z.number(),
       documentNumber: z.string().min(5, 'El número de documento es requerido'),
       documentType: z.enum(DOCUMENT_TYPE_VALUES, {
         message: 'Seleccione un tipo de documento'
@@ -61,9 +59,7 @@ export const updateCompanySchema = z
       }),
       account: z.string().min(8, 'El número de cuenta debe tener al menos 8 dígitos'),
       titularName: z.string().min(3, 'El nombre del titular es requerido'),
-      branchOfficeId: z.number({
-        required_error: 'Seleccione una sucursal'
-      }),
+      branchOfficeId: z.number(),
       documentNumber: z.string().min(5, 'El número de documento es requerido'),
       documentType: z.enum(DOCUMENT_TYPE_VALUES, {
         message: 'Seleccione un tipo de documento'

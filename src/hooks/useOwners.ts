@@ -3,7 +3,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 
 import { api } from '@/libs/axios'
-import type { Owner, CreateOwnerDto, UpdateOwnerDto, UpdateBankAccountDto } from '@/types/api/owners'
+import type { Owner, CreateOwnerDto, UpdateOwnerDto } from '@/types/api/owners'
 import { useAuth } from '@/contexts/AuthContext'
 
 const fetchOwners = async (): Promise<Owner[]> => {
@@ -82,29 +82,6 @@ const updateOwner = async ({ id, data }: { id: string; data: UpdateOwnerDto }): 
   return response.data
 }
 
-const updateBankAccount = async ({
-  bankAccountId,
-  data
-}: {
-  bankAccountId: string
-  data: UpdateBankAccountDto
-}): Promise<void> => {
-  const actingAsCompany = localStorage.getItem('acting_as_company')
-  let url = `/api/bank-accounts/${bankAccountId}`
-
-  if (actingAsCompany) {
-    try {
-      const company = JSON.parse(actingAsCompany)
-
-      url = `/api/bank-accounts/${bankAccountId}?companyId=${company.id}`
-    } catch (error) {
-      console.error('Error parsing acting_as_company:', error)
-    }
-  }
-
-  await api.patch(url, data)
-}
-
 const deleteOwner = async (id: string): Promise<void> => {
   const actingAsCompany = localStorage.getItem('acting_as_company')
   let url = `/api/owners/${id}`
@@ -157,34 +134,10 @@ export const useUpdateOwner = () => {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: async ({
-      ownerId,
-      bankAccountId,
-      ownerData,
-      bankAccountData,
-      originalBankAccount
-    }: {
-      ownerId: string
-      bankAccountId: string
-      ownerData: UpdateOwnerDto
-      bankAccountData: UpdateBankAccountDto
-      originalBankAccount?: UpdateBankAccountDto
-    }) => {
-      await updateOwner({ id: ownerId, data: ownerData })
-
-      const bankChanged =
-        !originalBankAccount ||
-        originalBankAccount.bank !== bankAccountData.bank ||
-        originalBankAccount.typeAccount !== bankAccountData.typeAccount ||
-        originalBankAccount.account !== bankAccountData.account
-
-      if (bankChanged) {
-        await updateBankAccount({ bankAccountId, data: bankAccountData })
-      }
-    },
+    mutationFn: updateOwner,
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['owners'] })
-      queryClient.invalidateQueries({ queryKey: ['owner', variables.ownerId] })
+      queryClient.invalidateQueries({ queryKey: ['owner', variables.id] })
     }
   })
 }
