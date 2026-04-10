@@ -37,8 +37,6 @@ interface DeckFormData {
 }
 
 interface StepConfiguracionProps {
-  busTypeName: string
-  setBusTypeName: (value: string) => void
   decks: DeckFormData[]
   setDecks: (decks: DeckFormData[]) => void
   selectedSeatTool: SeatType
@@ -174,8 +172,6 @@ const CellComponent: React.FC<CellComponentProps> = ({ seat, rowIndex, colIndex,
 }
 
 const StepConfiguracion = ({
-  busTypeName,
-  setBusTypeName,
   decks,
   setDecks,
   selectedSeatTool,
@@ -223,28 +219,10 @@ const StepConfiguracion = ({
             Tipo y Configuración de Pisos
           </Typography>
         }
-        subheader='Configure el tipo de bus y la distribución de asientos'
+        subheader='Configure la distribución de asientos'
       />
       <CardContent>
         <Grid container spacing={3}>
-          <Grid size={{ xs: 12 }}>
-            <CustomTextField
-              fullWidth
-              label='Nombre del Tipo de Bus'
-              placeholder='Ej: Type 1, Ejecutivo, etc.'
-              value={busTypeName}
-              onChange={e => setBusTypeName(e.target.value)}
-              required
-              InputProps={{
-                startAdornment: (
-                  <InputAdornment position='start'>
-                    <i className='tabler-category' />
-                  </InputAdornment>
-                )
-              }}
-            />
-          </Grid>
-
           <Grid size={{ xs: 12 }}>
             <Divider className='my-4'>
               <Chip label='Cantidad de Pisos' icon={<i className='tabler-layers' />} color='primary' />

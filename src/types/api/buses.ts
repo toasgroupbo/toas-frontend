@@ -36,12 +36,11 @@ export interface Deck {
 }
 
 export interface BusTypeDto {
-  name: string
   decks: Deck[]
 }
 
 export interface BusType {
-  name: string
+  name?: string
   decks: Deck[]
 }
 

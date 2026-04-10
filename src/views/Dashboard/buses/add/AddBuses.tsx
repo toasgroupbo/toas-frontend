@@ -56,7 +56,6 @@ const AddBuses = () => {
   const [exteriorImageFile, setExteriorImageFile] = useState<File | null>(null)
   const [interiorImagePreview, setInteriorImagePreview] = useState('')
   const [exteriorImagePreview, setExteriorImagePreview] = useState('')
-  const [busTypeName, setBusTypeName] = useState('')
   const [equipment, setEquipment] = useState<BusEquipment[]>([])
   const [selectedSeatTool, setSelectedSeatTool] = useState<SeatType>(SeatType.SEAT)
 
@@ -81,12 +80,10 @@ const AddBuses = () => {
       setInteriorImage(bus.interior_image)
       setExteriorImage(bus.exterior_image)
 
-      // Construir URL completa para las imágenes
       const baseURL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000'
 
       setInteriorImagePreview(bus.interior_image ? `${baseURL}${bus.interior_image}` : '')
       setExteriorImagePreview(bus.exterior_image ? `${baseURL}${bus.exterior_image}` : '')
-      setBusTypeName(bus.busType.name)
       setEquipment(bus.equipment)
 
       const deckFormData: DeckFormData[] = bus.busType.decks.map(deck => {
@@ -309,17 +306,16 @@ const AddBuses = () => {
     }
 
     if (activeStep === 1) {
-      if (!busTypeName || decks.length === 0) {
+      if (decks.length === 0) {
         showError('Por favor complete la configuración del tipo de bus')
 
         return
       }
 
-      // Validar que todos los pisos tengan filas y columnas válidas
       const invalidDeck = decks.find(deck => deck.rows === 0 || deck.columns === 0)
 
       if (invalidDeck) {
-        showError('Por favor configure las filas y columnas de todos los pisos ')
+        showError('Por favor configure las filas y columnas de todos los pisos')
 
         return
       }
@@ -361,7 +357,6 @@ const AddBuses = () => {
         brand,
         model,
         busType: {
-          name: busTypeName,
           decks: builtDecks
         },
         ownerId: parseInt(owner, 10)
@@ -399,7 +394,6 @@ const AddBuses = () => {
 
   return (
     <div className='space-y-6'>
-      {/* Stepper */}
       <Stepper activeStep={activeStep} className='mb-8'>
         {steps.map(label => (
           <Step key={label}>
@@ -408,7 +402,6 @@ const AddBuses = () => {
         ))}
       </Stepper>
 
-      {/* Steps Content */}
       {activeStep === 0 && (
         <StepDatosGenerales
           name={name}
@@ -436,8 +429,6 @@ const AddBuses = () => {
 
       {activeStep === 1 && (
         <StepConfiguracion
-          busTypeName={busTypeName}
-          setBusTypeName={setBusTypeName}
           decks={decks}
           setDecks={setDecks}
           selectedSeatTool={selectedSeatTool}
@@ -457,14 +448,12 @@ const AddBuses = () => {
           model={model}
           owner={owner}
           equipment={equipment}
-          busTypeName={busTypeName}
           decks={decks}
           totalSeats={totalSeats}
           owners={owners}
         />
       )}
 
-      {/* Navigation Buttons */}
       <div className='flex justify-between items-center mt-6'>
         <Button
           disabled={activeStep === 0}

@@ -33,11 +33,7 @@ import { Pagination } from '@mui/material'
 
 import CustomTextField from '@core/components/mui/TextField'
 import tableStyles from '@core/styles/table.module.css'
-import {
-  useTravelsForCashier,
-  useCreateTravelForCashier,
-  useCancelTravelForCashier
-} from '@/hooks/useTravels'
+import { useTravelsForCashier, useCreateTravelForCashier, useCancelTravelForCashier } from '@/hooks/useTravels'
 import type { Travel } from '@/types/api/travels'
 import CreateTravelDialog from '@/views/Dashboard/Viajes/components/CreateTravelDialog'
 import CancelTravelDialog from '@/views/Dashboard/Viajes/components/CancelTravelDialog'
@@ -102,7 +98,6 @@ const ViajesCashierListTable = () => {
   // Solo CASHIER y CASHIER_TRIPS pueden crear/cancelar viajes
   const canCreateTravel = userRole === 'CASHIER' || userRole === 'CASHIER_TRIPS'
 
-  // Filtrar viajes por estado (client-side)
   const filteredTravels = useMemo(() => {
     if (!travels) return []
     if (statusFilter === 'all') return travels
@@ -172,10 +167,10 @@ const ViajesCashierListTable = () => {
   }
 
   const formatDateTime = (dateString: string) => {
-    const dateWithoutZ = dateString.replace('Z', '')
-    const date = new Date(dateWithoutZ)
+    const date = new Date(dateString)
 
-    return date.toLocaleString('es-ES', {
+    return date.toLocaleString('es-BO', {
+      timeZone: 'America/La_Paz',
       year: 'numeric',
       month: 'short',
       day: 'numeric',

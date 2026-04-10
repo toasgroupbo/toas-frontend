@@ -34,7 +34,6 @@ interface StepResumenProps {
   model: string
   owner: string
   equipment: BusEquipment[]
-  busTypeName: string
   decks: DeckFormData[]
   totalSeats: number
   owners?: Owner[]
@@ -66,18 +65,7 @@ const getDeckTypeLabel = (deckType: string): string => {
   }
 }
 
-const StepResumen = ({
-  name,
-  plaque,
-  brand,
-  model,
-  owner,
-  equipment,
-  busTypeName,
-  decks,
-  totalSeats,
-  owners
-}: StepResumenProps) => {
+const StepResumen = ({ name, plaque, brand, model, owner, equipment, decks, totalSeats, owners }: StepResumenProps) => {
   return (
     <Card className='mb-6'>
       <CardHeader
@@ -178,12 +166,6 @@ const StepResumen = ({
                 </Typography>
               </div>
               <Divider className='mb-3' />
-              <div className='mb-3 flex items-center gap-2'>
-                <Typography variant='body2' color='text.secondary'>
-                  Tipo de Bus:
-                </Typography>
-                <Chip label={busTypeName} color='secondary' size='small' className='font-semibold' />
-              </div>
               <TableContainer>
                 <Table size='small' sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 2 }}>
                   <TableHead>

@@ -95,10 +95,10 @@ const ViajesListTable = () => {
   const totalRecords = travelsResponse?.meta?.total || 0
 
   const formatDateTime = (dateString: string) => {
-    const dateWithoutZ = dateString.replace('Z', '')
-    const date = new Date(dateWithoutZ)
+    const date = new Date(dateString)
 
-    return date.toLocaleString('es-ES', {
+    return date.toLocaleString('es-BO', {
+      timeZone: 'America/La_Paz',
       year: 'numeric',
       month: 'short',
       day: 'numeric',
