@@ -159,6 +159,23 @@ const ClientsTable = () => {
           />
         )
       },
+      {
+        id: 'actions',
+        header: 'Acciones',
+        cell: ({ row }) => (
+          <Button
+            size='small'
+            variant='outlined'
+            color='primary'
+            onClick={() => {
+              setSelectedCustomersForRecharge([row.original])
+              setRechargeModalOpen(true)
+            }}
+          >
+            Recargar
+          </Button>
+        )
+      },
       columnHelper.accessor('name', {
         header: 'Nombre',
         cell: ({ row }) => (
@@ -233,24 +250,7 @@ const ClientsTable = () => {
             variant='tonal'
           />
         )
-      }),
-      {
-        id: 'actions',
-        header: 'Acciones',
-        cell: ({ row }) => (
-          <Button
-            size='small'
-            variant='outlined'
-            color='primary'
-            onClick={() => {
-              setSelectedCustomersForRecharge([row.original])
-              setRechargeModalOpen(true)
-            }}
-          >
-            Recargar
-          </Button>
-        )
-      }
+      })
     ],
     []
   )

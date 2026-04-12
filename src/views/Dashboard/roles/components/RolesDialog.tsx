@@ -36,7 +36,16 @@ interface RoleDialogProps {
 }
 
 // Recursos ocultos que se envían automáticamente con COMPANY READ
-const HIDDEN_COMPANY_RESOURCES: ResourceType[] = ['OFFICE', 'OWNER', 'ROUTE', 'BUS', 'TRAVEL', 'CASHIER', 'FILE']
+const HIDDEN_COMPANY_RESOURCES: ResourceType[] = [
+  'OFFICE',
+  'OWNER',
+  'ROUTE',
+  'BUS',
+  'TRAVEL',
+  'CASHIER',
+  'FILE',
+  'PAYMENTS'
+]
 
 // Permisos completos que se asignan a los recursos ocultos
 const FULL_PERMISSIONS: PermissionType[] = ['CREATE', 'READ', 'UPDATE', 'DELETE']
@@ -238,7 +247,11 @@ const RoleDialog = ({ open, onClose, onSubmit, isLoading, existingRoles = [], ro
 
         // Para CASHIER agregar READ_CASHIERS además de los permisos completos
         const resourcePermissions: string[] =
-          hiddenResource === 'CASHIER' ? [...FULL_PERMISSIONS, 'READ_CASHIERS'] : [...FULL_PERMISSIONS]
+          hiddenResource === 'CASHIER'
+            ? [...FULL_PERMISSIONS, 'READ_CASHIERS']
+            : hiddenResource === 'PAYMENTS'
+              ? ['RECHARGE']
+              : [...FULL_PERMISSIONS]
 
         if (existingIndex !== -1) {
           permissions[existingIndex].permissions = resourcePermissions as PermissionType[]

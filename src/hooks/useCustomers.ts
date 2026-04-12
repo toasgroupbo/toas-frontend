@@ -21,6 +21,9 @@ const fetchCustomers = async (params: CustomersQueryParams): Promise<CustomersRe
   return response.data
 }
 
+export interface VerifyPaymentResponse {
+  status: string
+}
 export interface VerifyPaymentRequest {
   IdCorrelation: string
 }
@@ -43,9 +46,6 @@ export interface RechargeResponse {
 const generateRechargeQR = async (data: RechargeRequest): Promise<RechargeResponse> => {
   const response = await api.post<RechargeResponse>('/api/payments/recharge/qr', data)
 
-  console.log('📥 generateRechargeQR - respuesta del servidor:', response.data)
-  console.log('📥 correlationId recibido:', response.data.correlationId, 'tipo:', typeof response.data.correlationId)
-
   return response.data
 }
 
@@ -67,17 +67,13 @@ export const useCustomers = (params: CustomersQueryParams, enabled: boolean = tr
   })
 
   const verifyPayment = async (correlationId: string): Promise<boolean> => {
-    console.log('🔍 verifyPayment - correlationId recibido:', correlationId, 'tipo:', typeof correlationId)
-
     const payload = {
       IdCorrelation: correlationId
     }
 
-    console.log('📤 verifyPayment - payload a enviar:', payload)
+    const response = await api.post<VerifyPaymentResponse>('/api/payments/verify-qr-recharge', payload)
 
-    const response = await api.post<boolean>('/api/payments/verify-qr-recharge', payload)
-
-    return response.data
+    return response.data.status === 'PAID'
   }
 
   const verifyMutation = useMutation({

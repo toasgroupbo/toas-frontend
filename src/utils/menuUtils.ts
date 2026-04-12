@@ -18,34 +18,33 @@ export const filterMenuByRole = (
       return true
     }
 
-    const operationsMenus = ['OPERACIONES', 'Venta de Tickets', 'Arqueo de Caja', 'Salidas']
-
     if (isStaticRole) {
-      if (userRole === 'SUPER_ADMIN') {
-        if (!isImpersonating && !hasCompany) {
-          const adminOnlyMenus = [
-            'MÓDULO ADMINISTRACIÓN',
-            'Empresas',
-            'Administradores',
-            'Roles',
-            'REPORTES GLOBALES',
-            'Reporte de Depósitos',
-            'Reporte de Ventas',
-            'Reporte de Usuarios',
-            'Usuarios de Aplicación',
-            'CONFIGURACIÓN',
-            'Configuraciones y términos de uso'
-          ]
+      if (userRole === 'SUPER_ADMIN' || userRole === 'SUPERADMIN') {
+        const adminMenus = [
+          'MÓDULO ADMINISTRACIÓN',
+          'Empresas',
+          'Administradores',
+          'Roles',
+          'REPORTES GLOBALES',
+          'Reporte de Depósitos',
+          'Reporte de Ventas',
+          'Reporte de Usuarios',
+          'Usuarios de Aplicación',
+          'CONFIGURACIÓN',
+          'Configuraciones y términos de uso'
+        ]
 
-          return adminOnlyMenus.includes(item.label)
+        if (isImpersonating) {
+          const excludeWhenImpersonating = ['Venta de Tickets', 'Arqueo de Caja']
+
+          if (excludeWhenImpersonating.includes(item.label)) {
+            return false
+          }
+
+          return true
         }
 
-        // Si está impersonando, excluir menús de operaciones (son solo para cajeros)
-        if (isImpersonating && operationsMenus.includes(item.label)) {
-          return false
-        }
-
-        return true
+        return adminMenus.includes(item.label)
       }
 
       if (userRole === 'ADMIN_APLICACION') {
@@ -65,25 +64,35 @@ export const filterMenuByRole = (
       }
 
       if (userRole === 'CASHIER') {
-        const cashierMenus = ['OPERACIONES', 'Venta de Tickets', 'Arqueo de Caja', 'Salidas', 'Viajes']
+        const cashierMenus = ['OPERACIONES', 'Venta de Tickets', 'Arqueo de Caja', 'Viajes']
 
         return cashierMenus.includes(item.label)
       }
 
       if (userRole === 'CASHIER_TRIPS') {
-        const cashierTripsMenus = ['OPERACIONES', 'Salidas', 'Viajes']
+        const cashierTripsMenus = ['OPERACIONES', 'Viajes']
 
         return cashierTripsMenus.includes(item.label)
       }
 
       if (userRole === 'CASHIER_SELLER') {
-        const cashierSellerMenus = ['OPERACIONES', 'Venta de Tickets', 'Arqueo de Caja', 'Salidas']
+        const cashierSellerMenus = ['OPERACIONES', 'Venta de Tickets', 'Arqueo de Caja']
 
         return cashierSellerMenus.includes(item.label)
       }
 
       if (userRole === 'ADMIN_EMPRESA' || userRole === 'COMPANY_ADMIN') {
-        const empresaMenus = ['GESTIÓN DE EMPRESA', 'Buses', 'Rutas', 'Dueños', 'Cajeros', 'Oficinas', 'Viajes']
+        const empresaMenus = [
+          'GESTIÓN DE EMPRESA',
+          'Buses',
+          'Rutas',
+          'Dueños',
+          'Cajeros',
+          'Oficinas',
+          'Viajes',
+          'OPERACIONES',
+          'Salidas'
+        ]
 
         return empresaMenus.includes(item.label)
       }
@@ -113,21 +122,26 @@ export const filterMenuByRole = (
         OPERACIONES: ['TRAVEL', 'TICKET']
       }
 
-      // Menús que requieren empresa
       const companyMenus = ['GESTIÓN DE EMPRESA', 'Buses', 'Rutas', 'Dueños', 'Cajeros', 'Oficinas', 'Viajes']
+      const operationsMenus = ['OPERACIONES', 'Venta de Tickets', 'Arqueo de Caja', 'Salidas']
 
       if (!hasCompany && !isImpersonating) {
-        if (companyMenus.includes(item.label) || operationsMenus.includes(item.label)) {
+        if (companyMenus.includes(item.label)) {
           return false
         }
       }
 
-      if (isImpersonating && operationsMenus.includes(item.label)) {
-        return false
+      if (item.label === 'OPERACIONES' || item.label === 'Salidas') {
+        return isImpersonating
       }
 
       if (item.isSection) {
         const sectionLabel = item.label
+
+        if (sectionLabel === 'OPERACIONES') {
+          return isImpersonating
+        }
+
         const resourcesInSection = sectionToResourcesMap[sectionLabel]
 
         if (resourcesInSection) {

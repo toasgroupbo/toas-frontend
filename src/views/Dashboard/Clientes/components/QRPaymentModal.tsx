@@ -84,12 +84,7 @@ const QRPaymentModal = ({
       const checkPayment = async () => {
         try {
           setVerificationAttempts(prev => prev + 1)
-          console.log(
-            '🔍 QRPaymentModal - qrData.correlationId:',
-            qrData.correlationId,
-            'tipo:',
-            typeof qrData.correlationId
-          )
+
           const isPaid = await verifyPayment(qrData.correlationId)
 
           if (isPaid) {

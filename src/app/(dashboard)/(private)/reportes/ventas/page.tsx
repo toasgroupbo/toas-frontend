@@ -2,24 +2,22 @@
 import Grid from '@mui/material/Grid2'
 import { Typography } from '@mui/material'
 
-import DetalleArqueo from '@/views/Dashboard/arqueocaja/list/DetalleArqueoCaja'
+import VentasTable from '@/views/Dashboard/ventas/list/VentasTable'
 
-const PageDetalleArqueo = () => {
+const PageVentas = () => {
   return (
     <Grid container spacing={6}>
       <Grid size={{ xs: 12 }}>
         <Typography variant='h4' sx={{ paddingLeft: '20px' }}>
-          Detalle Arqueo de Caja
+          Reporte de Ventas
         </Typography>
-        <Typography sx={{ paddingLeft: '20px' }}>
-          Lista <code>de Detalle Arqueo de Caja</code>.
-        </Typography>
+        <Typography sx={{ paddingLeft: '20px' }}>Visualiza y analiza el reporte de ventas</Typography>
       </Grid>
       <Grid size={{ xs: 12 }}>
-        <DetalleArqueo />
+        <VentasTable />
       </Grid>
     </Grid>
   )
 }
 
-export default PageDetalleArqueo
+export default PageVentas

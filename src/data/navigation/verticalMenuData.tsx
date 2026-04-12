@@ -130,11 +130,12 @@ const verticalMenuData = (): VerticalMenuDataType[] => [
       action: 'READ'
     }
   },
-  {
+
+  /*  {
     label: 'Arqueo de Caja',
     icon: 'tabler-calculator',
     href: '/arqueo/list'
-  },
+  }, */
   {
     label: 'Salidas',
     icon: 'tabler-clock-up',
