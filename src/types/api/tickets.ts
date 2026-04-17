@@ -39,7 +39,6 @@ export interface Buyer {
   createdAt: string
 }
 
-// Nuevo tipo para el usuario (vendedor o quien cancela)
 export interface User {
   id: number
   email: string
@@ -55,6 +54,13 @@ export interface TicketSeat {
   id: number
   seatNumber: string
   price: string
+}
+
+export interface Billing {
+  id: number
+  nombre: string
+  ci: string
+  createdAt: string
 }
 
 export interface Ticket {
@@ -78,6 +84,7 @@ export interface Ticket {
   wallet_amount?: string
   qr_amount?: string
   past?: boolean
+  billing?: Billing
 }
 
 export interface BillingInfo {

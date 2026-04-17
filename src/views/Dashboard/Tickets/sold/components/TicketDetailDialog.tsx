@@ -32,6 +32,9 @@ const TicketDetailDialog = ({ open, onClose, ticket }: TicketDetailDialogProps) 
   // Determinar si el ticket está cancelado
   const isCancelled = ticket.status === 'cancelled'
 
+  const hasBillingInfo = ticket.billing && (ticket.billing.nombre || ticket.billing.ci)
+  const hasBuyerInfo = ticket.buyer && (ticket.buyer.name || ticket.buyer.ci)
+
   return (
     <Dialog open={open} onClose={onClose} maxWidth='md' fullWidth>
       <DialogTitle>
@@ -69,7 +72,7 @@ const TicketDetailDialog = ({ open, onClose, ticket }: TicketDetailDialogProps) 
       </DialogTitle>
       <DialogContent dividers>
         <Grid container spacing={3}>
-          {/* Información del Comprador */}
+          {/* Información del Comprador (Billing) */}
           <Grid item xs={12} md={6}>
             <Typography
               variant='subtitle2'
@@ -81,7 +84,7 @@ const TicketDetailDialog = ({ open, onClose, ticket }: TicketDetailDialogProps) 
               Información del Comprador
             </Typography>
             <Box sx={{ bgcolor: 'action.hover', p: 2, borderRadius: 1, border: '1px solid', borderColor: 'divider' }}>
-              {ticket.buyer ? (
+              {hasBillingInfo ? (
                 <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                     <i
@@ -92,7 +95,31 @@ const TicketDetailDialog = ({ open, onClose, ticket }: TicketDetailDialogProps) 
                       Nombre:
                     </Typography>
                     <Typography variant='body2' fontWeight={600}>
-                      {ticket.buyer.name || 'N/A'}
+                      {ticket.billing!.nombre || 'N/A'}
+                    </Typography>
+                  </Box>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                    <i className='tabler-id' style={{ fontSize: '18px', color: 'var(--mui-palette-primary-main)' }} />
+                    <Typography variant='body2' color='text.secondary'>
+                      CI / NIT:
+                    </Typography>
+                    <Typography variant='body2' fontWeight={600}>
+                      {ticket.billing!.ci || 'N/A'}
+                    </Typography>
+                  </Box>
+                </Box>
+              ) : hasBuyerInfo ? (
+                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                    <i
+                      className='tabler-user-circle'
+                      style={{ fontSize: '18px', color: 'var(--mui-palette-primary-main)' }}
+                    />
+                    <Typography variant='body2' color='text.secondary'>
+                      Nombre:
+                    </Typography>
+                    <Typography variant='body2' fontWeight={600}>
+                      {ticket.buyer!.name || 'N/A'}
                     </Typography>
                   </Box>
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
@@ -101,10 +128,10 @@ const TicketDetailDialog = ({ open, onClose, ticket }: TicketDetailDialogProps) 
                       CI:
                     </Typography>
                     <Typography variant='body2' fontWeight={600}>
-                      {ticket.buyer.ci || 'N/A'}
+                      {ticket.buyer!.ci || 'N/A'}
                     </Typography>
                   </Box>
-                  {ticket.buyer.email && (
+                  {ticket.buyer!.email && (
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                       <i
                         className='tabler-mail'
@@ -114,11 +141,11 @@ const TicketDetailDialog = ({ open, onClose, ticket }: TicketDetailDialogProps) 
                         Email:
                       </Typography>
                       <Typography variant='body2' fontWeight={600}>
-                        {ticket.buyer.email}
+                        {ticket.buyer!.email}
                       </Typography>
                     </Box>
                   )}
-                  {ticket.buyer.phone && (
+                  {ticket.buyer!.phone && (
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                       <i
                         className='tabler-phone'
@@ -128,15 +155,14 @@ const TicketDetailDialog = ({ open, onClose, ticket }: TicketDetailDialogProps) 
                         Teléfono:
                       </Typography>
                       <Typography variant='body2' fontWeight={600}>
-                        {ticket.buyer.phone}
+                        {ticket.buyer!.phone}
                       </Typography>
                     </Box>
                   )}
                 </Box>
               ) : (
                 <Typography variant='body2' color='text.secondary' sx={{ textAlign: 'center', py: 2 }}>
-                  <i className='tabler-user-off' style={{ fontSize: '24px', marginBottom: '8px' }} />
-                  <br />
+                  <i className='tabler-user-off' style={{ fontSize: '24px', marginBottom: '8px', display: 'block' }} />
                   No hay información del comprador disponible
                 </Typography>
               )}
@@ -165,7 +191,7 @@ const TicketDetailDialog = ({ open, onClose, ticket }: TicketDetailDialogProps) 
                     Tipo de Venta:
                   </Typography>
                   <Typography variant='body2' fontWeight={600}>
-                    {ticket.type === 'IN_OFFICE' ? 'En Oficina' : ticket.type}
+                    {ticket.type === 'IN_OFFICE' ? 'En Oficina' : ticket.type === 'ONLINE' ? 'En Línea' : ticket.type}
                   </Typography>
                 </Box>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
@@ -195,6 +221,20 @@ const TicketDetailDialog = ({ open, onClose, ticket }: TicketDetailDialogProps) 
                     {formatDate(ticket.createdAt)} {formatTime(ticket.createdAt)}
                   </Typography>
                 </Box>
+                {ticket.commission && parseFloat(ticket.commission) > 0 && (
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                    <i
+                      className='tabler-percentage'
+                      style={{ fontSize: '18px', color: 'var(--mui-palette-warning-main)' }}
+                    />
+                    <Typography variant='body2' color='text.secondary'>
+                      Comisión:
+                    </Typography>
+                    <Typography variant='body2' fontWeight={600} color='warning.main'>
+                      Bs. {parseFloat(ticket.commission).toFixed(2)}
+                    </Typography>
+                  </Box>
+                )}
                 {/* Solo mostrar información de cancelación si el ticket está cancelado */}
                 {isCancelled && ticket.cancelledAt && (
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>

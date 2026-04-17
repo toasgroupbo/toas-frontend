@@ -218,7 +218,9 @@ const TicketsTable = ({ initialTravelId }: TicketsTableProps) => {
         header: 'Método de Pago',
         cell: ({ row }) => (
           <Chip
-            label={row.original.payment_type === 'qr' ? 'QR' : row.original.payment_type === 'cash' ? 'Efectivo' : 'N/A'}
+            label={
+              row.original.payment_type === 'qr' ? 'QR' : row.original.payment_type === 'cash' ? 'Efectivo' : 'N/A'
+            }
             color={row.original.payment_type === 'qr' ? 'info' : 'warning'}
             variant='tonal'
             size='small'
@@ -338,7 +340,6 @@ const TicketsTable = ({ initialTravelId }: TicketsTableProps) => {
 
         <Box sx={{ padding: '0 20px', display: 'flex', flexDirection: 'column', gap: 2 }}>
           <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap', alignItems: 'flex-start' }}>
-            {/* Solo mostrar el select si no viene un travelId predefinido */}
             {!initialTravelId && (
               <CustomTextField
                 select
@@ -387,7 +388,8 @@ const TicketsTable = ({ initialTravelId }: TicketsTableProps) => {
                           </Typography>
                         </Box>
                         <Typography variant='caption' color='text.secondary'>
-                          {formatDate(travel.departure_time)} {formatTime(travel.departure_time)} - {travel.bus.name} ({travel.bus.plaque})
+                          {formatDate(travel.departure_time)} {formatTime(travel.departure_time)} - {travel.bus.name} (
+                          {travel.bus.plaque})
                         </Typography>
                       </Box>
                     </MenuItem>
