@@ -39,6 +39,17 @@ export interface Buyer {
   createdAt: string
 }
 
+// Nuevo tipo para el usuario (vendedor o quien cancela)
+export interface User {
+  id: number
+  email: string
+  fullName: string
+  ci: string
+  phone: string
+  sessionToken?: string
+  createdAt: string
+}
+
 export interface TicketSeat {
   deck: any
   id: number
@@ -56,11 +67,17 @@ export interface Ticket {
   reserve_expiresAt: string | null
   createdAt: string
   travelSeats: TravelSeat[]
-  buyer: Buyer
+  buyer: Buyer | null
   confirmedAt?: string | null
   cancelledAt?: string | null
   travel?: Travel
   customer?: Customer
+  soldBy?: User
+  canceledBy?: User | null
+  commission?: string
+  wallet_amount?: string
+  qr_amount?: string
+  past?: boolean
 }
 
 export interface BillingInfo {

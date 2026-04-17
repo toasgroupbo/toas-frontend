@@ -138,8 +138,8 @@ const CreateTravelDialog = ({ open, onClose, onSubmit, isLoading = false, isCash
       type: data.type,
       price_deck_1: data.price_deck_1,
       price_deck_2: data.price_deck_2 || data.price_deck_1,
-      departure_time: `${data.departure_time}:00`,
-      arrival_time: `${data.arrival_time}:00`
+      departure_time: new Date(data.departure_time).toISOString(),
+      arrival_time: new Date(data.arrival_time).toISOString()
     }
 
     try {
