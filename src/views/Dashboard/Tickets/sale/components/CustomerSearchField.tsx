@@ -18,7 +18,9 @@ import {
   DialogActions,
   Alert,
   Typography,
-  IconButton
+  IconButton,
+  useMediaQuery,
+  useTheme
 } from '@mui/material'
 
 import { useSearchBillingByCi } from '@/hooks/useCustomersByCi'
@@ -37,6 +39,9 @@ const CustomerSearchField = ({
   hasError = false,
   helperText
 }: CustomerSearchFieldProps) => {
+  const theme = useTheme()
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'))
+
   const [searchTerm, setSearchTerm] = useState('')
   const [searchQuery, setSearchQuery] = useState('')
   const [showResults, setShowResults] = useState(false)
@@ -215,14 +220,15 @@ const CustomerSearchField = ({
           <Box display='flex' gap={1}>
             <TextField
               fullWidth
-              label='Buscar Cliente por CI'
-              placeholder='Ingrese el CI del cliente y presione Enter o buscar'
+              label={isMobile ? 'CI del Cliente' : 'Buscar Cliente por CI'}
+              placeholder={isMobile ? 'Ingrese CI y presione Enter' : 'Ingrese el CI del cliente y presione Enter o buscar'}
               value={searchTerm}
               onChange={handleSearchChange}
               onKeyDown={handleKeyDown}
               disabled={disabled}
               error={hasError}
               helperText={hasError && !selectedBilling ? helperText : ''}
+              size={isMobile ? 'small' : 'medium'}
               InputProps={{
                 startAdornment: (
                   <InputAdornment position='start'>
@@ -241,9 +247,9 @@ const CustomerSearchField = ({
               color='primary'
               onClick={handleSearch}
               disabled={disabled || searchTerm.trim().length === 0 || isLoading}
-              sx={{ minWidth: 120, height: 56 }}
+              sx={{ minWidth: { xs: 50, sm: 120 }, height: { xs: 40, sm: 56 } }}
             >
-              {isLoading ? <CircularProgress size={24} color='inherit' /> : <i className='tabler-search' />}
+              {isLoading ? <CircularProgress size={isMobile ? 20 : 24} color='inherit' /> : <i className='tabler-search' />}
             </Button>
           </Box>
           {renderSearchResults()}
@@ -256,16 +262,18 @@ const CustomerSearchField = ({
         )}
       </Box>
 
-      <Dialog open={openCreateDialog} onClose={() => setOpenCreateDialog(false)} maxWidth='sm' fullWidth>
+      <Dialog open={openCreateDialog} onClose={() => setOpenCreateDialog(false)} maxWidth='sm' fullWidth fullScreen={isMobile}>
         <DialogTitle>
           <Box display='flex' alignItems='center' gap={1}>
-            <i className='tabler-user-plus' />
-            Crear Nuevo Cliente
+            <i className='tabler-user-plus' style={{ fontSize: isMobile ? '18px' : '24px' }} />
+            <Typography variant={isMobile ? 'body1' : 'h6'} fontWeight={600}>
+              Crear Nuevo Cliente
+            </Typography>
           </Box>
         </DialogTitle>
         <DialogContent>
-          <Box display='flex' flexDirection='column' gap={3} mt={2}>
-            <TextField label='CI' value={searchTerm} disabled fullWidth />
+          <Box display='flex' flexDirection='column' gap={{ xs: 2, sm: 3 }} mt={2}>
+            <TextField label='CI' value={searchTerm} disabled fullWidth size={isMobile ? 'small' : 'medium'} />
             <TextField
               label='Nombre Completo'
               value={newCustomerName}
@@ -273,21 +281,37 @@ const CustomerSearchField = ({
               placeholder='Ej: Juan Pérez'
               autoFocus
               fullWidth
+              size={isMobile ? 'small' : 'medium'}
             />
           </Box>
         </DialogContent>
-        <DialogActions sx={{ px: 3, pb: 3 }}>
-          <Button onClick={() => setOpenCreateDialog(false)} variant='outlined' color='secondary'>
-            Cancelar
-          </Button>
+        <DialogActions
+          sx={{
+            px: { xs: 2, sm: 3 },
+            pb: { xs: 2, sm: 3 },
+            gap: { xs: 1, sm: 2 },
+            flexDirection: { xs: 'column', sm: 'row' }
+          }}
+        >
           <Button
             onClick={handleCreateBilling}
             variant='contained'
             color='primary'
+            fullWidth={isMobile}
             disabled={!newCustomerName.trim()}
             startIcon={<i className='tabler-check' />}
+            sx={{ order: { xs: 1, sm: 2 } }}
           >
             Usar Datos
+          </Button>
+          <Button
+            onClick={() => setOpenCreateDialog(false)}
+            variant='outlined'
+            color='secondary'
+            fullWidth={isMobile}
+            sx={{ order: { xs: 2, sm: 1 } }}
+          >
+            Cancelar
           </Button>
         </DialogActions>
       </Dialog>

@@ -17,6 +17,8 @@ import Box from '@mui/material/Box'
 import Typography from '@mui/material/Typography'
 import Chip from '@mui/material/Chip'
 import Alert from '@mui/material/Alert'
+import useMediaQuery from '@mui/material/useMediaQuery'
+import { useTheme } from '@mui/material/styles'
 
 import CustomTextField from '@core/components/mui/TextField'
 import type { CreateTicketDto, SeatSelection, BillingInfo } from '@/types/api/tickets'
@@ -40,6 +42,9 @@ interface FormData {
 }
 
 const SellTicketDialog = ({ open, onClose, onSubmit, isLoading = false, preSelectedTravel }: SellTicketDialogProps) => {
+  const theme = useTheme()
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'))
+
   const { data: travels, isLoading: travelsLoading } = useCashierTravels()
   const [selectedTravelId, setSelectedTravelId] = useState<number | null>(null)
   const { data: travelDetail, refetch: refetchTravel, isRefetching } = useCashierTravelById(selectedTravelId)
@@ -239,21 +244,24 @@ const SellTicketDialog = ({ open, onClose, onSubmit, isLoading = false, preSelec
   }
 
   return (
-    <Dialog open={open} onClose={handleClose} maxWidth='lg' fullWidth>
-      <DialogTitle sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <Box display='flex' alignItems='center' gap={2}>
-          <i className='tabler-ticket' style={{ fontSize: '24px' }} />
-          <Typography variant='h6'>Vender Ticket</Typography>
-          {selectedTravel && (
+    <Dialog open={open} onClose={handleClose} maxWidth='lg' fullWidth fullScreen={isMobile}>
+      <DialogTitle sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', py: { xs: 1.5, sm: 2 } }}>
+        <Box display='flex' alignItems='center' gap={{ xs: 1, sm: 2 }} minWidth={0} flex={1}>
+          <i className='tabler-ticket' style={{ fontSize: isMobile ? '20px' : '24px', flexShrink: 0 }} />
+          <Typography variant={isMobile ? 'body1' : 'h6'} fontWeight={600} noWrap>
+            Vender Ticket
+          </Typography>
+          {selectedTravel && !isMobile && (
             <Chip
               label={`${selectedTravel.route.officeOrigin.place?.name || 'N/A'} → ${selectedTravel.route.officeDestination.place?.name || 'N/A'}`}
               color='primary'
               variant='tonal'
               size='small'
+              sx={{ maxWidth: 300, '& .MuiChip-label': { overflow: 'hidden', textOverflow: 'ellipsis' } }}
             />
           )}
         </Box>
-        <IconButton onClick={handleClose} disabled={isLoading}>
+        <IconButton onClick={handleClose} disabled={isLoading} size={isMobile ? 'small' : 'medium'}>
           <i className='tabler-x' />
         </IconButton>
       </DialogTitle>
@@ -353,10 +361,11 @@ const SellTicketDialog = ({ open, onClose, onSubmit, isLoading = false, preSelec
             {selectedTravel && (
               <>
                 <Grid item xs={12}>
-                  <Box display='flex' gap={2} alignItems='center'>
+                  <Box display='flex' flexDirection={{ xs: 'column', sm: 'row' }} gap={{ xs: 1, sm: 2 }} alignItems={{ xs: 'stretch', sm: 'center' }}>
                     <Alert severity='info' icon={<i className='tabler-info-circle' />} sx={{ flex: 1 }}>
-                      Selecciona los asientos haciendo clic en el esquema del bus. Total seleccionados:{' '}
-                      {selectedSeats.size}
+                      <Typography variant={isMobile ? 'caption' : 'body2'}>
+                        Selecciona los asientos. Total: {selectedSeats.size}
+                      </Typography>
                     </Alert>
                     <Button
                       variant='outlined'
@@ -364,7 +373,8 @@ const SellTicketDialog = ({ open, onClose, onSubmit, isLoading = false, preSelec
                       onClick={() => refetchTravel()}
                       disabled={isRefetching || isLoading}
                       startIcon={isRefetching ? <CircularProgress size={16} /> : <i className='tabler-refresh' />}
-                      sx={{ minWidth: 140 }}
+                      sx={{ minWidth: { xs: 'auto', sm: 140 } }}
+                      size={isMobile ? 'small' : 'medium'}
                     >
                       {isRefetching ? 'Actualizando...' : 'Actualizar'}
                     </Button>
@@ -449,18 +459,20 @@ const SellTicketDialog = ({ open, onClose, onSubmit, isLoading = false, preSelec
                     <Grid item xs={12}>
                       <Box
                         sx={{
-                          p: 2,
+                          p: { xs: 1.5, sm: 2 },
                           bgcolor: 'success.lighter',
                           borderRadius: 1,
                           display: 'flex',
+                          flexDirection: { xs: 'column', sm: 'row' },
                           justifyContent: 'space-between',
-                          alignItems: 'center'
+                          alignItems: 'center',
+                          gap: { xs: 0.5, sm: 0 }
                         }}
                       >
-                        <Typography variant='h6' fontWeight='bold'>
+                        <Typography variant={isMobile ? 'body1' : 'h6'} fontWeight='bold'>
                           Total a pagar:
                         </Typography>
-                        <Typography variant='h5' color='success.main' fontWeight='bold'>
+                        <Typography variant={isMobile ? 'h6' : 'h5'} color='success.main' fontWeight='bold'>
                           Bs. {calculateTotal()}
                         </Typography>
                       </Box>
@@ -472,17 +484,33 @@ const SellTicketDialog = ({ open, onClose, onSubmit, isLoading = false, preSelec
           </Grid>
         </DialogContent>
 
-        <DialogActions sx={{ px: 3, pb: 3 }}>
-          <Button onClick={handleClose} variant='outlined' color='secondary' disabled={isLoading}>
-            Cancelar
-          </Button>
+        <DialogActions
+          sx={{
+            px: { xs: 2, sm: 3 },
+            pb: { xs: 2, sm: 3 },
+            gap: { xs: 1, sm: 2 },
+            flexDirection: { xs: 'column', sm: 'row' }
+          }}
+        >
           <Button
             type='submit'
             variant='contained'
+            fullWidth={isMobile}
             disabled={isLoading || selectedSeats.size === 0}
             startIcon={isLoading ? <CircularProgress size={20} /> : <i className='tabler-ticket' />}
+            sx={{ order: { xs: 1, sm: 2 } }}
           >
-            {isLoading ? 'Vendiendo...' : 'Vender Ticket'}
+            {isLoading ? 'Vendiendo...' : isMobile ? 'Vender' : 'Vender Ticket'}
+          </Button>
+          <Button
+            onClick={handleClose}
+            variant='outlined'
+            color='secondary'
+            fullWidth={isMobile}
+            disabled={isLoading}
+            sx={{ order: { xs: 2, sm: 1 } }}
+          >
+            Cancelar
           </Button>
         </DialogActions>
       </form>

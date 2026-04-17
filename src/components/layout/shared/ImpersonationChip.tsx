@@ -32,6 +32,12 @@ const ImpersonationChip = () => {
             variant='filled'
             sx={{
               fontWeight: 600,
+              maxWidth: { xs: '150px', sm: '250px', md: '400px' },
+              '& .MuiChip-label': {
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                whiteSpace: 'nowrap'
+              },
               '& .MuiChip-icon': {
                 fontSize: '16px'
               }

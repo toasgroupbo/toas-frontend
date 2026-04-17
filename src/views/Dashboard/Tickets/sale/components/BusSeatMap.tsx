@@ -1,6 +1,6 @@
 'use client'
 
-import { Box, Typography, Chip, Paper, Tooltip } from '@mui/material'
+import { Box, Typography, Chip, Paper, Tooltip, useMediaQuery, useTheme } from '@mui/material'
 
 import type { TravelSeat } from '@/types/api/travels'
 
@@ -14,6 +14,10 @@ interface BusSeatMapProps {
 }
 
 const BusSeatMap = ({ seats, deck, deckPrice, selectedSeats, onSeatToggle, totalDecks = 1 }: BusSeatMapProps) => {
+  const theme = useTheme()
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'))
+  const isTablet = useMediaQuery(theme.breakpoints.down('md'))
+
   const deckSeats = seats.filter(seat => seat.deck === deck)
 
   if (deckSeats.length === 0) {
@@ -32,6 +36,13 @@ const BusSeatMap = ({ seats, deck, deckPrice, selectedSeats, onSeatToggle, total
     seatSize = 50
   } else if (totalSeats > 20) {
     seatSize = 55
+  }
+
+  // Ajustar tamaño para móvil y tablet
+  if (isMobile) {
+    seatSize = Math.min(seatSize, 38)
+  } else if (isTablet) {
+    seatSize = Math.min(seatSize, 48)
   }
 
   const seatMatrix: (TravelSeat | null)[][] = Array(maxRow)
@@ -154,12 +165,13 @@ const BusSeatMap = ({ seats, deck, deckPrice, selectedSeats, onSeatToggle, total
       <Paper
         elevation={0}
         sx={{
-          p: 3,
+          p: { xs: 1.5, sm: 2, md: 3 },
           bgcolor: 'action.hover',
           border: '2px solid',
           borderColor: 'divider',
           borderRadius: 2,
-          position: 'relative'
+          position: 'relative',
+          overflowX: 'auto'
         }}
       >
         {/* Bus front indicator */}
@@ -382,63 +394,63 @@ const BusSeatMap = ({ seats, deck, deckPrice, selectedSeats, onSeatToggle, total
         <Box
           sx={{
             display: 'flex',
-            gap: 2,
+            gap: { xs: 1, sm: 2 },
             justifyContent: 'center',
-            mt: 3,
+            mt: { xs: 2, sm: 3 },
             flexWrap: 'wrap'
           }}
         >
           <Box display='flex' alignItems='center' gap={0.5}>
             <Box
               sx={{
-                width: 20,
-                height: 20,
+                width: { xs: 14, sm: 20 },
+                height: { xs: 14, sm: 20 },
                 bgcolor: 'success.light',
                 border: '2px solid',
                 borderColor: 'success.main',
                 borderRadius: 1
               }}
             />
-            <Typography variant='caption'>Disponible</Typography>
+            <Typography variant='caption' sx={{ fontSize: { xs: '0.65rem', sm: '0.75rem' } }}>Disponible</Typography>
           </Box>
           <Box display='flex' alignItems='center' gap={0.5}>
             <Box
               sx={{
-                width: 20,
-                height: 20,
+                width: { xs: 14, sm: 20 },
+                height: { xs: 14, sm: 20 },
                 bgcolor: 'primary.main',
                 border: '2px solid',
                 borderColor: 'primary.main',
                 borderRadius: 1
               }}
             />
-            <Typography variant='caption'>Seleccionado</Typography>
+            <Typography variant='caption' sx={{ fontSize: { xs: '0.65rem', sm: '0.75rem' } }}>Seleccionado</Typography>
           </Box>
           <Box display='flex' alignItems='center' gap={0.5}>
             <Box
               sx={{
-                width: 20,
-                height: 20,
+                width: { xs: 14, sm: 20 },
+                height: { xs: 14, sm: 20 },
                 bgcolor: 'warning.light',
                 border: '2px solid',
                 borderColor: 'warning.main',
                 borderRadius: 1
               }}
             />
-            <Typography variant='caption'>Reservado</Typography>
+            <Typography variant='caption' sx={{ fontSize: { xs: '0.65rem', sm: '0.75rem' } }}>Reservado</Typography>
           </Box>
           <Box display='flex' alignItems='center' gap={0.5}>
             <Box
               sx={{
-                width: 20,
-                height: 20,
+                width: { xs: 14, sm: 20 },
+                height: { xs: 14, sm: 20 },
                 bgcolor: 'error.light',
                 border: '2px solid',
                 borderColor: 'error.main',
                 borderRadius: 1
               }}
             />
-            <Typography variant='caption'>Vendido</Typography>
+            <Typography variant='caption' sx={{ fontSize: { xs: '0.65rem', sm: '0.75rem' } }}>Vendido</Typography>
           </Box>
         </Box>
       </Paper>

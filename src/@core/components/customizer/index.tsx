@@ -273,7 +273,7 @@ const Customizer = ({ breakpoint = 'lg', dir = 'ltr', disableDirection = false }
                       <i className='tabler-sun text-[30px]' />
                     </div>
                     <p className={styles.itemLabel} onClick={() => handleChange('mode', 'light')}>
-                      Light
+                      Claro
                     </p>
                   </div>
                   <div className='flex flex-col items-start gap-0.5'>
@@ -286,7 +286,7 @@ const Customizer = ({ breakpoint = 'lg', dir = 'ltr', disableDirection = false }
                       <i className='tabler-moon-stars text-[30px]' />
                     </div>
                     <p className={styles.itemLabel} onClick={() => handleChange('mode', 'dark')}>
-                      Dark
+                      Oscuro
                     </p>
                   </div>
                   <div className='flex flex-col items-start gap-0.5'>
@@ -299,7 +299,7 @@ const Customizer = ({ breakpoint = 'lg', dir = 'ltr', disableDirection = false }
                       <i className='tabler-device-laptop text-[30px]' />
                     </div>
                     <p className={styles.itemLabel} onClick={() => handleChange('mode', 'system')}>
-                      System
+                      Sistema
                     </p>
                   </div>
                 </div>

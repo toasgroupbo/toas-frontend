@@ -12,6 +12,8 @@ import Typography from '@mui/material/Typography'
 import CircularProgress from '@mui/material/CircularProgress'
 import Alert from '@mui/material/Alert'
 import Chip from '@mui/material/Chip'
+import useMediaQuery from '@mui/material/useMediaQuery'
+import { useTheme } from '@mui/material/styles'
 
 import type { Ticket } from '@/types/api/tickets'
 import type { Travel } from '@/types/api/travels'
@@ -37,6 +39,9 @@ const QRPaymentDialog = ({
   onPaymentSuccess,
   onPaymentCancel
 }: QRPaymentDialogProps) => {
+  const theme = useTheme()
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'))
+
   const [qrImage, setQrImage] = useState<string | null>(null)
   const [paymentStatus, setPaymentStatus] = useState<'generating' | 'waiting' | 'verifying' | 'paid' | 'expired' | 'error'>('generating')
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
@@ -194,27 +199,28 @@ const QRPaymentDialog = ({
   if (!ticket || !travel) return null
 
   return (
-    <Dialog open={open} onClose={onClose} maxWidth='sm' fullWidth>
+    <Dialog open={open} onClose={onClose} maxWidth='sm' fullWidth fullScreen={isMobile}>
       <DialogTitle>
-        <Box display='flex' alignItems='center' gap={2}>
+        <Box display='flex' alignItems='center' gap={{ xs: 1.5, sm: 2 }}>
           <Box
             sx={{
-              width: 50,
-              height: 50,
+              width: { xs: 40, sm: 50 },
+              height: { xs: 40, sm: 50 },
               borderRadius: '50%',
               bgcolor: 'info.main',
               display: 'flex',
               alignItems: 'center',
-              justifyContent: 'center'
+              justifyContent: 'center',
+              flexShrink: 0
             }}
           >
-            <i className='tabler-qrcode' style={{ fontSize: '28px', color: 'white' }} />
+            <i className='tabler-qrcode' style={{ fontSize: isMobile ? '22px' : '28px', color: 'white' }} />
           </Box>
           <Box>
-            <Typography variant='h5' fontWeight={600}>
+            <Typography variant={isMobile ? 'h6' : 'h5'} fontWeight={600}>
               Pago por QR
             </Typography>
-            <Typography variant='body2' color='text.secondary'>
+            <Typography variant='body2' color='text.secondary' sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>
               Ticket #{ticket.id}
             </Typography>
           </Box>
@@ -268,7 +274,7 @@ const QRPaymentDialog = ({
 
                 <Box
                   sx={{
-                    p: 2,
+                    p: { xs: 1, sm: 2 },
                     bgcolor: 'white',
                     borderRadius: 2,
                     boxShadow: 3
@@ -277,7 +283,7 @@ const QRPaymentDialog = ({
                   <img
                     src={qrImage}
                     alt='Código QR de pago'
-                    style={{ width: 250, height: 250 }}
+                    style={{ width: isMobile ? 200 : 250, height: isMobile ? 200 : 250 }}
                   />
                 </Box>
                 <Chip
@@ -347,19 +353,21 @@ const QRPaymentDialog = ({
           {/* Total */}
           <Box
             sx={{
-              mt: 3,
-              p: 2,
+              mt: { xs: 2, sm: 3 },
+              p: { xs: 1.5, sm: 2 },
               bgcolor: 'success.lighter',
               borderRadius: 1,
               display: 'flex',
+              flexDirection: { xs: 'column', sm: 'row' },
               justifyContent: 'space-between',
-              alignItems: 'center'
+              alignItems: 'center',
+              gap: { xs: 0.5, sm: 0 }
             }}
           >
-            <Typography variant='h6' fontWeight='bold'>
+            <Typography variant={isMobile ? 'body1' : 'h6'} fontWeight='bold'>
               Total a pagar:
             </Typography>
-            <Typography variant='h4' color='success.main' fontWeight='bold'>
+            <Typography variant={isMobile ? 'h5' : 'h4'} color='success.main' fontWeight='bold'>
               Bs. {parseFloat(ticket.total_price).toFixed(2)}
             </Typography>
           </Box>

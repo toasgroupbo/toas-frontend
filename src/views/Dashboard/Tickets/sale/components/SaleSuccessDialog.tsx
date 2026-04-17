@@ -7,7 +7,9 @@ import DialogActions from '@mui/material/DialogActions'
 import Button from '@mui/material/Button'
 import Box from '@mui/material/Box'
 import Typography from '@mui/material/Typography'
-import { Grid } from '@mui/material'
+import Grid from '@mui/material/Grid'
+import useMediaQuery from '@mui/material/useMediaQuery'
+import { useTheme } from '@mui/material/styles'
 
 import type { Travel } from '@/types/api/travels'
 import type { Ticket } from '@/types/api/tickets'
@@ -30,28 +32,32 @@ const SaleSuccessDialog = ({
   onContinueSelling,
   onViewTickets
 }: SaleSuccessDialogProps) => {
+  const theme = useTheme()
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'))
+
   return (
-    <Dialog open={open} onClose={onClose} maxWidth='md' fullWidth>
+    <Dialog open={open} onClose={onClose} maxWidth='md' fullWidth fullScreen={isMobile}>
       <DialogTitle>
-        <Box display='flex' alignItems='center' gap={2}>
+        <Box display='flex' alignItems='center' gap={{ xs: 1.5, sm: 2 }}>
           <Box
             sx={{
-              width: 50,
-              height: 50,
+              width: { xs: 40, sm: 50 },
+              height: { xs: 40, sm: 50 },
               borderRadius: '50%',
               bgcolor: 'success.main',
               display: 'flex',
               alignItems: 'center',
-              justifyContent: 'center'
+              justifyContent: 'center',
+              flexShrink: 0
             }}
           >
-            <i className='tabler-check' style={{ fontSize: '28px', color: 'white' }} />
+            <i className='tabler-check' style={{ fontSize: isMobile ? '22px' : '28px', color: 'white' }} />
           </Box>
           <Box>
-            <Typography variant='h5' fontWeight={600}>
+            <Typography variant={isMobile ? 'h6' : 'h5'} fontWeight={600}>
               ¡Venta Exitosa!
             </Typography>
-            <Typography variant='body2' color='text.secondary'>
+            <Typography variant='body2' color='text.secondary' sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>
               Ticket confirmado y pagado correctamente
             </Typography>
           </Box>
@@ -128,18 +134,32 @@ const SaleSuccessDialog = ({
           </Box>
         </Box>
       </DialogContent>
-      <DialogActions sx={{ px: 3, pb: 3, gap: 2 }}>
-        <Button onClick={onContinueSelling} variant='outlined' color='secondary' sx={{ flex: 1 }}>
-          Continuar vendiendo
-        </Button>
+      <DialogActions
+        sx={{
+          px: { xs: 2, sm: 3 },
+          pb: { xs: 2, sm: 3 },
+          gap: { xs: 1, sm: 2 },
+          flexDirection: { xs: 'column', sm: 'row' }
+        }}
+      >
         <Button
           onClick={onViewTickets}
           variant='contained'
           color='primary'
-          sx={{ flex: 1 }}
+          fullWidth={isMobile}
+          sx={{ flex: { sm: 1 }, order: { xs: 1, sm: 2 } }}
           startIcon={<i className='tabler-list' />}
         >
-          Ver lista de tickets
+          Ver tickets
+        </Button>
+        <Button
+          onClick={onContinueSelling}
+          variant='outlined'
+          color='secondary'
+          fullWidth={isMobile}
+          sx={{ flex: { sm: 1 }, order: { xs: 2, sm: 1 } }}
+        >
+          Continuar vendiendo
         </Button>
       </DialogActions>
     </Dialog>
