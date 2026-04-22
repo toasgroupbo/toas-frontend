@@ -63,7 +63,17 @@ const createOwner = async (data: CreateOwnerDto): Promise<Owner> => {
   return response.data
 }
 
-const updateOwner = async ({ id, data }: { id: string; data: UpdateOwnerDto }): Promise<Owner> => {
+const updateOwner = async ({
+  id,
+  data,
+  userId,
+  newPassword
+}: {
+  id: string
+  data: UpdateOwnerDto
+  userId?: number
+  newPassword?: string
+}): Promise<Owner> => {
   const actingAsCompany = localStorage.getItem('acting_as_company')
   let url = `/api/owners/${id}`
 
@@ -78,6 +88,11 @@ const updateOwner = async ({ id, data }: { id: string; data: UpdateOwnerDto }): 
   }
 
   const response = await api.patch<Owner>(url, data)
+
+  // Si hay nueva contraseña, actualizar con PUT /api/users/{userId}
+  if (newPassword && newPassword.trim() !== '' && userId) {
+    await api.put(`/api/users/${userId}`, { password: newPassword })
+  }
 
   return response.data
 }

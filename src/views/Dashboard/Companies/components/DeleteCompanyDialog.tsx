@@ -4,7 +4,6 @@ import Dialog from '@mui/material/Dialog'
 import DialogTitle from '@mui/material/DialogTitle'
 import DialogContent from '@mui/material/DialogContent'
 import DialogActions from '@mui/material/DialogActions'
-import DialogContentText from '@mui/material/DialogContentText'
 import Button from '@mui/material/Button'
 import Box from '@mui/material/Box'
 import Typography from '@mui/material/Typography'
@@ -24,32 +23,29 @@ const DeleteCompanyDialog = ({ open, onClose, onConfirm, company, isLoading }: D
     <Dialog open={open} onClose={onClose} maxWidth='sm' fullWidth>
       <DialogTitle>¿Eliminar empresa permanentemente?</DialogTitle>
       <DialogContent>
-        <DialogContentText>
-          {company && (
-            <>
+        {company && (
+          <>
+            <Typography variant='body1' color='text.secondary' sx={{ mb: 2 }}>
               Estás a punto de eliminar la empresa <strong>&quot;{company.name}&quot;</strong>.
-              <br />
-              <br />
-              <Box
-                sx={{
-                  bgcolor: 'error.lighter',
-                  border: '1px solid',
-                  borderColor: 'error.main',
-                  borderRadius: 1,
-                  p: 2,
-                  mt: 2
-                }}
-              >
-                <Typography variant='body2' color='error.main' sx={{ fontWeight: 600 }}>
-                  ⚠️ Esta acción no se puede deshacer
-                </Typography>
-                <Typography variant='caption' color='text.secondary' sx={{ display: 'block', mt: 1 }}>
-                  Se eliminarán todos los datos relacionados con esta empresa.
-                </Typography>
-              </Box>
-            </>
-          )}
-        </DialogContentText>
+            </Typography>
+            <Box
+              sx={{
+                bgcolor: 'error.lighter',
+                border: '1px solid',
+                borderColor: 'error.main',
+                borderRadius: 1,
+                p: 2
+              }}
+            >
+              <Typography variant='body2' color='error.main' sx={{ fontWeight: 600 }}>
+                ⚠️ Esta acción no se puede deshacer
+              </Typography>
+              <Typography variant='caption' color='text.secondary' sx={{ display: 'block', mt: 1 }}>
+                Se eliminarán todos los datos relacionados con esta empresa.
+              </Typography>
+            </Box>
+          </>
+        )}
       </DialogContent>
       <DialogActions sx={{ p: 3 }}>
         <Button onClick={onClose} disabled={isLoading} color='secondary'>

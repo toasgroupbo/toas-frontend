@@ -67,8 +67,9 @@ export interface Company {
   logo: string
   commission: number
   hours_before_closing: number
+  createdAt: string
   bankAccount: BankAccount
-  admin: CompanyAdmin
+  users: CompanyAdmin[]
 }
 
 export interface CreateCompanyDto {

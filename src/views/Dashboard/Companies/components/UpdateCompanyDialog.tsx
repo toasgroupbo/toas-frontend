@@ -102,10 +102,10 @@ const UpdateCompanyDialog = ({ open, onClose, onSubmit, isLoading, company }: Up
           documentExtension: company.bankAccount.documentExtension || ''
         },
         admin: {
-          email: company.admin.email,
-          fullName: company.admin.fullName,
-          ci: company.admin.ci,
-          phone: company.admin.phone
+          email: company.users[0]?.email || '',
+          fullName: company.users[0]?.fullName || '',
+          ci: company.users[0]?.ci || '',
+          phone: company.users[0]?.phone || ''
         },
         newPassword: '',
         confirmPassword: ''
@@ -191,9 +191,9 @@ const UpdateCompanyDialog = ({ open, onClose, onSubmit, isLoading, company }: Up
       return
     }
 
-    if (!company.admin?.id) {
+    if (!company.users?.[0]?.id) {
       setUploadError('Error: ID de administrador no disponible')
-      console.error('❌ Admin ID is missing:', company.admin)
+      console.error('❌ Admin ID is missing:', company.users)
 
       return
     }
@@ -245,11 +245,11 @@ const UpdateCompanyDialog = ({ open, onClose, onSubmit, isLoading, company }: Up
       await onSubmit(company.id, company.bankAccount.id, companyData, bankAccountData)
 
       // Actualizar datos del administrador (PATCH /api/users/:id)
-      await api.patch(`/api/users/${company.admin.id}`, adminData)
+      await api.patch(`/api/users/${company.users[0].id}`, adminData)
 
       // Si hay nueva contraseña, actualizar contraseña (PUT /api/users/:id)
       if (data.newPassword && data.newPassword.trim() !== '') {
-        await api.put(`/api/users/${company.admin.id}`, { password: data.newPassword })
+        await api.put(`/api/users/${company.users[0].id}`, { password: data.newPassword })
       }
 
       // Invalidar queries para refrescar datos

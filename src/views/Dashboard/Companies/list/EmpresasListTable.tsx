@@ -310,7 +310,11 @@ const EmpresaListTable = () => {
       columnHelper.accessor('bankAccount', {
         header: 'Banco',
         cell: ({ row }) => {
-          const banco = BANCOS_OPTIONS.find(b => b.value === row.original.bankAccount.bankCode)
+          const banco = BANCOS_OPTIONS.find(b => b.value === row.original.bankAccount?.bankCode)
+
+          if (!row.original.bankAccount) {
+            return <Typography variant='body2'>Sin cuenta bancaria</Typography>
+          }
 
           return (
             <div className='flex flex-col gap-1'>
@@ -351,34 +355,46 @@ const EmpresaListTable = () => {
         cell: ({ row }) => <Chip label={`${row.original.commission}%`} color='success' variant='tonal' size='small' />,
         size: 80
       }),
-      columnHelper.accessor('admin', {
+      columnHelper.accessor('users', {
         header: 'Administrador',
-        cell: ({ row }) => (
-          <div className='flex flex-col gap-1'>
-            <div className='flex items-center gap-1'>
-              <i className='tabler-user' style={{ fontSize: '16px', color: 'var(--mui-palette-text-secondary)' }} />
-              <Typography className='font-medium' color='text.primary' variant='body2'>
-                {row.original.admin.fullName}
+        cell: ({ row }) => {
+          const adminUser = row.original.users && row.original.users.length > 0 ? row.original.users[0] : null
+
+          if (!adminUser) {
+            return <Typography variant='body2'>Sin administrador</Typography>
+          }
+
+          return (
+            <div className='flex flex-col gap-1'>
+              <div className='flex items-center gap-1'>
+                <i className='tabler-user' style={{ fontSize: '16px', color: 'var(--mui-palette-text-secondary)' }} />
+                <Typography className='font-medium' color='text.primary' variant='body2'>
+                  {adminUser.fullName}
+                </Typography>
+              </div>
+              <Typography variant='caption' color='text.secondary'>
+                CI: {adminUser.ci}
+              </Typography>
+              <Typography variant='caption' color='text.secondary'>
+                {adminUser.email}
               </Typography>
             </div>
-            <Typography variant='caption' color='text.secondary'>
-              CI: {row.original.admin.ci}
-            </Typography>
-            <Typography variant='caption' color='text.secondary'>
-              {row.original.admin.email}
-            </Typography>
-          </div>
-        )
+          )
+        }
       }),
       {
         id: 'phone',
         header: 'Teléfono',
-        cell: ({ row }) => (
-          <div className='flex items-center gap-1'>
-            <i className='tabler-phone' style={{ fontSize: '16px', color: 'var(--mui-palette-success-main)' }} />
-            <Typography variant='body2'>{row.original.admin.phone}</Typography>
-          </div>
-        )
+        cell: ({ row }) => {
+          const adminUser = row.original.users && row.original.users.length > 0 ? row.original.users[0] : null
+
+          return (
+            <div className='flex items-center gap-1'>
+              <i className='tabler-phone' style={{ fontSize: '16px', color: 'var(--mui-palette-success-main)' }} />
+              <Typography variant='body2'>{adminUser?.phone || 'No disponible'}</Typography>
+            </div>
+          )
+        }
       }
     ],
     [canImpersonate, canUpdate, canDelete, handleActAsCompany]

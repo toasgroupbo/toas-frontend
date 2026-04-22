@@ -83,10 +83,10 @@ const ActAsCompanyDialog = ({ open, onClose, onConfirm, company, isLoading = fal
                 {company.name}
               </Typography>
               <Typography variant='body2' color='text.secondary'>
-                Administrador: {company.admin.fullName}
+                Administrador: {company.users[0]?.fullName || 'Sin asignar'}
               </Typography>
               <Typography variant='caption' color='text.secondary'>
-                {company.admin.email}
+                {company.users[0]?.email || ''}
               </Typography>
             </Box>
           </Box>

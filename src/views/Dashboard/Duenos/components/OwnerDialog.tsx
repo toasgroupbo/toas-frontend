@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 
 import Dialog from '@mui/material/Dialog'
 import DialogTitle from '@mui/material/DialogTitle'
@@ -29,38 +29,73 @@ const BANCOS_VALUES = BANCOS_OPTIONS.map(b => b.value) as [string, ...string[]]
 const DOCUMENT_TYPE_VALUES = DOCUMENT_TYPE_OPTIONS.map(d => d.value) as [string, ...string[]]
 const DOCUMENT_EXTENSION_VALUES = DOCUMENT_EXTENSION_OPTIONS.map(d => d.value) as [string, ...string[]]
 
-const ownerSchema = z.object({
-  name: z.string().min(1, 'El nombre es requerido'),
-  ci: z.string().min(1, 'El CI es requerido'),
-  phone: z.string().min(1, 'El teléfono es requerido'),
-  bankAccount: z.object({
-    bankCode: z.enum(BANCOS_VALUES, { message: 'Seleccione un banco' }),
-    account: z.string().min(8, 'El número de cuenta debe tener al menos 8 dígitos'),
-    titularName: z.string().min(3, 'El nombre del titular es requerido'),
-    branchOfficeId: z.number(),
-    documentNumber: z.string().min(5, 'El número de documento es requerido'),
-    documentType: z.enum(DOCUMENT_TYPE_VALUES, { message: 'Seleccione un tipo de documento' }),
-    documentExtension: z.enum(DOCUMENT_EXTENSION_VALUES, { message: 'Seleccione una extensión de documento' })
-  })
+const bankAccountSchema = z.object({
+  bankCode: z.enum(BANCOS_VALUES, { message: 'Seleccione un banco' }),
+  account: z.string().min(8, 'El número de cuenta debe tener al menos 8 dígitos'),
+  titularName: z.string().min(3, 'El nombre del titular es requerido'),
+  branchOfficeId: z.number(),
+  documentNumber: z.string().min(5, 'El número de documento es requerido'),
+  documentType: z.enum(DOCUMENT_TYPE_VALUES, { message: 'Seleccione un tipo de documento' }),
+  documentExtension: z.enum(DOCUMENT_EXTENSION_VALUES, { message: 'Seleccione una extensión de documento' })
 })
+
+const ownerSchema = z
+  .object({
+    name: z.string().min(1, 'El nombre es requerido'),
+    ci: z.string().min(1, 'El CI es requerido'),
+    phone: z.string().min(1, 'El teléfono es requerido'),
+    email: z.string().optional().or(z.literal('')),
+    password: z.string().optional().or(z.literal('')),
+    newPassword: z.string().optional().or(z.literal('')),
+    confirmPassword: z.string().optional().or(z.literal('')),
+    bankAccount: bankAccountSchema
+  })
+  .superRefine((data, ctx) => {
+    if (data.newPassword && data.newPassword.length > 0 && data.newPassword.length < 6) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'La contraseña debe tener al menos 6 caracteres',
+        path: ['newPassword']
+      })
+    }
+
+    if (data.newPassword && data.newPassword !== data.confirmPassword) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'Las contraseñas no coinciden',
+        path: ['confirmPassword']
+      })
+    }
+  })
 
 type OwnerFormData = z.infer<typeof ownerSchema>
 
 interface OwnerDialogProps {
   open: boolean
   onClose: () => void
-  onSubmit: (data: { name: string; ci: string; phone: string; bankAccount: any }) => void
+  onSubmit: (data: {
+    name: string
+    ci: string
+    phone: string
+    email?: string
+    password?: string
+    newPassword?: string
+    bankAccount: any
+  }) => void
   owner?: Owner | null
   isLoading?: boolean
   isEdit?: boolean
 }
 
 const OwnerDialog = ({ open, onClose, onSubmit, owner, isLoading, isEdit = false }: OwnerDialogProps) => {
+  const [showPassword, setShowPassword] = useState(false)
+
   const {
     register,
     handleSubmit,
     control,
     reset,
+    setError,
     formState: { errors }
   } = useForm<OwnerFormData>({
     resolver: zodResolver(ownerSchema),
@@ -68,11 +103,15 @@ const OwnerDialog = ({ open, onClose, onSubmit, owner, isLoading, isEdit = false
       name: '',
       ci: '',
       phone: '',
+      email: '',
+      password: '',
+      newPassword: '',
+      confirmPassword: '',
       bankAccount: {
         bankCode: '',
         account: '',
         titularName: '',
-        branchOfficeId: 201, // La Paz por defecto
+        branchOfficeId: 201,
         documentNumber: '',
         documentType: '',
         documentExtension: ''
@@ -87,6 +126,10 @@ const OwnerDialog = ({ open, onClose, onSubmit, owner, isLoading, isEdit = false
           name: owner.name,
           ci: owner.ci,
           phone: owner.phone,
+          email: '',
+          password: '',
+          newPassword: '',
+          confirmPassword: '',
           bankAccount: {
             bankCode: owner.bankAccount.bankCode,
             account: owner.bankAccount.account,
@@ -102,6 +145,10 @@ const OwnerDialog = ({ open, onClose, onSubmit, owner, isLoading, isEdit = false
           name: '',
           ci: '',
           phone: '',
+          email: '',
+          password: '',
+          newPassword: '',
+          confirmPassword: '',
           bankAccount: {
             bankCode: '',
             account: '',
@@ -117,7 +164,36 @@ const OwnerDialog = ({ open, onClose, onSubmit, owner, isLoading, isEdit = false
   }, [open, owner, isEdit, reset])
 
   const handleFormSubmit = (data: OwnerFormData) => {
-    onSubmit(data)
+    // Validar email y password al crear
+    if (!isEdit) {
+      if (!data.email || data.email.trim() === '') {
+        setError('email', { type: 'manual', message: 'El email es requerido' })
+
+        return
+      }
+
+      if (!data.password || data.password.trim() === '') {
+        setError('password', { type: 'manual', message: 'La contraseña es requerida' })
+
+        return
+      }
+
+      if (data.password.length < 6) {
+        setError('password', { type: 'manual', message: 'La contraseña debe tener al menos 6 caracteres' })
+
+        return
+      }
+    }
+
+    onSubmit({
+      name: data.name,
+      ci: data.ci,
+      phone: data.phone,
+      email: data.email,
+      password: data.password,
+      newPassword: data.newPassword,
+      bankAccount: data.bankAccount
+    })
   }
 
   return (
@@ -194,6 +270,118 @@ const OwnerDialog = ({ open, onClose, onSubmit, owner, isLoading, isEdit = false
                 }}
               />
             </Grid>
+
+            {/* Credenciales - Solo para crear */}
+            {!isEdit && (
+              <>
+                <Grid size={{ xs: 12 }}>
+                  <Typography variant='h6' sx={{ mb: 2, mt: 2 }}>
+                    Credenciales de Acceso
+                  </Typography>
+                </Grid>
+
+                <Grid size={{ xs: 12, sm: 6 }}>
+                  <CustomTextField
+                    fullWidth
+                    label='Email *'
+                    type='email'
+                    placeholder='owner@gmail.com'
+                    {...register('email')}
+                    error={!!errors.email}
+                    helperText={errors.email?.message}
+                    InputProps={{
+                      startAdornment: (
+                        <InputAdornment position='start'>
+                          <i className='tabler-mail' />
+                        </InputAdornment>
+                      )
+                    }}
+                  />
+                </Grid>
+
+                <Grid size={{ xs: 12, sm: 6 }}>
+                  <CustomTextField
+                    fullWidth
+                    label='Contraseña *'
+                    type={showPassword ? 'text' : 'password'}
+                    placeholder='••••••••'
+                    {...register('password')}
+                    error={!!errors.password}
+                    helperText={errors.password?.message}
+                    InputProps={{
+                      startAdornment: (
+                        <InputAdornment position='start'>
+                          <i className='tabler-lock' />
+                        </InputAdornment>
+                      ),
+                      endAdornment: (
+                        <InputAdornment position='end'>
+                          <IconButton onClick={() => setShowPassword(!showPassword)} edge='end'>
+                            <i className={showPassword ? 'tabler-eye-off' : 'tabler-eye'} />
+                          </IconButton>
+                        </InputAdornment>
+                      )
+                    }}
+                  />
+                </Grid>
+              </>
+            )}
+
+            {/* Cambiar Contraseña - Solo para editar */}
+            {isEdit && (
+              <>
+                <Grid size={{ xs: 12 }}>
+                  <Typography variant='h6' sx={{ mb: 2, mt: 2 }}>
+                    Cambiar Contraseña (Opcional)
+                  </Typography>
+                </Grid>
+
+                <Grid size={{ xs: 12, sm: 6 }}>
+                  <CustomTextField
+                    fullWidth
+                    label='Nueva Contraseña'
+                    type={showPassword ? 'text' : 'password'}
+                    placeholder='••••••••'
+                    {...register('newPassword')}
+                    error={!!errors.newPassword}
+                    helperText={errors.newPassword?.message}
+                    InputProps={{
+                      startAdornment: (
+                        <InputAdornment position='start'>
+                          <i className='tabler-lock' />
+                        </InputAdornment>
+                      ),
+                      endAdornment: (
+                        <InputAdornment position='end'>
+                          <IconButton onClick={() => setShowPassword(!showPassword)} edge='end'>
+                            <i className={showPassword ? 'tabler-eye-off' : 'tabler-eye'} />
+                          </IconButton>
+                        </InputAdornment>
+                      )
+                    }}
+                  />
+                </Grid>
+
+                <Grid size={{ xs: 12, sm: 6 }}>
+                  <CustomTextField
+                    fullWidth
+                    label='Confirmar Contraseña'
+                    type={showPassword ? 'text' : 'password'}
+                    placeholder='••••••••'
+                    {...register('confirmPassword')}
+                    error={!!errors.confirmPassword}
+                    helperText={errors.confirmPassword?.message}
+                    InputProps={{
+                      startAdornment: (
+                        <InputAdornment position='start'>
+                          <i className='tabler-lock' />
+                        </InputAdornment>
+                      )
+                    }}
+                  />
+                </Grid>
+              </>
+            )}
 
             {/* Información Bancaria */}
             <Grid size={{ xs: 12 }}>

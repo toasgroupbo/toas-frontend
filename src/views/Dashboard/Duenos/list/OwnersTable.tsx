@@ -125,7 +125,13 @@ const OwnersTable = () => {
     setUpdateDialogOpen(true)
   }
 
-  const handleUpdateOwner = async (data: { name: string; ci: string; phone: string; bankAccount: any }) => {
+  const handleUpdateOwner = async (data: {
+    name: string
+    ci: string
+    phone: string
+    newPassword?: string
+    bankAccount: any
+  }) => {
     if (!selectedOwner) return
 
     try {
@@ -136,12 +142,14 @@ const OwnersTable = () => {
           ci: data.ci,
           phone: data.phone,
           bankAccount: data.bankAccount
-        }
+        },
+        userId: selectedOwner.users[0]?.id,
+        newPassword: data.newPassword
       })
 
       setUpdateDialogOpen(false)
       setSelectedOwner(null)
-      showSuccess('Dueño actualizado correctamente')
+      showSuccess(data.newPassword ? 'Dueño y contraseña actualizados correctamente' : 'Dueño actualizado correctamente')
     } catch (error: any) {
       console.error('Error al actualizar dueño:', error)
       showError(error?.response?.data?.message || 'Error al actualizar dueño')
@@ -250,6 +258,16 @@ const OwnersTable = () => {
           <div className='flex items-center gap-1'>
             <i className='tabler-phone' style={{ fontSize: '16px', color: 'var(--mui-palette-success-main)' }} />
             <Typography variant='body2'>{row.original.phone}</Typography>
+          </div>
+        )
+      },
+      {
+        id: 'email',
+        header: 'Email',
+        cell: ({ row }) => (
+          <div className='flex items-center gap-1'>
+            <i className='tabler-mail' style={{ fontSize: '16px', color: 'var(--mui-palette-info-main)' }} />
+            <Typography variant='body2'>{row.original.users[0]?.email || '-'}</Typography>
           </div>
         )
       },
