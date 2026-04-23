@@ -1,3 +1,5 @@
+// types/api/travels.ts
+
 import type { Route } from './rutas'
 
 export interface TravelSeat {
@@ -44,6 +46,20 @@ export interface Travel {
   route: Route
   seatsAvailable?: number
   closedAt?: string | null
+  tickets_app_count?: number
+  tickets_office_count?: number
+  tickets_count?: number
+  cash_amount?: string
+  qr_amount?: string
+  app_amount?: string
+  total?: string
+  total_commission?: string
+  net_to_company?: string
+  lane?: number
+  isPaid?: boolean
+  paidAt?: string | null
+  drivers?: any[] | null
+  assistants?: any[] | null
 }
 
 export interface CreateTravelDto {
@@ -66,4 +82,31 @@ export interface UpdateTravelDto {
   lane?: number
   departure_time?: string
   arrival_time?: string
+}
+
+export interface TravelsResponse {
+  data: Travel[]
+  meta: {
+    total: number
+    page: number
+    lastPage: number
+    limit: number
+    offset: number
+    hasNextPage: boolean
+    hasPreviousPage: boolean
+  }
+  amounts: {
+    office: number
+    app: number
+  }
+}
+
+export interface TravelFilters {
+  status?: 'active' | 'closed'
+  startDate?: string
+  endDate?: string
+  origin_placeId?: number
+  destination_placeId?: number
+  busId?: number
+  routeId?: number
 }

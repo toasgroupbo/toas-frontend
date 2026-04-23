@@ -133,7 +133,7 @@ const ViajesCashierListTable = () => {
   const [rowSelection, setRowSelection] = useState({})
   const [searchQuery, setSearchQuery] = useState('')
   const [statusFilter, setStatusFilter] = useState<string>('all')
-  const [datePreset, setDatePreset] = useState<DateRangePreset>('today')
+  const [datePreset, setDatePreset] = useState<DateRangePreset>('custom')
   const [customStartDate, setCustomStartDate] = useState<string>('')
   const [customEndDate, setCustomEndDate] = useState<string>('')
   const [destinationPlaceId, setDestinationPlaceId] = useState<string>('')
@@ -143,10 +143,8 @@ const ViajesCashierListTable = () => {
 
   const { showSuccess, showError } = useSnackbar()
 
-  // Get cashier routes to extract origin and destinations
   const { data: cashierRoutes } = useCashierRoutes()
 
-  // Extract origin place from cashier routes (same as TravelsForSale)
   const cashierPlaceName = useMemo(() => {
     if (!cashierRoutes || cashierRoutes.length === 0) return null
 
@@ -159,10 +157,8 @@ const ViajesCashierListTable = () => {
     return cashierRoutes[0].officeOrigin.place.id
   }, [cashierRoutes])
 
-  // Extract unique destinations from cashier routes
   const uniqueDestinations = useMemo(() => {
     if (!cashierRoutes || cashierRoutes.length === 0) return []
-
     const destinationsMap = new Map<number, { id: number; name: string }>()
 
     cashierRoutes.forEach(route => {
@@ -176,7 +172,6 @@ const ViajesCashierListTable = () => {
     return Array.from(destinationsMap.values())
   }, [cashierRoutes])
 
-  // Build filters for API
   const apiFilters = useMemo((): TravelFilters => {
     const dateRange =
       datePreset === 'custom'
@@ -192,8 +187,10 @@ const ViajesCashierListTable = () => {
     }
   }, [statusFilter, datePreset, customStartDate, customEndDate, originPlaceId, destinationPlaceId])
 
-  // Hook para obtener viajes (CASHIER y CASHIER_TRIPS)
-  const { data: travels, isLoading, error } = useTravelsForCashier(apiFilters)
+  const { data: travelsResponse, isLoading, error } = useTravelsForCashier(apiFilters)
+
+  const travels = travelsResponse?.data || []
+  const amounts = travelsResponse?.amounts || { office: 0, app: 0 }
 
   const createMutation = useCreateTravelForCashier()
   const cancelMutation = useCancelTravelForCashier()
@@ -203,6 +200,10 @@ const ViajesCashierListTable = () => {
 
     return travels
   }, [travels])
+
+  const totalOfficeAmount = amounts.office || 0
+  const totalAppAmount = amounts.app || 0
+  const totalAmount = totalOfficeAmount + totalAppAmount
 
   const handleOpenCreateDialog = () => {
     setCreateDialogOpen(true)
@@ -278,6 +279,24 @@ const ViajesCashierListTable = () => {
     })
   }
 
+  const formatDateOnly = (dateString: string) => {
+    if (!dateString) return '-'
+    const date = new Date(dateString)
+
+    return date.toLocaleDateString('es-BO', {
+      timeZone: 'America/La_Paz',
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric'
+    })
+  }
+
+  const formatCurrency = (amount: number | string) => {
+    const numAmount = typeof amount === 'string' ? parseFloat(amount) : amount
+
+    return `Bs. ${numAmount.toFixed(2)}`
+  }
+
   const columns = useMemo<ColumnDef<TravelWithActionsType, any>[]>(
     () => [
       {
@@ -343,13 +362,13 @@ const ViajesCashierListTable = () => {
         )
       }),
       columnHelper.accessor('route', {
-        header: 'Ruta',
+        header: 'Ruta / Salida',
         cell: ({ row }) => {
           const originCity = row.original.route.officeOrigin.place?.name || 'N/A'
           const destinationCity = row.original.route.officeDestination.place?.name || 'N/A'
 
           return (
-            <div className='flex items-center gap-2'>
+            <div className='flex flex-col gap-1'>
               <Box
                 sx={{
                   display: 'flex',
@@ -377,18 +396,74 @@ const ViajesCashierListTable = () => {
                   </Typography>
                 </div>
               </Box>
+              <div className='flex items-center gap-1'>
+                <i className='tabler-clock' style={{ fontSize: '14px', color: 'var(--mui-palette-info-main)' }} />
+                <Typography variant='caption'>{formatDateTime(row.original.departure_time)}</Typography>
+              </div>
             </div>
           )
         }
       }),
-      columnHelper.accessor('departure_time', {
-        header: 'Salida',
-        cell: ({ row }) => (
-          <div className='flex items-center gap-1'>
-            <i className='tabler-clock' style={{ fontSize: '16px', color: 'var(--mui-palette-info-main)' }} />
-            <Typography variant='body2'>{formatDateTime(row.original.departure_time)}</Typography>
-          </div>
-        )
+      columnHelper.accessor('tickets_app_count', {
+        header: 'Vendidos App',
+        cell: ({ row }) => {
+          const ticketCount = row.original.tickets_app_count || 0
+          const appAmount = parseFloat(row.original.app_amount || '0')
+
+          return (
+            <div className='flex flex-col'>
+              <Typography variant='body2' fontWeight='medium'>
+                {ticketCount} asientos
+              </Typography>
+              <Typography variant='caption' color='success.main'>
+                {formatCurrency(appAmount)}
+              </Typography>
+            </div>
+          )
+        }
+      }),
+      columnHelper.accessor('tickets_office_count', {
+        header: 'Vendidos Oficina',
+        cell: ({ row }) => {
+          const ticketCount = row.original.tickets_office_count || 0
+          const officeAmount = parseFloat(row.original.cash_amount || '0') + parseFloat(row.original.qr_amount || '0')
+
+          return (
+            <div className='flex flex-col'>
+              <Typography variant='body2' fontWeight='medium'>
+                {ticketCount} asientos
+              </Typography>
+              <Typography variant='caption' color='info.main'>
+                {formatCurrency(officeAmount)}
+              </Typography>
+            </div>
+          )
+        }
+      }),
+      columnHelper.accessor('tickets_count', {
+        header: 'Vendido Total',
+        cell: ({ row }) => {
+          const totalTickets = (row.original.tickets_app_count || 0) + (row.original.tickets_office_count || 0)
+
+          const totalSoldAmount =
+            parseFloat(row.original.app_amount || '0') +
+            parseFloat(row.original.cash_amount || '0') +
+            parseFloat(row.original.qr_amount || '0')
+
+          const seatsAvailable = row.original.seatsAvailable || 0
+          const totalSeats = seatsAvailable + totalTickets
+
+          return (
+            <div className='flex flex-col'>
+              <Typography variant='body2' fontWeight='bold'>
+                {totalTickets} de {totalSeats} asientos
+              </Typography>
+              <Typography variant='caption' color='primary.main' fontWeight='medium'>
+                {formatCurrency(totalSoldAmount)}
+              </Typography>
+            </div>
+          )
+        }
       }),
       columnHelper.accessor('type', {
         header: 'Tipo',
@@ -407,63 +482,47 @@ const ViajesCashierListTable = () => {
           />
         )
       }),
-      columnHelper.accessor('price_deck_1', {
-        header: 'Precio Piso 1',
-        cell: ({ row }) => (
-          <Chip
-            label={`Bs. ${row.original.price_deck_1}`}
-            color='success'
-            variant='tonal'
-            size='small'
-            icon={<i className='tabler-currency-dollar' style={{ fontSize: '14px' }} />}
-          />
-        )
-      }),
-      columnHelper.accessor('price_deck_2', {
-        header: 'Precio Piso 2',
-        cell: ({ row }) => (
-          <Chip
-            label={`Bs. ${row.original.price_deck_2}`}
-            color='info'
-            variant='tonal'
-            size='small'
-            icon={<i className='tabler-currency-dollar' style={{ fontSize: '14px' }} />}
-          />
-        )
-      }),
       columnHelper.accessor('travel_status', {
         header: 'Estado',
-        cell: ({ row }) => (
-          <Chip
-            label={row.original.travel_status === 'active' ? 'Activo' : 'Inactivo'}
-            color={row.original.travel_status === 'active' ? 'success' : 'default'}
-            variant='tonal'
-            size='small'
-            icon={
-              <i
-                className={row.original.travel_status === 'active' ? 'tabler-check' : 'tabler-x'}
-                style={{ fontSize: '14px' }}
-              />
-            }
-          />
-        )
+        cell: ({ row }) => {
+          const statusMap: Record<string, { label: string; color: 'success' | 'default' | 'error' | 'warning' }> = {
+            active: { label: 'Activo', color: 'success' },
+            closed: { label: 'Cerrado', color: 'default' },
+            cancelled: { label: 'Cancelado', color: 'error' }
+          }
+
+          const status = statusMap[row.original.travel_status] || {
+            label: row.original.travel_status,
+            color: 'default'
+          }
+
+          return (
+            <Chip
+              label={status.label}
+              color={status.color}
+              variant='tonal'
+              size='small'
+              icon={
+                <i
+                  className={row.original.travel_status === 'active' ? 'tabler-check' : 'tabler-x'}
+                  style={{ fontSize: '14px' }}
+                />
+              }
+            />
+          )
+        }
       }),
-      columnHelper.accessor('enabled', {
-        header: 'Habilitado',
-        cell: ({ row }) => (
-          <Chip
-            label={row.original.enabled ? 'Habilitado' : 'Deshabilitado'}
-            color={row.original.enabled ? 'success' : 'error'}
-            variant='tonal'
-            size='small'
-            icon={
-              <i
-                className={row.original.enabled ? 'tabler-toggle-right' : 'tabler-toggle-left'}
-                style={{ fontSize: '14px' }}
-              />
-            }
-          />
-        )
+      columnHelper.accessor('closedAt', {
+        header: 'Fecha Cierre',
+        cell: ({ row }) => {
+          if (!row.original.closedAt) return <Typography variant='caption'>-</Typography>
+
+          return (
+            <div className='flex flex-col'>
+              <Typography variant='caption'>{formatDateOnly(row.original.closedAt)}</Typography>
+            </div>
+          )
+        }
       })
     ],
     []
@@ -533,7 +592,6 @@ const ViajesCashierListTable = () => {
           </div>
         </div>
 
-        {/* Filtros de fecha */}
         <div className='flex justify-center px-6 pb-4'>
           <ToggleButtonGroup
             value={datePreset}
@@ -550,22 +608,7 @@ const ViajesCashierListTable = () => {
           </ToggleButtonGroup>
         </div>
 
-        {/* Filtros de estado, origen y destino */}
         <div className='flex flex-wrap gap-4 px-6 pb-4 items-center'>
-          <CustomTextField
-            select
-            label='Estado'
-            value={statusFilter}
-            onChange={e => setStatusFilter(e.target.value)}
-            size='small'
-            sx={{ minWidth: 120 }}
-          >
-            <MenuItem value='all'>Todos</MenuItem>
-            <MenuItem value='active'>Activo</MenuItem>
-            <MenuItem value='closed'>Cerrado</MenuItem>
-          </CustomTextField>
-
-          {/* Origen - Fixed from cashier login */}
           <Box
             sx={{
               display: 'flex',
@@ -607,6 +650,7 @@ const ViajesCashierListTable = () => {
               </MenuItem>
             ))}
           </CustomTextField>
+
           {datePreset === 'custom' && (
             <>
               <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
@@ -634,8 +678,81 @@ const ViajesCashierListTable = () => {
               </Box>
             </>
           )}
+          <CustomTextField
+            select
+            label='Estado'
+            value={statusFilter}
+            onChange={e => setStatusFilter(e.target.value)}
+            size='small'
+            sx={{ minWidth: 120 }}
+          >
+            <MenuItem value='all'>Todos</MenuItem>
+            <MenuItem value='active'>Activo</MenuItem>
+            <MenuItem value='closed'>Cerrado</MenuItem>
+          </CustomTextField>
         </div>
 
+        <div className='flex flex-wrap justify-between items-center gap-4 px-6 pb-4'>
+          <Box
+            sx={{
+              bgcolor: 'info.lighter',
+              px: 3,
+              py: 1.5,
+              borderRadius: 2,
+              border: '1px solid',
+              borderColor: 'info.main',
+              minWidth: '180px',
+              textAlign: 'center'
+            }}
+          >
+            <Typography variant='caption' color='info.main' fontWeight='medium'>
+              Total Ventas Oficina
+            </Typography>
+            <Typography variant='h6' color='info.dark' fontWeight='bold'>
+              {formatCurrency(totalOfficeAmount)}
+            </Typography>
+          </Box>
+
+          <Box
+            sx={{
+              bgcolor: 'success.lighter',
+              px: 3,
+              py: 1.5,
+              borderRadius: 2,
+              border: '1px solid',
+              borderColor: 'success.main',
+              minWidth: '180px',
+              textAlign: 'center'
+            }}
+          >
+            <Typography variant='caption' color='success.main' fontWeight='medium'>
+              Total Ventas App
+            </Typography>
+            <Typography variant='h6' color='success.dark' fontWeight='bold'>
+              {formatCurrency(totalAppAmount)}
+            </Typography>
+          </Box>
+
+          <Box
+            sx={{
+              bgcolor: 'primary.lighter',
+              px: 3,
+              py: 1.5,
+              borderRadius: 2,
+              border: '1px solid',
+              borderColor: 'primary.main',
+              minWidth: '180px',
+              textAlign: 'center'
+            }}
+          >
+            <Typography variant='caption' color='primary.main' fontWeight='medium'>
+              Total General
+            </Typography>
+            <Typography variant='h6' color='primary.dark' fontWeight='bold'>
+              {formatCurrency(totalAmount)}
+            </Typography>
+          </Box>
+        </div>
         <div className='flex flex-wrap justify-between gap-4 px-6 pb-6'>
           <div className='flex flex-wrap gap-4 items-center'>
             <DebouncedInput

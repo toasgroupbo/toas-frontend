@@ -1,5 +1,3 @@
-'use client'
-
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 
 import { api } from '@/libs/axios'
@@ -110,8 +108,9 @@ const deleteTravel = async (id: number): Promise<void> => {
   await api.delete(url)
 }
 
-// Cashier-specific functions
-const fetchTravelsForCashier = async (filters?: TravelFilters): Promise<Travel[]> => {
+const fetchTravelsForCashier = async (
+  filters?: TravelFilters
+): Promise<{ data: Travel[]; amounts: { office: number; app: number } }> => {
   const queryParams = new URLSearchParams()
 
   if (filters?.status) {
@@ -135,13 +134,14 @@ const fetchTravelsForCashier = async (filters?: TravelFilters): Promise<Travel[]
   }
 
   const url = `/api/travels/for-cashier/all${queryParams.toString() ? `?${queryParams.toString()}` : ''}`
-  const response = await api.get<{ data: Travel[]; meta: any; amounts: any }>(url)
+  const response = await api.get<{ data: Travel[]; meta: any; amounts: { office: number; app: number } }>(url)
 
-  return response.data.data
+  return { data: response.data.data, amounts: response.data.amounts }
 }
 
-// Owner-specific functions
-const fetchTravelsForOwner = async (filters?: TravelFilters): Promise<Travel[]> => {
+const fetchTravelsForOwner = async (
+  filters?: TravelFilters
+): Promise<{ data: Travel[]; amounts: { office: number; app: number } }> => {
   const queryParams = new URLSearchParams()
 
   if (filters?.status) {
@@ -165,9 +165,9 @@ const fetchTravelsForOwner = async (filters?: TravelFilters): Promise<Travel[]> 
   }
 
   const url = `/api/travels/for-cashier/owner/all${queryParams.toString() ? `?${queryParams.toString()}` : ''}`
-  const response = await api.get<{ data: Travel[]; meta: any; amounts: any }>(url)
+  const response = await api.get<{ data: Travel[]; meta: any; amounts: { office: number; app: number } }>(url)
 
-  return response.data.data
+  return { data: response.data.data, amounts: response.data.amounts }
 }
 
 const deleteTravelForCashier = async (id: number): Promise<void> => {
@@ -238,7 +238,6 @@ export const useDeleteTravel = () => {
   })
 }
 
-// Cashier hooks
 export const useTravelsForCashier = (filters?: TravelFilters) => {
   return useQuery({
     queryKey: ['travelsForCashier', filters],
@@ -248,7 +247,6 @@ export const useTravelsForCashier = (filters?: TravelFilters) => {
   })
 }
 
-// Owner hooks
 export const useTravelsForOwner = (filters?: TravelFilters) => {
   return useQuery({
     queryKey: ['travelsForOwner', filters],
