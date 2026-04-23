@@ -24,9 +24,9 @@ const fetchCashierTravels = async (params?: FetchCashierTravelsParams): Promise<
 
   const url = `/api/travels/for-cashier/all${queryParams.toString() ? `?${queryParams.toString()}` : ''}`
 
-  const response = await api.get<Travel[]>(url)
+  const response = await api.get<{ data: Travel[]; meta: any; amounts: any }>(url)
 
-  return response.data
+  return response.data.data
 }
 
 const fetchCashierTravelById = async (id: number): Promise<Travel> => {

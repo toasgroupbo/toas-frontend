@@ -52,6 +52,7 @@ export interface CreateTravelDto {
   price_deck_1: string
   price_deck_2: string
   type: TravelType
+  lane: number
   departure_time: string
   arrival_time: string
 }
@@ -62,6 +63,7 @@ export interface UpdateTravelDto {
   price_deck_1?: string
   price_deck_2?: string
   type?: TravelType
+  lane?: number
   departure_time?: string
   arrival_time?: string
 }

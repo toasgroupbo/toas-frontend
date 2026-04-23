@@ -6,6 +6,14 @@ import { api } from '@/libs/axios'
 import type { Travel, CreateTravelDto } from '@/types/api/travels'
 import { useAuth } from '@/contexts/AuthContext'
 
+export interface TravelFilters {
+  status?: 'active' | 'closed'
+  startDate?: string
+  endDate?: string
+  origin_placeId?: number
+  destination_placeId?: number
+}
+
 const fetchTravels = async (params: {
   page: number
   limit: number
@@ -103,10 +111,63 @@ const deleteTravel = async (id: number): Promise<void> => {
 }
 
 // Cashier-specific functions
-const fetchTravelsForCashier = async (): Promise<Travel[]> => {
-  const response = await api.get<Travel[]>('/api/travels/for-cashier/all')
+const fetchTravelsForCashier = async (filters?: TravelFilters): Promise<Travel[]> => {
+  const queryParams = new URLSearchParams()
 
-  return response.data
+  if (filters?.status) {
+    queryParams.append('status', filters.status)
+  }
+
+  if (filters?.startDate) {
+    queryParams.append('startDate', filters.startDate)
+  }
+
+  if (filters?.endDate) {
+    queryParams.append('endDate', filters.endDate)
+  }
+
+  if (filters?.origin_placeId) {
+    queryParams.append('origin_placeId', filters.origin_placeId.toString())
+  }
+
+  if (filters?.destination_placeId) {
+    queryParams.append('destination_placeId', filters.destination_placeId.toString())
+  }
+
+  const url = `/api/travels/for-cashier/all${queryParams.toString() ? `?${queryParams.toString()}` : ''}`
+  const response = await api.get<{ data: Travel[]; meta: any; amounts: any }>(url)
+
+  return response.data.data
+}
+
+// Owner-specific functions
+const fetchTravelsForOwner = async (filters?: TravelFilters): Promise<Travel[]> => {
+  const queryParams = new URLSearchParams()
+
+  if (filters?.status) {
+    queryParams.append('status', filters.status)
+  }
+
+  if (filters?.startDate) {
+    queryParams.append('startDate', filters.startDate)
+  }
+
+  if (filters?.endDate) {
+    queryParams.append('endDate', filters.endDate)
+  }
+
+  if (filters?.origin_placeId) {
+    queryParams.append('origin_placeId', filters.origin_placeId.toString())
+  }
+
+  if (filters?.destination_placeId) {
+    queryParams.append('destination_placeId', filters.destination_placeId.toString())
+  }
+
+  const url = `/api/travels/for-cashier/owner/all${queryParams.toString() ? `?${queryParams.toString()}` : ''}`
+  const response = await api.get<{ data: Travel[]; meta: any; amounts: any }>(url)
+
+  return response.data.data
 }
 
 const deleteTravelForCashier = async (id: number): Promise<void> => {
@@ -178,10 +239,20 @@ export const useDeleteTravel = () => {
 }
 
 // Cashier hooks
-export const useTravelsForCashier = () => {
+export const useTravelsForCashier = (filters?: TravelFilters) => {
   return useQuery({
-    queryKey: ['travelsForCashier'],
-    queryFn: fetchTravelsForCashier,
+    queryKey: ['travelsForCashier', filters],
+    queryFn: () => fetchTravelsForCashier(filters),
+    retry: 1,
+    staleTime: 30000
+  })
+}
+
+// Owner hooks
+export const useTravelsForOwner = (filters?: TravelFilters) => {
+  return useQuery({
+    queryKey: ['travelsForOwner', filters],
+    queryFn: () => fetchTravelsForOwner(filters),
     retry: 1,
     staleTime: 30000
   })

@@ -81,6 +81,12 @@ export const filterMenuByRole = (
         return cashierSellerMenus.includes(item.label)
       }
 
+      if (userRole === 'CASHIER_OWNER') {
+        const cashierOwnerMenus = ['GESTIÓN DE EMPRESA', 'Viajes']
+
+        return cashierOwnerMenus.includes(item.label)
+      }
+
       if (userRole === 'ADMIN_EMPRESA' || userRole === 'COMPANY_ADMIN') {
         const empresaMenus = [
           'GESTIÓN DE EMPRESA',

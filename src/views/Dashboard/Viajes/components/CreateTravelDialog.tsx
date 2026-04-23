@@ -34,6 +34,7 @@ interface FormData {
   busId: number | ''
   routeId: number | ''
   type: TravelType
+  lane: number | ''
   price_deck_1: string
   price_deck_2: string
   departure_time: string
@@ -68,6 +69,7 @@ const CreateTravelDialog = ({ open, onClose, onSubmit, isLoading = false, isCash
       busId: '',
       routeId: '',
       type: 'normal',
+      lane: '',
       price_deck_1: '',
       price_deck_2: '',
       departure_time: '',
@@ -136,6 +138,7 @@ const CreateTravelDialog = ({ open, onClose, onSubmit, isLoading = false, isCash
       busId: typeof data.busId === 'number' ? data.busId : Number(data.busId),
       routeId: typeof data.routeId === 'number' ? data.routeId : Number(data.routeId),
       type: data.type,
+      lane: typeof data.lane === 'number' ? data.lane : Number(data.lane),
       price_deck_1: data.price_deck_1,
       price_deck_2: data.price_deck_2 || data.price_deck_1,
       departure_time: new Date(data.departure_time).toISOString(),
@@ -221,6 +224,40 @@ const CreateTravelDialog = ({ open, onClose, onSubmit, isLoading = false, isCash
                       </Box>
                     </MenuItem>
                   </CustomTextField>
+                )}
+              />
+            </Grid>
+
+            <Grid item xs={12} sm={6}>
+              <Controller
+                name='lane'
+                control={control}
+                rules={{
+                  required: 'El carril es requerido',
+                  min: {
+                    value: 1,
+                    message: 'El carril debe ser mayor a 0'
+                  }
+                }}
+                render={({ field }) => (
+                  <CustomTextField
+                    {...field}
+                    fullWidth
+                    type='number'
+                    label='Carril'
+                    placeholder='Ej: 7'
+                    error={!!errors.lane}
+                    helperText={errors.lane?.message || 'Número de carril de salida'}
+                    disabled={isLoading}
+                    onChange={e => field.onChange(e.target.value ? Number(e.target.value) : '')}
+                    InputProps={{
+                      startAdornment: (
+                        <InputAdornment position='start'>
+                          <i className='tabler-road' />
+                        </InputAdornment>
+                      )
+                    }}
+                  />
                 )}
               />
             </Grid>

@@ -47,7 +47,8 @@ const STATIC_ROLE_PERMISSIONS: Record<string, string[]> = {
   COMPANY_ADMIN: ['/home', '/buses', '/rutas', '/duenos', '/cajeros', '/oficinas', '/viajes'],
   CASHIER: ['/home', '/arqueo', '/salidas', '/tickets', '/viajes'],
   CASHIER_TRIPS: ['/home', '/salidas', '/viajes'],
-  CASHIER_SELLER: ['/home', '/arqueo', '/salidas', '/tickets']
+  CASHIER_SELLER: ['/home', '/arqueo', '/salidas', '/tickets'],
+  CASHIER_OWNER: ['/home', '/viajes']
 }
 
 const hasPermissionForRoute = (
@@ -99,6 +100,14 @@ const hasPermissionForRoute = (
       if (!hasCompany) return false
 
       const allowedRoutes = STATIC_ROLE_PERMISSIONS.CASHIER_SELLER
+
+      return allowedRoutes.some(route => pathname === route || pathname.startsWith(route + '/'))
+    }
+
+    if (userRole === 'CASHIER_OWNER') {
+      if (!hasCompany) return false
+
+      const allowedRoutes = STATIC_ROLE_PERMISSIONS.CASHIER_OWNER
 
       return allowedRoutes.some(route => pathname === route || pathname.startsWith(route + '/'))
     }
@@ -178,7 +187,7 @@ const ProtectedRoute = ({ children, publicRoutes = ['/login', '/'] }: ProtectedR
           router.push('/home')
         } else if (userRole === 'CASHIER' || userRole === 'CASHIER_SELLER') {
           router.push('/tickets/list')
-        } else if (userRole === 'CASHIER_TRIPS') {
+        } else if (userRole === 'CASHIER_TRIPS' || userRole === 'CASHIER_OWNER') {
           router.push('/viajes/list')
         } else {
           router.push('/home')

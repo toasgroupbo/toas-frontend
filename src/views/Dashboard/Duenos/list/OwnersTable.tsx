@@ -108,9 +108,28 @@ const OwnersTable = () => {
     }
   }, [owners])
 
-  const handleCreateOwner = async (data: CreateOwnerDto) => {
+  const handleCreateOwner = async (data: {
+    name: string
+    ci: string
+    phone: string
+    email?: string
+    password?: string
+    bankAccount: any
+  }) => {
+    if (!data.email || !data.password) {
+      showError('El email y la contraseña son requeridos')
+      return
+    }
+
     try {
-      await createMutation.mutateAsync(data)
+      await createMutation.mutateAsync({
+        name: data.name,
+        ci: data.ci,
+        phone: data.phone,
+        email: data.email,
+        password: data.password,
+        bankAccount: data.bankAccount
+      })
       setCreateDialogOpen(false)
       showSuccess('Dueño creado correctamente')
     } catch (error: any) {

@@ -157,6 +157,9 @@ export const AuthProvider = ({ children }: ChildrenType) => {
           case 'CASHIER':
             router.push('/ventas/caja')
             break
+          case 'CASHIER_OWNER':
+            router.push('/viajes/list')
+            break
           default:
             router.push('/home')
         }
@@ -238,8 +241,9 @@ export const AuthProvider = ({ children }: ChildrenType) => {
 
   // TEMPORAL: Todos los cajeros siempre tienen compañía (a través de su oficina)
   // TODO: El backend debe retornar companyId para cajeros
-  const isCashierRole = userRole === 'CASHIER' || userRole === 'CASHIER_TRIPS' || userRole === 'CASHIER_SELLER'
-  const hasCompany = !!user?.companyId || isCashierRole
+  const isCashierRole =
+    userRole === 'CASHIER' || userRole === 'CASHIER_TRIPS' || userRole === 'CASHIER_SELLER' || userRole === 'CASHIER_OWNER'
+  const hasCompany = !!user?.companyId || !!user?.company?.id || isCashierRole
 
   const isImpersonating = !!actingAsCompany
 

@@ -3,15 +3,20 @@
 import { useAuth } from '@/contexts/AuthContext'
 import ViajesListTable from '@/views/Dashboard/Viajes/list/ViajesListTable'
 import ViajesCashierListTable from '@/views/Dashboard/Viajes/list/ViajesCashierListTable'
+import ViajesOwnerListTable from '@/views/Dashboard/Viajes/list/ViajesOwnerListTable'
 
 const ViajesPageContent = () => {
   const { userRole } = useAuth()
 
-  // Verificar si es rol de cajero
-  const isCashierRole = userRole === 'CASHIER' || userRole === 'CASHIER_TRIPS' || userRole === 'CASHIER_SELLER'
+  if (userRole === 'CASHIER_OWNER') {
+    return <ViajesOwnerListTable />
+  }
 
-  // Mostrar tabla correspondiente según el rol
-  return isCashierRole ? <ViajesCashierListTable /> : <ViajesListTable />
+  if (userRole === 'CASHIER' || userRole === 'CASHIER_TRIPS') {
+    return <ViajesCashierListTable />
+  }
+
+  return <ViajesListTable />
 }
 
 export default ViajesPageContent
