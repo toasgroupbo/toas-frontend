@@ -85,6 +85,7 @@ const getDateRange = (preset: DateRangePreset): { startDate?: string; endDate?: 
 
 import CreateTravelDialog from '@/views/Dashboard/Viajes/components/CreateTravelDialog'
 import CancelTravelDialog from '@/views/Dashboard/Viajes/components/CancelTravelDialog'
+import TravelDetailDialog from '@/views/Dashboard/Viajes/components/TravelDetailDialog'
 import { useSnackbar } from '@/contexts/SnackbarContext'
 import { useCashierRoutes } from '@/hooks/useCashierTravels'
 
@@ -140,6 +141,8 @@ const ViajesCashierListTable = () => {
   const [createDialogOpen, setCreateDialogOpen] = useState(false)
   const [cancelDialogOpen, setCancelDialogOpen] = useState(false)
   const [selectedTravel, setSelectedTravel] = useState<Travel | null>(null)
+  const [detailDialogOpen, setDetailDialogOpen] = useState(false)
+  const [detailTravel, setDetailTravel] = useState<Travel | null>(null)
 
   const { showSuccess, showError } = useSnackbar()
 
@@ -253,6 +256,16 @@ const ViajesCashierListTable = () => {
     setSelectedTravel(null)
   }
 
+  const handleOpenDetailDialog = (travel: Travel) => {
+    setDetailTravel(travel)
+    setDetailDialogOpen(true)
+  }
+
+  const handleCloseDetailDialog = () => {
+    setDetailDialogOpen(false)
+    setDetailTravel(null)
+  }
+
   const handleConfirmCancel = async () => {
     if (!selectedTravel) return
 
@@ -327,7 +340,12 @@ const ViajesCashierListTable = () => {
           const isActive = row.original.travel_status === 'active'
 
           return (
-            <div className='flex items-center gap-2'>
+            <div className='flex items-center gap-1'>
+              <Tooltip title='Ver Detalles / Imprimir'>
+                <IconButton size='small' onClick={() => handleOpenDetailDialog(row.original)} color='primary'>
+                  <i className='tabler-file-description' style={{ fontSize: '18px' }} />
+                </IconButton>
+              </Tooltip>
               {isActive && (
                 <Tooltip title='Cancelar Viaje'>
                   <IconButton
@@ -877,6 +895,15 @@ const ViajesCashierListTable = () => {
         travel={selectedTravel}
         isLoading={cancelMutation.isPending}
       />
+
+      {detailTravel && (
+        <TravelDetailDialog
+          open={detailDialogOpen}
+          onClose={handleCloseDetailDialog}
+          travel={detailTravel}
+          isCashier={true}
+        />
+      )}
     </Box>
   )
 }

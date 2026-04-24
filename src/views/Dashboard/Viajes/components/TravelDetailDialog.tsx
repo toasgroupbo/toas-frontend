@@ -21,7 +21,7 @@ import Card from '@mui/material/Card'
 import CardContent from '@mui/material/CardContent'
 
 import type { Travel } from '@/types/api/travels'
-import { useTicketsByTravelAndCompany } from '@/hooks/useTickets'
+import { useTicketsByTravelAndCompany, useTicketsByTravel } from '@/hooks/useTickets'
 import { printTravelReport } from '../utils/printTravelReport'
 
 interface TravelDetailDialogProps {
@@ -29,6 +29,7 @@ interface TravelDetailDialogProps {
   onClose: () => void
   travel: Travel | null
   companyName?: string
+  isCashier?: boolean
 }
 
 const formatDate = (dateString: string): string => {
@@ -59,8 +60,11 @@ const formatCurrency = (amount: number | string) => {
   return `Bs. ${numAmount.toFixed(2)}`
 }
 
-const TravelDetailDialog = ({ open, onClose, travel, companyName }: TravelDetailDialogProps) => {
-  const { data: tickets, isLoading: ticketsLoading } = useTicketsByTravelAndCompany(travel?.id || null)
+const TravelDetailDialog = ({ open, onClose, travel, companyName, isCashier = false }: TravelDetailDialogProps) => {
+  const cashierTicketsQuery = useTicketsByTravel(isCashier ? (travel?.id || null) : null)
+  const companyTicketsQuery = useTicketsByTravelAndCompany(!isCashier ? (travel?.id || null) : null)
+
+  const { data: tickets, isLoading: ticketsLoading } = isCashier ? cashierTicketsQuery : companyTicketsQuery
 
   if (!travel) return null
 

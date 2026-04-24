@@ -122,36 +122,54 @@ const ViajesOwnerListTable = () => {
   const [datePreset, setDatePreset] = useState<DateRangePreset>('custom')
   const [customStartDate, setCustomStartDate] = useState<string>('')
   const [customEndDate, setCustomEndDate] = useState<string>('')
+  const [originPlaceId, setOriginPlaceId] = useState<string>('')
   const [destinationPlaceId, setDestinationPlaceId] = useState<string>('')
 
   const { data: ownerRoutes } = useOwnerRoutes()
 
-  const originPlaceName = useMemo(() => {
-    if (!ownerRoutes || ownerRoutes.length === 0) return null
+  // Extraer orígenes únicos - filtrados por destino seleccionado si hay uno
+  const uniqueOrigins = useMemo(() => {
+    if (!ownerRoutes || ownerRoutes.length === 0) return []
+    const originsMap = new Map<number, { id: number; name: string }>()
 
-    return ownerRoutes[0].officeOrigin.place.name
-  }, [ownerRoutes])
+    ownerRoutes.forEach((route: any) => {
+      const originPlace = route.officeOrigin.place
+      const destPlace = route.officeDestination.place
 
-  const originPlaceId = useMemo(() => {
-    if (!ownerRoutes || ownerRoutes.length === 0) return undefined
+      // Si hay un destino seleccionado, solo mostrar orígenes que tengan ruta hacia ese destino
+      if (destinationPlaceId && destPlace.id !== Number(destinationPlaceId)) {
+        return
+      }
 
-    return ownerRoutes[0].officeOrigin.place.id
-  }, [ownerRoutes])
+      if (!originsMap.has(originPlace.id)) {
+        originsMap.set(originPlace.id, { id: originPlace.id, name: originPlace.name })
+      }
+    })
 
+    return Array.from(originsMap.values())
+  }, [ownerRoutes, destinationPlaceId])
+
+  // Extraer destinos únicos - filtrados por origen seleccionado si hay uno
   const uniqueDestinations = useMemo(() => {
     if (!ownerRoutes || ownerRoutes.length === 0) return []
     const destinationsMap = new Map<number, { id: number; name: string }>()
 
     ownerRoutes.forEach((route: any) => {
-      const place = route.officeDestination.place
+      const originPlace = route.officeOrigin.place
+      const destPlace = route.officeDestination.place
 
-      if (!destinationsMap.has(place.id)) {
-        destinationsMap.set(place.id, { id: place.id, name: place.name })
+      // Si hay un origen seleccionado, solo mostrar destinos que tengan ruta desde ese origen
+      if (originPlaceId && originPlace.id !== Number(originPlaceId)) {
+        return
+      }
+
+      if (!destinationsMap.has(destPlace.id)) {
+        destinationsMap.set(destPlace.id, { id: destPlace.id, name: destPlace.name })
       }
     })
 
     return Array.from(destinationsMap.values())
-  }, [ownerRoutes])
+  }, [ownerRoutes, originPlaceId])
 
   const apiFilters = useMemo((): TravelFilters => {
     const dateRange =
@@ -163,7 +181,7 @@ const ViajesOwnerListTable = () => {
       status: statusFilter !== 'all' ? (statusFilter as 'active' | 'closed') : undefined,
       startDate: dateRange.startDate,
       endDate: dateRange.endDate,
-      origin_placeId: originPlaceId,
+      origin_placeId: originPlaceId ? Number(originPlaceId) : undefined,
       destination_placeId: destinationPlaceId ? Number(destinationPlaceId) : undefined
     }
   }, [statusFilter, datePreset, customStartDate, customEndDate, originPlaceId, destinationPlaceId])
@@ -473,29 +491,21 @@ const ViajesOwnerListTable = () => {
         </div>
 
         <div className='flex flex-wrap gap-4 px-6 pb-4 items-center'>
-          <Box
-            sx={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: 1,
-              px: 2,
-              py: 1,
-              bgcolor: 'primary.lighter',
-              borderRadius: 1,
-              border: '1px solid',
-              borderColor: 'primary.main'
-            }}
+          <CustomTextField
+            select
+            label='Origen'
+            value={originPlaceId}
+            onChange={e => setOriginPlaceId(e.target.value)}
+            size='small'
+            sx={{ minWidth: 180 }}
           >
-            <i className='tabler-map-pin' style={{ fontSize: '18px', color: 'var(--mui-palette-primary-main)' }} />
-            <Box>
-              <Typography variant='caption' color='text.secondary'>
-                Origen
-              </Typography>
-              <Typography variant='body2' fontWeight='medium' color='primary.main'>
-                {originPlaceName || 'Cargando...'}
-              </Typography>
-            </Box>
-          </Box>
+            <MenuItem value=''>Todos</MenuItem>
+            {uniqueOrigins.map(place => (
+              <MenuItem key={place.id} value={place.id.toString()}>
+                {place.name}
+              </MenuItem>
+            ))}
+          </CustomTextField>
 
           <i className='tabler-arrow-right' style={{ fontSize: '20px', color: 'var(--mui-palette-text-secondary)' }} />
 
@@ -505,7 +515,7 @@ const ViajesOwnerListTable = () => {
             value={destinationPlaceId}
             onChange={e => setDestinationPlaceId(e.target.value)}
             size='small'
-            sx={{ minWidth: 150 }}
+            sx={{ minWidth: 180 }}
           >
             <MenuItem value=''>Todos</MenuItem>
             {uniqueDestinations.map(place => (
