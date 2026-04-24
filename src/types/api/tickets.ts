@@ -63,6 +63,77 @@ export interface Billing {
   createdAt: string
 }
 
+export interface Place {
+  id: number
+  name: string
+  createdAt: string
+}
+
+export interface Office {
+  id: number
+  url_gps: string
+  name: string
+  address: string
+  enabled: boolean
+  createdAt: string
+  place: Place
+}
+
+export interface Route {
+  id: number
+  isActive: boolean
+  pass_by: string[]
+  travel_hours: number
+  enabled: boolean
+  createdAt: string
+  officeOrigin: Office
+  officeDestination: Office
+}
+
+export interface TravelCompany {
+  id: number
+  name: string
+  logo: string
+  commission: number
+  hours_before_closing: number
+  createdAt: string
+}
+
+export interface TravelBus {
+  id: number
+  name: string
+  plaque: string
+}
+
+export interface TicketTravel {
+  id: number
+  departure_time: string
+  arrival_time: string
+  price_deck_1: string
+  price_deck_2: string
+  travel_status: string
+  type: string
+  enabled: boolean
+  lane: number
+  closedAt: string | null
+  isPaid: boolean
+  paidAt: string | null
+  total: string
+  total_commission: string
+  net_to_company: string
+  cash_amount: string
+  qr_amount: string
+  app_amount: string
+  tickets_app_count: number
+  tickets_office_count: number
+  tickets_count: number
+  drivers: any
+  assistants: any
+  route: Route
+  company: TravelCompany
+  bus?: TravelBus
+}
+
 export interface Ticket {
   id: number
   type: string
@@ -76,7 +147,7 @@ export interface Ticket {
   buyer: Buyer | null
   confirmedAt?: string | null
   cancelledAt?: string | null
-  travel?: Travel
+  travel?: TicketTravel
   customer?: Customer
   soldBy?: User
   canceledBy?: User | null

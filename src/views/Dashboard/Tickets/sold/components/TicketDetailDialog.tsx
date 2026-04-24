@@ -19,6 +19,7 @@ import Grid from '@mui/material/Grid'
 import type { Ticket } from '@/types/api/tickets'
 import { getStatusColor, getStatusLabel } from '../utils/ticketStatus'
 import { formatDate, formatTime } from '../../sale/utils/dateFormatters'
+import { printTicketReceipt } from '../utils/printReceipt'
 
 interface TicketDetailDialogProps {
   open: boolean
@@ -29,11 +30,22 @@ interface TicketDetailDialogProps {
 const TicketDetailDialog = ({ open, onClose, ticket }: TicketDetailDialogProps) => {
   if (!ticket) return null
 
-  // Determinar si el ticket está cancelado
-  const isCancelled = ticket.status === 'cancelled'
+  const isCancelled = ticket.status === 'cancelled' || ticket.status === 'cancelado'
+  const isInApp = ticket.type === 'IN_APP'
 
   const hasBillingInfo = ticket.billing && (ticket.billing.nombre || ticket.billing.ci)
   const hasBuyerInfo = ticket.buyer && (ticket.buyer.name || ticket.buyer.ci)
+
+  const getSaleTypeLabel = (type: string) => {
+    if (type === 'IN_OFFICE') return 'En Oficina'
+    if (type === 'IN_APP') return 'En Aplicación'
+
+    return type
+  }
+
+  const origin = ticket.travel?.route?.officeOrigin?.place?.name || 'N/A'
+  const destination = ticket.travel?.route?.officeDestination?.place?.name || 'N/A'
+  const companyName = ticket.travel?.company?.name || 'N/A'
 
   return (
     <Dialog open={open} onClose={onClose} maxWidth='md' fullWidth>
@@ -71,8 +83,65 @@ const TicketDetailDialog = ({ open, onClose, ticket }: TicketDetailDialogProps) 
         </Box>
       </DialogTitle>
       <DialogContent dividers>
+        {/* Información del Viaje */}
+        <Box sx={{ mb: 3, p: 2, bgcolor: 'primary.lighter', borderRadius: 2 }}>
+          <Grid container spacing={2}>
+            <Grid item xs={12}>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
+                <i className='tabler-building' style={{ fontSize: '20px', color: 'var(--mui-palette-primary-main)' }} />
+                <Typography variant='subtitle1' fontWeight={700} color='primary.main'>
+                  {companyName}
+                </Typography>
+              </Box>
+            </Grid>
+            <Grid item xs={12}>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
+                <Chip
+                  label={origin}
+                  size='small'
+                  color='success'
+                  variant='outlined'
+                  icon={<i className='tabler-flag' style={{ fontSize: '14px' }} />}
+                />
+                <i
+                  className='tabler-arrow-right'
+                  style={{ fontSize: '18px', color: 'var(--mui-palette-text-secondary)' }}
+                />
+                <Chip
+                  label={destination}
+                  size='small'
+                  color='error'
+                  variant='outlined'
+                  icon={<i className='tabler-flag-filled' style={{ fontSize: '14px' }} />}
+                />
+              </Box>
+            </Grid>
+            <Grid item xs={12} sm={6}>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                <i className='tabler-calendar' style={{ fontSize: '18px', color: 'var(--mui-palette-primary-main)' }} />
+                <Typography variant='body2' color='text.secondary'>
+                  Fecha Salida:
+                </Typography>
+                <Typography variant='body2' fontWeight={600}>
+                  {ticket.travel?.departure_time ? formatDate(ticket.travel.departure_time) : 'N/A'}
+                </Typography>
+              </Box>
+            </Grid>
+            <Grid item xs={12} sm={6}>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                <i className='tabler-clock' style={{ fontSize: '18px', color: 'var(--mui-palette-primary-main)' }} />
+                <Typography variant='body2' color='text.secondary'>
+                  Hora Salida:
+                </Typography>
+                <Typography variant='body2' fontWeight={600}>
+                  {ticket.travel?.departure_time ? formatTime(ticket.travel.departure_time) : 'N/A'}
+                </Typography>
+              </Box>
+            </Grid>
+          </Grid>
+        </Box>
+
         <Grid container spacing={3}>
-          {/* Información del Comprador (Billing) */}
           <Grid item xs={12} md={6}>
             <Typography
               variant='subtitle2'
@@ -169,7 +238,6 @@ const TicketDetailDialog = ({ open, onClose, ticket }: TicketDetailDialogProps) 
             </Box>
           </Grid>
 
-          {/* Información del Ticket */}
           <Grid item xs={12} md={6}>
             <Typography
               variant='subtitle2'
@@ -191,7 +259,7 @@ const TicketDetailDialog = ({ open, onClose, ticket }: TicketDetailDialogProps) 
                     Tipo de Venta:
                   </Typography>
                   <Typography variant='body2' fontWeight={600}>
-                    {ticket.type === 'IN_OFFICE' ? 'En Oficina' : ticket.type === 'ONLINE' ? 'En Línea' : ticket.type}
+                    {getSaleTypeLabel(ticket.type)}
                   </Typography>
                 </Box>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
@@ -221,63 +289,67 @@ const TicketDetailDialog = ({ open, onClose, ticket }: TicketDetailDialogProps) 
                     {formatDate(ticket.createdAt)} {formatTime(ticket.createdAt)}
                   </Typography>
                 </Box>
-                {ticket.commission && parseFloat(ticket.commission) > 0 && (
+                {!isInApp && (
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                     <i
-                      className='tabler-percentage'
-                      style={{ fontSize: '18px', color: 'var(--mui-palette-warning-main)' }}
+                      className='tabler-user-circle'
+                      style={{ fontSize: '18px', color: 'var(--mui-palette-info-main)' }}
                     />
                     <Typography variant='body2' color='text.secondary'>
-                      Comisión:
+                      Cajero:
                     </Typography>
-                    <Typography variant='body2' fontWeight={600} color='warning.main'>
-                      Bs. {parseFloat(ticket.commission).toFixed(2)}
+                    <Typography variant='body2' fontWeight={600}>
+                      {ticket.soldBy?.fullName || ticket.soldBy?.email || 'N/A'}
                     </Typography>
                   </Box>
                 )}
-                {/* Solo mostrar información de cancelación si el ticket está cancelado */}
-                {isCancelled && ticket.cancelledAt && (
+              </Box>
+            </Box>
+          </Grid>
+
+          {/* Información del Cancelador (solo si está cancelado) */}
+          {isCancelled && (
+            <Grid item xs={12}>
+              <Typography
+                variant='subtitle2'
+                color='error'
+                fontWeight={700}
+                sx={{ mb: 2, display: 'flex', alignItems: 'center', gap: 1 }}
+              >
+                <i className='tabler-circle-x' />
+                Información de Cancelación
+              </Typography>
+              <Box
+                sx={{ bgcolor: 'error.lighter', p: 2, borderRadius: 1, border: '1px solid', borderColor: 'error.main' }}
+              >
+                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                     <i
-                      className='tabler-circle-x'
+                      className='tabler-calendar-x'
                       style={{ fontSize: '18px', color: 'var(--mui-palette-error-main)' }}
                     />
                     <Typography variant='body2' color='text.secondary'>
                       Fecha de Cancelación:
                     </Typography>
                     <Typography variant='body2' fontWeight={600} color='error.main'>
-                      {formatDate(ticket.cancelledAt)} {formatTime(ticket.cancelledAt)}
+                      {ticket.cancelledAt ? formatDate(ticket.cancelledAt) : 'N/A'}{' '}
+                      {ticket.cancelledAt ? formatTime(ticket.cancelledAt) : ''}
                     </Typography>
                   </Box>
-                )}
-                {isCancelled && ticket.canceledBy && (
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                     <i className='tabler-user-x' style={{ fontSize: '18px', color: 'var(--mui-palette-error-main)' }} />
                     <Typography variant='body2' color='text.secondary'>
                       Cancelado por:
                     </Typography>
                     <Typography variant='body2' fontWeight={600}>
-                      {ticket.canceledBy.fullName || ticket.canceledBy.email || 'N/A'}
+                      {ticket.canceledBy?.fullName || ticket.canceledBy?.email || 'N/A'}
                     </Typography>
                   </Box>
-                )}
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                  <i
-                    className='tabler-user-circle'
-                    style={{ fontSize: '18px', color: 'var(--mui-palette-info-main)' }}
-                  />
-                  <Typography variant='body2' color='text.secondary'>
-                    Vendedor:
-                  </Typography>
-                  <Typography variant='body2' fontWeight={600}>
-                    {ticket.soldBy?.fullName || ticket.soldBy?.email || 'N/A'}
-                  </Typography>
                 </Box>
               </Box>
-            </Box>
-          </Grid>
+            </Grid>
+          )}
 
-          {/* Detalles de Asientos y Pasajeros */}
           <Grid item xs={12}>
             <Typography
               variant='subtitle2'
@@ -344,13 +416,15 @@ const TicketDetailDialog = ({ open, onClose, ticket }: TicketDetailDialogProps) 
                       : ticket.seats.map((seat, index) => (
                           <TableRow key={index} sx={{ '&:last-child td': { border: 0 } }}>
                             <TableCell sx={{ p: 1.5 }}>
-                              <Chip
-                                label={`#${seat.seatNumber}`}
-                                size='small'
-                                color='primary'
-                                variant='outlined'
-                                icon={<i className='tabler-armchair' style={{ fontSize: '12px' }} />}
-                              />
+                              <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                                <Chip
+                                  label={`#${seat.seatNumber}`}
+                                  size='small'
+                                  color='primary'
+                                  variant='outlined'
+                                  icon={<i className='tabler-armchair' style={{ fontSize: '12px' }} />}
+                                />
+                              </Box>
                             </TableCell>
                             <TableCell align='right' sx={{ p: 1.5 }}>
                               <Typography variant='body2' fontWeight={600} color='success.main'>
@@ -368,7 +442,6 @@ const TicketDetailDialog = ({ open, onClose, ticket }: TicketDetailDialogProps) 
 
         <Divider sx={{ my: 3 }} />
 
-        {/* Total */}
         <Box
           sx={{
             display: 'flex',
@@ -389,8 +462,19 @@ const TicketDetailDialog = ({ open, onClose, ticket }: TicketDetailDialogProps) 
           </Box>
         </Box>
       </DialogContent>
-      <DialogActions sx={{ px: 3, py: 2 }}>
-        <Button onClick={onClose} variant='contained' color='primary' fullWidth>
+      <DialogActions sx={{ px: 3, py: 2, gap: 2 }}>
+        {!isCancelled && (
+          <Button
+            onClick={() => printTicketReceipt(ticket)}
+            variant='outlined'
+            color='primary'
+            startIcon={<i className='tabler-printer' />}
+            sx={{ flex: 1 }}
+          >
+            Imprimir
+          </Button>
+        )}
+        <Button onClick={onClose} variant='contained' color='primary' sx={{ flex: 1 }}>
           Cerrar
         </Button>
       </DialogActions>

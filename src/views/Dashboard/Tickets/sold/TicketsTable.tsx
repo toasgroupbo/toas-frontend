@@ -67,6 +67,7 @@ const TicketsTable = ({ initialTravelId }: TicketsTableProps) => {
   const [ticketToCancel, setTicketToCancel] = useState<Ticket | null>(null)
   const [openDetailDialog, setOpenDetailDialog] = useState(false)
   const [selectedTicket, setSelectedTicket] = useState<Ticket | null>(null)
+  const [statusFilter, setStatusFilter] = useState<string>('all')
 
   const { data: travels, isLoading: travelsLoading } = useCashierTravels()
   const { data: tickets, isLoading, error } = useTicketsByTravel(selectedTravelId)
@@ -86,6 +87,13 @@ const TicketsTable = ({ initialTravelId }: TicketsTableProps) => {
     }
   }, [tickets])
 
+  const filteredData = useMemo(() => {
+    if (!data) return []
+    if (statusFilter === 'all') return data
+
+    return data.filter(ticket => ticket.status === statusFilter)
+  }, [data, statusFilter])
+
   const handleCancelTicket = async () => {
     if (!ticketToCancel) return
 
@@ -101,6 +109,10 @@ const TicketsTable = ({ initialTravelId }: TicketsTableProps) => {
   const handleViewTicket = (ticket: Ticket) => {
     setSelectedTicket(ticket)
     setOpenDetailDialog(true)
+  }
+
+  const isTicketCancellable = (ticket: Ticket) => {
+    return ticket.status !== 'cancelled' && ticket.status !== 'cancelado' && ticket.type === 'IN_OFFICE'
   }
 
   const columns = useMemo<ColumnDef<TicketWithActionsType, any>[]>(
@@ -136,7 +148,9 @@ const TicketsTable = ({ initialTravelId }: TicketsTableProps) => {
                 <i className='tabler-eye' style={{ fontSize: '18px' }} />
               </IconButton>
             </Tooltip>
-            <Tooltip title='Cancelar Ticket'>
+            <Tooltip
+              title={row.original.type === 'IN_APP' ? 'Tickets de aplicación no se pueden cancelar' : 'Cancelar Ticket'}
+            >
               <span>
                 <IconButton
                   size='small'
@@ -145,7 +159,7 @@ const TicketsTable = ({ initialTravelId }: TicketsTableProps) => {
                     setTicketToCancel(row.original)
                     setOpenCancelDialog(true)
                   }}
-                  disabled={row.original.status === 'cancelled' || row.original.status === 'cancelado'}
+                  disabled={!isTicketCancellable(row.original)}
                   sx={{
                     color: 'error.main',
                     '&:hover': { backgroundColor: 'error.light', color: 'white' },
@@ -165,10 +179,10 @@ const TicketsTable = ({ initialTravelId }: TicketsTableProps) => {
         cell: ({ row }) => (
           <Box>
             <Typography variant='body2' fontWeight={600}>
-              {row.original.buyer?.name || 'N/A'}
+              {row.original.billing?.nombre || row.original.buyer?.name || 'N/A'}
             </Typography>
             <Typography variant='caption' color='text.secondary'>
-              CI: {row.original.buyer?.ci || 'N/A'}
+              CI: {row.original.billing?.ci || row.original.buyer?.ci || 'N/A'}
             </Typography>
           </Box>
         )
@@ -177,9 +191,16 @@ const TicketsTable = ({ initialTravelId }: TicketsTableProps) => {
         header: 'Tipo',
         cell: ({ row }) => (
           <Chip
-            label={row.original.type === 'IN_OFFICE' ? 'En Oficina' : row.original.type}
+            label={
+              row.original.type === 'IN_OFFICE'
+                ? 'En Oficina'
+                : row.original.type === 'IN_APP'
+                  ? 'En Aplicación'
+                  : row.original.type
+            }
             size='small'
             variant='outlined'
+            color={row.original.type === 'IN_APP' ? 'info' : 'default'}
           />
         )
       }),
@@ -262,7 +283,7 @@ const TicketsTable = ({ initialTravelId }: TicketsTableProps) => {
   )
 
   const table = useReactTable({
-    data: data || [],
+    data: filteredData,
     columns,
     filterFns: {
       fuzzy: fuzzyFilter
@@ -290,13 +311,13 @@ const TicketsTable = ({ initialTravelId }: TicketsTableProps) => {
 
   useEffect(() => {
     table.setPageSize(pageSize)
-  }, [pageSize])
+  }, [pageSize, table])
 
   useEffect(() => {
     if (currentPage > 0 && currentPage <= totalPages) {
       table.setPageIndex(currentPage - 1)
     }
-  }, [currentPage, totalPages])
+  }, [currentPage, totalPages, table])
 
   if (isLoading) {
     return (
@@ -401,19 +422,42 @@ const TicketsTable = ({ initialTravelId }: TicketsTableProps) => {
             )}
 
             {(selectedTravelId || initialTravelId) && (
-              <DebouncedInput
-                value={searchQuery ?? ''}
-                onChange={value => setSearchQuery(String(value))}
-                placeholder='Buscar tickets...'
-                sx={{ flexGrow: 1 }}
-                InputProps={{
-                  startAdornment: (
-                    <Box sx={{ mr: 1, display: 'flex', alignItems: 'center' }}>
-                      <i className='tabler-search' />
-                    </Box>
-                  )
-                }}
-              />
+              <>
+                <CustomTextField
+                  select
+                  value={statusFilter}
+                  onChange={e => {
+                    setStatusFilter(e.target.value)
+                    setCurrentPage(1)
+                  }}
+                  label='Filtrar por Estado'
+                  sx={{ minWidth: 180 }}
+                  InputProps={{
+                    startAdornment: (
+                      <Box sx={{ mr: 1, display: 'flex', alignItems: 'center' }}>
+                        <i className='tabler-filter' />
+                      </Box>
+                    )
+                  }}
+                >
+                  <MenuItem value='all'>Todos</MenuItem>
+                  <MenuItem value='sold'>Vendido</MenuItem>
+                  <MenuItem value='cancelled'>Cancelado</MenuItem>
+                </CustomTextField>
+                <DebouncedInput
+                  value={searchQuery ?? ''}
+                  onChange={value => setSearchQuery(String(value))}
+                  placeholder='Buscar tickets...'
+                  sx={{ flexGrow: 1 }}
+                  InputProps={{
+                    startAdornment: (
+                      <Box sx={{ mr: 1, display: 'flex', alignItems: 'center' }}>
+                        <i className='tabler-search' />
+                      </Box>
+                    )
+                  }}
+                />
+              </>
             )}
           </Box>
 
@@ -436,7 +480,7 @@ const TicketsTable = ({ initialTravelId }: TicketsTableProps) => {
                     Total de Tickets
                   </Typography>
                   <Typography variant='h6' fontWeight='bold'>
-                    {tickets.length}
+                    {filteredData.length}
                   </Typography>
                 </Box>
                 <Box>
@@ -444,7 +488,7 @@ const TicketsTable = ({ initialTravelId }: TicketsTableProps) => {
                     Total de Asientos
                   </Typography>
                   <Typography variant='h6' fontWeight='bold'>
-                    {tickets.reduce((sum, ticket) => sum + ticket.seats.length, 0)}
+                    {filteredData.reduce((sum, ticket) => sum + ticket.seats.length, 0)}
                   </Typography>
                 </Box>
               </Box>
@@ -453,7 +497,7 @@ const TicketsTable = ({ initialTravelId }: TicketsTableProps) => {
                   Ingresos Totales
                 </Typography>
                 <Typography variant='h5' color='success.main' fontWeight='bold'>
-                  Bs. {tickets.reduce((sum, ticket) => sum + parseFloat(ticket.total_price || '0'), 0).toFixed(2)}
+                  Bs. {filteredData.reduce((sum, ticket) => sum + parseFloat(ticket.total_price || '0'), 0).toFixed(2)}
                 </Typography>
               </Box>
             </Box>
@@ -565,7 +609,6 @@ const TicketsTable = ({ initialTravelId }: TicketsTableProps) => {
         </Box>
       </Card>
 
-      {/* Modal de Detalle del Ticket */}
       <TicketDetailDialog
         open={openDetailDialog}
         onClose={() => {
@@ -575,7 +618,6 @@ const TicketsTable = ({ initialTravelId }: TicketsTableProps) => {
         ticket={selectedTicket}
       />
 
-      {/* Dialog de Cancelar Ticket */}
       <CancelTicketDialog
         open={openCancelDialog}
         onClose={() => {
