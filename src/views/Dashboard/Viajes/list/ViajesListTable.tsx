@@ -5,12 +5,13 @@ import { useEffect, useMemo, useState } from 'react'
 import Card from '@mui/material/Card'
 import Chip from '@mui/material/Chip'
 import Checkbox from '@mui/material/Checkbox'
-import TablePagination from '@mui/material/TablePagination'
 import MenuItem from '@mui/material/MenuItem'
 import Typography from '@mui/material/Typography'
 import Box from '@mui/material/Box'
 import CircularProgress from '@mui/material/CircularProgress'
 import Alert from '@mui/material/Alert'
+import ToggleButton from '@mui/material/ToggleButton'
+import ToggleButtonGroup from '@mui/material/ToggleButtonGroup'
 import type { TextFieldProps } from '@mui/material/TextField'
 import classnames from 'classnames'
 import { rankItem } from '@tanstack/match-sorter-utils'
@@ -23,6 +24,7 @@ import {
   getFacetedRowModel,
   getFacetedUniqueValues,
   getFacetedMinMaxValues,
+  getPaginationRowModel,
   getSortedRowModel
 } from '@tanstack/react-table'
 import type { ColumnDef, FilterFn } from '@tanstack/react-table'
@@ -30,11 +32,46 @@ import { Pagination } from '@mui/material'
 
 import CustomTextField from '@core/components/mui/TextField'
 import tableStyles from '@core/styles/table.module.css'
-import { useTravels } from '@/hooks/useTravels'
+import { useTravelsForAdmin, type TravelFilters } from '@/hooks/useTravels'
 import type { Travel } from '@/types/api/travels'
 
-type TravelWithActionsType = Travel & {
-  actions?: string
+type DateRangePreset = 'today' | 'last_week' | 'this_month' | 'last_month' | 'custom'
+
+const getDateRange = (preset: DateRangePreset): { startDate?: string; endDate?: string } => {
+  const today = new Date()
+  const formatDate = (date: Date) => date.toISOString().split('T')[0]
+
+  switch (preset) {
+    case 'today':
+      return { startDate: formatDate(today) }
+
+    case 'last_week': {
+      const lastWeek = new Date(today)
+
+      lastWeek.setDate(today.getDate() - 7)
+
+      return { startDate: formatDate(lastWeek), endDate: formatDate(today) }
+    }
+
+    case 'this_month': {
+      const firstDayOfMonth = new Date(today.getFullYear(), today.getMonth(), 1)
+      const lastDayOfMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0)
+
+      return { startDate: formatDate(firstDayOfMonth), endDate: formatDate(lastDayOfMonth) }
+    }
+
+    case 'last_month': {
+      const firstDayOfLastMonth = new Date(today.getFullYear(), today.getMonth() - 1, 1)
+      const lastDayOfLastMonth = new Date(today.getFullYear(), today.getMonth(), 0)
+
+      return { startDate: formatDate(firstDayOfLastMonth), endDate: formatDate(lastDayOfLastMonth) }
+    }
+
+    case 'custom':
+      return {}
+    default:
+      return { startDate: formatDate(today) }
+  }
 }
 
 const fuzzyFilter: FilterFn<any> = (row, columnId, value, addMeta) => {
@@ -72,27 +109,71 @@ const DebouncedInput = ({
   return <CustomTextField {...props} value={value} onChange={e => setValue(e.target.value)} />
 }
 
-const columnHelper = createColumnHelper<TravelWithActionsType>()
+const columnHelper = createColumnHelper<Travel>()
 
 const ViajesListTable = () => {
   const [rowSelection, setRowSelection] = useState({})
-  const [currentPage, setCurrentPage] = useState(1)
-  const [pageSize, setPageSize] = useState(10)
   const [searchQuery, setSearchQuery] = useState('')
   const [statusFilter, setStatusFilter] = useState<string>('all')
+  const [datePreset, setDatePreset] = useState<DateRangePreset>('custom')
+  const [customStartDate, setCustomStartDate] = useState<string>('')
+  const [customEndDate, setCustomEndDate] = useState<string>('')
+  const [originPlaceId, setOriginPlaceId] = useState<string>('')
+  const [destinationPlaceId, setDestinationPlaceId] = useState<string>('')
 
-  const queryParams = useMemo(
-    () => ({
-      page: currentPage,
-      limit: pageSize,
-      status: statusFilter
-    }),
-    [currentPage, pageSize, statusFilter]
-  )
+  const apiFilters = useMemo((): TravelFilters => {
+    const dateRange =
+      datePreset === 'custom'
+        ? { startDate: customStartDate || undefined, endDate: customEndDate || undefined }
+        : getDateRange(datePreset)
 
-  const { data: travelsResponse, isLoading, error } = useTravels(queryParams)
+    return {
+      status: statusFilter !== 'all' ? (statusFilter as 'active' | 'closed' | 'cancelled') : undefined,
+      startDate: dateRange.startDate,
+      endDate: dateRange.endDate,
+      origin_placeId: originPlaceId ? Number(originPlaceId) : undefined,
+      destination_placeId: destinationPlaceId ? Number(destinationPlaceId) : undefined
+    }
+  }, [statusFilter, datePreset, customStartDate, customEndDate, originPlaceId, destinationPlaceId])
+
+  const { data: travelsResponse, isLoading, error } = useTravelsForAdmin(apiFilters)
+
   const travels = travelsResponse?.data || []
-  const totalRecords = travelsResponse?.meta?.total || 0
+  const amounts = travelsResponse?.amounts || { office: 0, app: 0 }
+
+  const totalOfficeAmount = amounts.office || 0
+  const totalAppAmount = amounts.app || 0
+  const totalAmount = totalOfficeAmount + totalAppAmount
+
+  const uniqueOrigins = useMemo(() => {
+    if (!travels) return []
+    const originsMap = new Map<number, { id: number; name: string }>()
+
+    travels.forEach(travel => {
+      const place = travel.route?.officeOrigin?.place
+
+      if (place && !originsMap.has(place.id)) {
+        originsMap.set(place.id, { id: place.id, name: place.name })
+      }
+    })
+
+    return Array.from(originsMap.values())
+  }, [travels])
+
+  const uniqueDestinations = useMemo(() => {
+    if (!travels) return []
+    const destinationsMap = new Map<number, { id: number; name: string }>()
+
+    travels.forEach(travel => {
+      const place = travel.route?.officeDestination?.place
+
+      if (place && !destinationsMap.has(place.id)) {
+        destinationsMap.set(place.id, { id: place.id, name: place.name })
+      }
+    })
+
+    return Array.from(destinationsMap.values())
+  }, [travels])
 
   const formatDateTime = (dateString: string) => {
     const date = new Date(dateString)
@@ -107,7 +188,25 @@ const ViajesListTable = () => {
     })
   }
 
-  const columns = useMemo<ColumnDef<TravelWithActionsType, any>[]>(
+  const formatDateOnly = (dateString: string) => {
+    if (!dateString) return '-'
+    const date = new Date(dateString)
+
+    return date.toLocaleDateString('es-BO', {
+      timeZone: 'America/La_Paz',
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric'
+    })
+  }
+
+  const formatCurrency = (amount: number | string) => {
+    const numAmount = typeof amount === 'string' ? parseFloat(amount) : amount
+
+    return `Bs. ${numAmount.toFixed(2)}`
+  }
+
+  const columns = useMemo<ColumnDef<Travel, any>[]>(
     () => [
       {
         id: 'select',
@@ -146,13 +245,13 @@ const ViajesListTable = () => {
         )
       }),
       columnHelper.accessor('route', {
-        header: 'Ruta',
+        header: 'Ruta / Salida',
         cell: ({ row }) => {
-          const originCity = row.original.route.officeOrigin.place?.name || 'N/A'
-          const destinationCity = row.original.route.officeDestination.place?.name || 'N/A'
+          const originCity = row.original.route?.officeOrigin?.place?.name || 'N/A'
+          const destinationCity = row.original.route?.officeDestination?.place?.name || 'N/A'
 
           return (
-            <div className='flex items-center gap-2'>
+            <div className='flex flex-col gap-1'>
               <Box
                 sx={{
                   display: 'flex',
@@ -180,18 +279,74 @@ const ViajesListTable = () => {
                   </Typography>
                 </div>
               </Box>
+              <div className='flex items-center gap-1'>
+                <i className='tabler-clock' style={{ fontSize: '14px', color: 'var(--mui-palette-info-main)' }} />
+                <Typography variant='caption'>{formatDateTime(row.original.departure_time)}</Typography>
+              </div>
             </div>
           )
         }
       }),
-      columnHelper.accessor('departure_time', {
-        header: 'Salida',
-        cell: ({ row }) => (
-          <div className='flex items-center gap-1'>
-            <i className='tabler-clock' style={{ fontSize: '16px', color: 'var(--mui-palette-info-main)' }} />
-            <Typography variant='body2'>{formatDateTime(row.original.departure_time)}</Typography>
-          </div>
-        )
+      columnHelper.accessor('seatsApp', {
+        header: 'Vendidos App',
+        cell: ({ row }) => {
+          const seatsApp = (row.original as any).seatsApp || 0
+          const appAmount = parseFloat((row.original as any).app_amount || '0')
+
+          return (
+            <div className='flex flex-col'>
+              <Typography variant='body2' fontWeight='medium'>
+                {seatsApp} asientos
+              </Typography>
+              <Typography variant='caption' color='success.main'>
+                {formatCurrency(appAmount)}
+              </Typography>
+            </div>
+          )
+        }
+      }),
+      columnHelper.accessor('seatsOffice', {
+        header: 'Vendidos Oficina',
+        cell: ({ row }) => {
+          const seatsOffice = (row.original as any).seatsOffice || 0
+
+          const officeAmount =
+            parseFloat((row.original as any).cash_amount || '0') + parseFloat((row.original as any).qr_amount || '0')
+
+          return (
+            <div className='flex flex-col'>
+              <Typography variant='body2' fontWeight='medium'>
+                {seatsOffice} asientos
+              </Typography>
+              <Typography variant='caption' color='info.main'>
+                {formatCurrency(officeAmount)}
+              </Typography>
+            </div>
+          )
+        }
+      }),
+      columnHelper.accessor('totalSoldSeats', {
+        header: 'Vendido Total',
+        cell: ({ row }) => {
+          const totalSoldSeats = (row.original as any).totalSoldSeats || 0
+          const totalBusSeats = (row.original as any).totalBusSeats || 0
+
+          const totalSoldAmount =
+            parseFloat((row.original as any).app_amount || '0') +
+            parseFloat((row.original as any).cash_amount || '0') +
+            parseFloat((row.original as any).qr_amount || '0')
+
+          return (
+            <div className='flex flex-col'>
+              <Typography variant='body2' fontWeight='bold'>
+                {totalSoldSeats} de {totalBusSeats} asientos
+              </Typography>
+              <Typography variant='caption' color='primary.main' fontWeight='medium'>
+                {formatCurrency(totalSoldAmount)}
+              </Typography>
+            </div>
+          )
+        }
       }),
       columnHelper.accessor('type', {
         header: 'Tipo',
@@ -210,63 +365,47 @@ const ViajesListTable = () => {
           />
         )
       }),
-      columnHelper.accessor('price_deck_1', {
-        header: 'Precio Piso 1',
-        cell: ({ row }) => (
-          <Chip
-            label={`Bs. ${row.original.price_deck_1}`}
-            color='success'
-            variant='tonal'
-            size='small'
-            icon={<i className='tabler-currency-dollar' style={{ fontSize: '14px' }} />}
-          />
-        )
-      }),
-      columnHelper.accessor('price_deck_2', {
-        header: 'Precio Piso 2',
-        cell: ({ row }) => (
-          <Chip
-            label={`Bs. ${row.original.price_deck_2}`}
-            color='info'
-            variant='tonal'
-            size='small'
-            icon={<i className='tabler-currency-dollar' style={{ fontSize: '14px' }} />}
-          />
-        )
-      }),
       columnHelper.accessor('travel_status', {
         header: 'Estado',
-        cell: ({ row }) => (
-          <Chip
-            label={row.original.travel_status === 'active' ? 'Activo' : 'Inactivo'}
-            color={row.original.travel_status === 'active' ? 'success' : 'default'}
-            variant='tonal'
-            size='small'
-            icon={
-              <i
-                className={row.original.travel_status === 'active' ? 'tabler-check' : 'tabler-x'}
-                style={{ fontSize: '14px' }}
-              />
-            }
-          />
-        )
+        cell: ({ row }) => {
+          const statusMap: Record<string, { label: string; color: 'success' | 'default' | 'error' | 'warning' }> = {
+            active: { label: 'Activo', color: 'success' },
+            closed: { label: 'Cerrado', color: 'default' },
+            cancelled: { label: 'Cancelado', color: 'error' }
+          }
+
+          const status = statusMap[row.original.travel_status] || {
+            label: row.original.travel_status,
+            color: 'default'
+          }
+
+          return (
+            <Chip
+              label={status.label}
+              color={status.color}
+              variant='tonal'
+              size='small'
+              icon={
+                <i
+                  className={row.original.travel_status === 'active' ? 'tabler-check' : 'tabler-x'}
+                  style={{ fontSize: '14px' }}
+                />
+              }
+            />
+          )
+        }
       }),
-      columnHelper.accessor('enabled', {
-        header: 'Habilitado',
-        cell: ({ row }) => (
-          <Chip
-            label={row.original.enabled ? 'Habilitado' : 'Deshabilitado'}
-            color={row.original.enabled ? 'success' : 'error'}
-            variant='tonal'
-            size='small'
-            icon={
-              <i
-                className={row.original.enabled ? 'tabler-toggle-right' : 'tabler-toggle-left'}
-                style={{ fontSize: '14px' }}
-              />
-            }
-          />
-        )
+      columnHelper.accessor('closedAt', {
+        header: 'Fecha Cierre',
+        cell: ({ row }) => {
+          if (!row.original.closedAt) return <Typography variant='caption'>-</Typography>
+
+          return (
+            <div className='flex flex-col'>
+              <Typography variant='caption'>{formatDateOnly(row.original.closedAt)}</Typography>
+            </div>
+          )
+        }
       })
     ],
     []
@@ -289,9 +428,15 @@ const ViajesListTable = () => {
     getCoreRowModel: getCoreRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
     getSortedRowModel: getSortedRowModel(),
+    getPaginationRowModel: getPaginationRowModel(),
     getFacetedRowModel: getFacetedRowModel(),
     getFacetedUniqueValues: getFacetedUniqueValues(),
-    getFacetedMinMaxValues: getFacetedMinMaxValues()
+    getFacetedMinMaxValues: getFacetedMinMaxValues(),
+    initialState: {
+      pagination: {
+        pageSize: 10
+      }
+    }
   })
 
   if (isLoading) {
@@ -306,6 +451,10 @@ const ViajesListTable = () => {
     return <Alert severity='error'>Error al cargar los viajes. Por favor, intenta nuevamente.</Alert>
   }
 
+  const totalRows = table.getFilteredRowModel().rows.length
+  const pageIndex = table.getState().pagination.pageIndex
+  const pageSize = table.getState().pagination.pageSize
+
   return (
     <Box>
       <Card>
@@ -315,31 +464,173 @@ const ViajesListTable = () => {
           </div>
         </div>
 
+        <div className='flex justify-center px-6 pb-4'>
+          <ToggleButtonGroup
+            value={datePreset}
+            exclusive
+            onChange={(_, value) => value && setDatePreset(value)}
+            size='small'
+            sx={{ flexWrap: 'wrap', justifyContent: 'center' }}
+          >
+            <ToggleButton value='today'>Hoy</ToggleButton>
+            <ToggleButton value='last_week'>Última Semana</ToggleButton>
+            <ToggleButton value='this_month'>Este Mes</ToggleButton>
+            <ToggleButton value='last_month'>Mes Anterior</ToggleButton>
+            <ToggleButton value='custom'>Otro</ToggleButton>
+          </ToggleButtonGroup>
+        </div>
+
+        <div className='flex flex-wrap gap-4 px-6 pb-4 items-center'>
+          <CustomTextField
+            select
+            label='Origen'
+            value={originPlaceId}
+            onChange={e => setOriginPlaceId(e.target.value)}
+            size='small'
+            sx={{ minWidth: 150 }}
+          >
+            <MenuItem value=''>Todos</MenuItem>
+            {uniqueOrigins.map(place => (
+              <MenuItem key={place.id} value={place.id.toString()}>
+                {place.name}
+              </MenuItem>
+            ))}
+          </CustomTextField>
+
+          <i className='tabler-arrow-right' style={{ fontSize: '20px', color: 'var(--mui-palette-text-secondary)' }} />
+
+          <CustomTextField
+            select
+            label='Destino'
+            value={destinationPlaceId}
+            onChange={e => setDestinationPlaceId(e.target.value)}
+            size='small'
+            sx={{ minWidth: 150 }}
+          >
+            <MenuItem value=''>Todos</MenuItem>
+            {uniqueDestinations.map(place => (
+              <MenuItem key={place.id} value={place.id.toString()}>
+                {place.name}
+              </MenuItem>
+            ))}
+          </CustomTextField>
+
+          {datePreset === 'custom' && (
+            <>
+              <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
+                <CustomTextField
+                  type='date'
+                  label='Fecha Inicio'
+                  value={customStartDate}
+                  onChange={e => setCustomStartDate(e.target.value)}
+                  InputLabelProps={{ shrink: true }}
+                  size='small'
+                  sx={{ width: '150px' }}
+                />
+                <Typography variant='body2' color='text.secondary'>
+                  a
+                </Typography>
+                <CustomTextField
+                  type='date'
+                  label='Fecha Fin'
+                  value={customEndDate}
+                  onChange={e => setCustomEndDate(e.target.value)}
+                  InputLabelProps={{ shrink: true }}
+                  size='small'
+                  sx={{ width: '150px' }}
+                />
+              </Box>
+            </>
+          )}
+
+          <CustomTextField
+            select
+            label='Estado'
+            value={statusFilter}
+            onChange={e => setStatusFilter(e.target.value)}
+            size='small'
+            sx={{ minWidth: 120 }}
+          >
+            <MenuItem value='all'>Todos</MenuItem>
+            <MenuItem value='active'>Activo</MenuItem>
+            <MenuItem value='closed'>Cerrado</MenuItem>
+            <MenuItem value='cancelled'>Cancelado</MenuItem>
+          </CustomTextField>
+        </div>
+
+        <div className='flex flex-wrap justify-between items-center gap-4 px-6 pb-4'>
+          <Box
+            sx={{
+              bgcolor: 'info.lighter',
+              px: 3,
+              py: 1.5,
+              borderRadius: 2,
+              border: '1px solid',
+              borderColor: 'info.main',
+              minWidth: '180px',
+              textAlign: 'center'
+            }}
+          >
+            <Typography variant='caption' color='info.main' fontWeight='medium'>
+              Total Ventas Oficina
+            </Typography>
+            <Typography variant='h6' color='info.dark' fontWeight='bold'>
+              {formatCurrency(totalOfficeAmount)}
+            </Typography>
+          </Box>
+
+          <Box
+            sx={{
+              bgcolor: 'success.lighter',
+              px: 3,
+              py: 1.5,
+              borderRadius: 2,
+              border: '1px solid',
+              borderColor: 'success.main',
+              minWidth: '180px',
+              textAlign: 'center'
+            }}
+          >
+            <Typography variant='caption' color='success.main' fontWeight='medium'>
+              Total Ventas App
+            </Typography>
+            <Typography variant='h6' color='success.dark' fontWeight='bold'>
+              {formatCurrency(totalAppAmount)}
+            </Typography>
+          </Box>
+
+          <Box
+            sx={{
+              bgcolor: 'primary.lighter',
+              px: 3,
+              py: 1.5,
+              borderRadius: 2,
+              border: '1px solid',
+              borderColor: 'primary.main',
+              minWidth: '180px',
+              textAlign: 'center'
+            }}
+          >
+            <Typography variant='caption' color='primary.main' fontWeight='medium'>
+              Total General
+            </Typography>
+            <Typography variant='h6' color='primary.dark' fontWeight='bold'>
+              {formatCurrency(totalAmount)}
+            </Typography>
+          </Box>
+        </div>
+
         <div className='flex flex-wrap justify-between gap-4 px-6 pb-6'>
           <div className='flex flex-wrap gap-4 items-center'>
             <DebouncedInput
               value={searchQuery}
               onChange={value => {
                 setSearchQuery(String(value))
-                setCurrentPage(1)
+                table.setPageIndex(0)
               }}
               placeholder='Buscar viajes...'
               className='max-sm:is-full min-w-[300px] flex-1 max-w-md'
             />
-            <CustomTextField
-              select
-              value={statusFilter}
-              onChange={e => {
-                setStatusFilter(e.target.value)
-                setCurrentPage(1)
-              }}
-              className='max-sm:is-full sm:is-[150px]'
-            >
-              <MenuItem value='all'>Todos</MenuItem>
-              <MenuItem value='active'>Activo</MenuItem>
-              <MenuItem value='closed'>Cerrado</MenuItem>
-              <MenuItem value='cancelled'>Cancelado</MenuItem>
-            </CustomTextField>
           </div>
 
           <div className='flex max-sm:flex-col items-start sm:items-center gap-4 max-sm:is-full'>
@@ -347,8 +638,7 @@ const ViajesListTable = () => {
               select
               value={pageSize}
               onChange={e => {
-                setPageSize(Number(e.target.value))
-                setCurrentPage(1)
+                table.setPageSize(Number(e.target.value))
               }}
               className='flex-auto max-sm:is-full sm:is-[70px]'
             >
@@ -387,7 +677,7 @@ const ViajesListTable = () => {
               ))}
             </thead>
 
-            {table.getFilteredRowModel().rows.length === 0 ? (
+            {table.getRowModel().rows.length === 0 ? (
               <tbody>
                 <tr>
                   <td colSpan={table.getVisibleFlatColumns().length} className='text-center py-8'>
@@ -420,29 +710,23 @@ const ViajesListTable = () => {
           </table>
         </div>
 
-        <TablePagination
-          component={() => (
-            <div className='flex justify-between items-center flex-wrap pli-6 border-bs bs-auto plb-[12.5px] gap-2'>
-              <Typography color='text.disabled'>
-                {`Mostrando ${(currentPage - 1) * pageSize + 1} a ${Math.min(currentPage * pageSize, totalRecords)} de ${totalRecords} viajes`}
-              </Typography>
-              <Pagination
-                shape='rounded'
-                color='primary'
-                variant='tonal'
-                count={Math.ceil(totalRecords / pageSize)}
-                page={currentPage}
-                onChange={(_, page) => setCurrentPage(page)}
-                showFirstButton
-                showLastButton
-              />
-            </div>
-          )}
-          count={totalRecords}
-          rowsPerPage={pageSize}
-          page={currentPage - 1}
-          onPageChange={() => {}}
-        />
+        <div className='flex justify-between items-center flex-wrap pli-6 border-bs bs-auto plb-[12.5px] gap-2'>
+          <Typography color='text.disabled'>
+            {totalRows > 0
+              ? `Mostrando ${pageIndex * pageSize + 1} a ${Math.min((pageIndex + 1) * pageSize, totalRows)} de ${totalRows} viajes`
+              : 'No hay viajes'}
+          </Typography>
+          <Pagination
+            shape='rounded'
+            color='primary'
+            variant='tonal'
+            count={table.getPageCount()}
+            page={pageIndex + 1}
+            onChange={(_, page) => table.setPageIndex(page - 1)}
+            showFirstButton
+            showLastButton
+          />
+        </div>
       </Card>
     </Box>
   )

@@ -141,3 +141,16 @@ export const useAssignStaff = () => {
     }
   })
 }
+
+const fetchOwnerRoutes = async () => {
+  const response = await api.get('/api/routes/for-cashier/owner/all')
+
+  return response.data
+}
+
+export const useOwnerRoutes = () => {
+  return useQuery({
+    queryKey: ['owner-routes'],
+    queryFn: fetchOwnerRoutes
+  })
+}

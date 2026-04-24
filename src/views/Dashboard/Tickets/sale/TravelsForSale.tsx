@@ -75,12 +75,9 @@ const TravelRow = ({
     setEquipmentAnchor(event.currentTarget)
   }
 
-  const seatsColor =
-    travel.seatsAvailable && travel.seatsAvailable > 10
-      ? 'success'
-      : travel.seatsAvailable && travel.seatsAvailable > 0
-        ? 'warning'
-        : 'error'
+  const seatsAvailable = travel.seatsAvailable ?? 0
+
+  const seatsColor = seatsAvailable > 10 ? 'success' : seatsAvailable > 0 ? 'warning' : 'error'
 
   return (
     <Box
@@ -359,7 +356,7 @@ const TravelRow = ({
               color={`${seatsColor}.main`}
               sx={{ fontSize: { xs: '1rem', md: '1.25rem' } }}
             >
-              {travel.seatsAvailable ?? 0}
+              {seatsAvailable}
             </Typography>
           </Box>
           <Typography variant='caption' color='text.secondary' sx={{ fontSize: { xs: '0.6rem', md: '0.75rem' } }}>
@@ -519,7 +516,13 @@ const TravelsForSale = () => {
   const activeTravels = useMemo(() => {
     if (!travels) return []
 
-    return travels.filter(travel => travel.travel_status === 'active')
+    return travels.filter(travel => {
+      if (!travel.travelSeats) {
+        travel.travelSeats = []
+      }
+
+      return travel.travel_status === 'active'
+    })
   }, [travels])
 
   // Agrupar viajes por fecha de salida
@@ -588,8 +591,7 @@ const TravelsForSale = () => {
     setPendingTicketData(data)
     setSelectedTravel(travel)
 
-    // Construir pseudo-ticket para mostrar en AssignPassengersDialog
-    const selectedSeatsData = travel.travelSeats.filter(seat =>
+    const selectedSeatsData = (travel.travelSeats || []).filter(seat =>
       data.seatSelections.some(sel => sel.seatId === String(seat.id))
     )
 

@@ -5,29 +5,50 @@ import type { Travel, CreateTravelDto } from '@/types/api/travels'
 import { useAuth } from '@/contexts/AuthContext'
 
 export interface TravelFilters {
-  status?: 'active' | 'closed'
+  status?: 'active' | 'closed' | 'cancelled'
+  startDate?: string
+  endDate?: string
+  origin_placeId?: number
+  destination_placeId?: number
+  companyId?: number
+}
+
+interface UseTravelsParams {
+  page?: number
+  limit?: number
+  status?: string
   startDate?: string
   endDate?: string
   origin_placeId?: number
   destination_placeId?: number
 }
 
-const fetchTravels = async (params: {
-  page: number
-  limit: number
-  status?: string
-}): Promise<{ data: Travel[]; meta: any }> => {
-  const { page = 1, limit = 10, status } = params
+const fetchTravels = async (params: UseTravelsParams): Promise<{ data: Travel[]; meta: any }> => {
+  const { page = 1, limit = 10, status, startDate, endDate, origin_placeId, destination_placeId } = params
   const actingAsCompany = localStorage.getItem('acting_as_company')
-  let url = '/api/travels'
+  const queryParams = new URLSearchParams()
 
-  const queryParams = new URLSearchParams({
-    page: page.toString(),
-    limit: limit.toString()
-  })
+  queryParams.append('page', page.toString())
+  queryParams.append('limit', limit.toString())
 
   if (status && status !== 'all') {
     queryParams.append('status', status)
+  }
+
+  if (startDate) {
+    queryParams.append('startDate', startDate)
+  }
+
+  if (endDate) {
+    queryParams.append('endDate', endDate)
+  }
+
+  if (origin_placeId) {
+    queryParams.append('origin_placeId', origin_placeId.toString())
+  }
+
+  if (destination_placeId) {
+    queryParams.append('destination_placeId', destination_placeId.toString())
   }
 
   if (actingAsCompany) {
@@ -40,9 +61,7 @@ const fetchTravels = async (params: {
     }
   }
 
-  url = `${url}?${queryParams.toString()}`
-
-  const response = await api.get<{ data: Travel[]; meta: any }>(url)
+  const response = await api.get<{ data: Travel[]; meta: any }>(`/api/travels?${queryParams.toString()}`)
 
   return response.data
 }
@@ -139,6 +158,48 @@ const fetchTravelsForCashier = async (
   return { data: response.data.data, amounts: response.data.amounts }
 }
 
+const fetchTravelsForAdmin = async (
+  filters?: TravelFilters
+): Promise<{ data: Travel[]; amounts: { office: number; app: number } }> => {
+  const actingAsCompany = localStorage.getItem('acting_as_company')
+  const queryParams = new URLSearchParams()
+
+  if (filters?.status) {
+    queryParams.append('status', filters.status)
+  }
+
+  if (filters?.startDate) {
+    queryParams.append('startDate', filters.startDate)
+  }
+
+  if (filters?.endDate) {
+    queryParams.append('endDate', filters.endDate)
+  }
+
+  if (filters?.origin_placeId) {
+    queryParams.append('origin_placeId', filters.origin_placeId.toString())
+  }
+
+  if (filters?.destination_placeId) {
+    queryParams.append('destination_placeId', filters.destination_placeId.toString())
+  }
+
+  if (actingAsCompany) {
+    try {
+      const company = JSON.parse(actingAsCompany)
+
+      queryParams.append('companyId', company.id.toString())
+    } catch (error) {
+      console.error('Error parsing acting_as_company:', error)
+    }
+  }
+
+  const url = `/api/travels${queryParams.toString() ? `?${queryParams.toString()}` : ''}`
+  const response = await api.get<{ data: Travel[]; meta: any; amounts: { office: number; app: number } }>(url)
+
+  return { data: response.data.data, amounts: response.data.amounts || { office: 0, app: 0 } }
+}
+
 const fetchTravelsForOwner = async (
   filters?: TravelFilters
 ): Promise<{ data: Travel[]; amounts: { office: number; app: number } }> => {
@@ -178,11 +239,21 @@ const cancelTravelForCashier = async (id: number): Promise<void> => {
   await api.post(`/api/travels/for-cashier/cancel/${id}`)
 }
 
-export const useTravels = (params: { page: number; limit: number; status?: string }) => {
+export const useTravels = (params: UseTravelsParams) => {
   const { companyId } = useAuth()
 
   return useQuery({
-    queryKey: ['travels', companyId, params.page, params.limit, params.status],
+    queryKey: [
+      'travels',
+      companyId,
+      params.page,
+      params.limit,
+      params.status,
+      params.startDate,
+      params.endDate,
+      params.origin_placeId,
+      params.destination_placeId
+    ],
     queryFn: () => fetchTravels(params),
     enabled: !!companyId,
     placeholderData: previousData => previousData,
@@ -243,6 +314,15 @@ export const useTravelsForCashier = (filters?: TravelFilters) => {
     queryKey: ['travelsForCashier', filters],
     queryFn: () => fetchTravelsForCashier(filters),
     retry: 1,
+    staleTime: 30000
+  })
+}
+
+export const useTravelsForAdmin = (filters?: TravelFilters) => {
+  return useQuery({
+    queryKey: ['travelsForAdmin', filters],
+    queryFn: () => fetchTravelsForAdmin(filters),
+    retry: 2,
     staleTime: 30000
   })
 }

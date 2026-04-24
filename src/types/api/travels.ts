@@ -30,6 +30,18 @@ export interface TravelBus {
   createdAt: string
 }
 
+export interface Driver {
+  ci: string
+  name: string
+  phone: string
+}
+
+export interface Assistant {
+  ci: string
+  name: string
+  phone: string
+}
+
 export type TravelType = 'normal' | 'habilitada'
 
 export interface Travel {
@@ -41,25 +53,34 @@ export interface Travel {
   type: TravelType
   travel_status: string
   enabled: boolean
-  bus: TravelBus
-  travelSeats: TravelSeat[]
-  route: Route
-  seatsAvailable?: number
+  lane?: number
   closedAt?: string | null
-  tickets_app_count?: number
-  tickets_office_count?: number
-  tickets_count?: number
-  cash_amount?: string
-  qr_amount?: string
-  app_amount?: string
+  isPaid?: boolean
+  paidAt?: string | null
   total?: string
   total_commission?: string
   net_to_company?: string
-  lane?: number
-  isPaid?: boolean
-  paidAt?: string | null
-  drivers?: any[] | null
-  assistants?: any[] | null
+  cash_amount?: string
+  qr_amount?: string
+  app_amount?: string
+
+  // NUEVOS CAMPOS (opcionales para no romper código existente)
+  totalBusSeats?: number
+  seatsApp?: number
+  seatsOffice?: number
+  seatsAvailable?: number
+  totalSoldSeats?: number
+
+  // CAMPOS EXISTENTES (mantener)
+  tickets_app_count?: number
+  tickets_office_count?: number
+  tickets_count?: number
+
+  bus: TravelBus
+  travelSeats?: TravelSeat[]
+  route: Route
+  drivers?: Driver[] | null
+  assistants?: Assistant[] | null
 }
 
 export interface CreateTravelDto {

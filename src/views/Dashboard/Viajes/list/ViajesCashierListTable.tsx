@@ -404,16 +404,16 @@ const ViajesCashierListTable = () => {
           )
         }
       }),
-      columnHelper.accessor('tickets_app_count', {
+      columnHelper.accessor('seatsApp', {
         header: 'Vendidos App',
         cell: ({ row }) => {
-          const ticketCount = row.original.tickets_app_count || 0
+          const seatsApp = row.original.seatsApp || 0
           const appAmount = parseFloat(row.original.app_amount || '0')
 
           return (
             <div className='flex flex-col'>
               <Typography variant='body2' fontWeight='medium'>
-                {ticketCount} asientos
+                {seatsApp} asientos
               </Typography>
               <Typography variant='caption' color='success.main'>
                 {formatCurrency(appAmount)}
@@ -422,16 +422,16 @@ const ViajesCashierListTable = () => {
           )
         }
       }),
-      columnHelper.accessor('tickets_office_count', {
+      columnHelper.accessor('seatsOffice', {
         header: 'Vendidos Oficina',
         cell: ({ row }) => {
-          const ticketCount = row.original.tickets_office_count || 0
+          const seatsOffice = row.original.seatsOffice || 0
           const officeAmount = parseFloat(row.original.cash_amount || '0') + parseFloat(row.original.qr_amount || '0')
 
           return (
             <div className='flex flex-col'>
               <Typography variant='body2' fontWeight='medium'>
-                {ticketCount} asientos
+                {seatsOffice} asientos
               </Typography>
               <Typography variant='caption' color='info.main'>
                 {formatCurrency(officeAmount)}
@@ -440,23 +440,21 @@ const ViajesCashierListTable = () => {
           )
         }
       }),
-      columnHelper.accessor('tickets_count', {
+      columnHelper.accessor('totalSoldSeats', {
         header: 'Vendido Total',
         cell: ({ row }) => {
-          const totalTickets = (row.original.tickets_app_count || 0) + (row.original.tickets_office_count || 0)
+          const totalSoldSeats = row.original.totalSoldSeats || 0
+          const totalBusSeats = row.original.totalBusSeats || 0
 
           const totalSoldAmount =
             parseFloat(row.original.app_amount || '0') +
             parseFloat(row.original.cash_amount || '0') +
             parseFloat(row.original.qr_amount || '0')
 
-          const seatsAvailable = row.original.seatsAvailable || 0
-          const totalSeats = seatsAvailable + totalTickets
-
           return (
             <div className='flex flex-col'>
               <Typography variant='body2' fontWeight='bold'>
-                {totalTickets} de {totalSeats} asientos
+                {totalSoldSeats} de {totalBusSeats} asientos
               </Typography>
               <Typography variant='caption' color='primary.main' fontWeight='medium'>
                 {formatCurrency(totalSoldAmount)}

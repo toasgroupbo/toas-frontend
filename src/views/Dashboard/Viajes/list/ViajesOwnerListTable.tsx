@@ -32,7 +32,7 @@ import { Pagination } from '@mui/material'
 import CustomTextField from '@core/components/mui/TextField'
 import tableStyles from '@core/styles/table.module.css'
 import { useTravelsForOwner, type TravelFilters } from '@/hooks/useTravels'
-import { useCashierRoutes } from '@/hooks/useCashierTravels'
+import { useOwnerRoutes } from '@/hooks/useCashierTravels'
 import type { Travel } from '@/types/api/travels'
 
 type DateRangePreset = 'today' | 'last_week' | 'this_month' | 'last_month' | 'custom'
@@ -124,25 +124,25 @@ const ViajesOwnerListTable = () => {
   const [customEndDate, setCustomEndDate] = useState<string>('')
   const [destinationPlaceId, setDestinationPlaceId] = useState<string>('')
 
-  const { data: cashierRoutes } = useCashierRoutes()
+  const { data: ownerRoutes } = useOwnerRoutes()
 
-  const cashierPlaceName = useMemo(() => {
-    if (!cashierRoutes || cashierRoutes.length === 0) return null
+  const originPlaceName = useMemo(() => {
+    if (!ownerRoutes || ownerRoutes.length === 0) return null
 
-    return cashierRoutes[0].officeOrigin.place.name
-  }, [cashierRoutes])
+    return ownerRoutes[0].officeOrigin.place.name
+  }, [ownerRoutes])
 
   const originPlaceId = useMemo(() => {
-    if (!cashierRoutes || cashierRoutes.length === 0) return undefined
+    if (!ownerRoutes || ownerRoutes.length === 0) return undefined
 
-    return cashierRoutes[0].officeOrigin.place.id
-  }, [cashierRoutes])
+    return ownerRoutes[0].officeOrigin.place.id
+  }, [ownerRoutes])
 
   const uniqueDestinations = useMemo(() => {
-    if (!cashierRoutes || cashierRoutes.length === 0) return []
+    if (!ownerRoutes || ownerRoutes.length === 0) return []
     const destinationsMap = new Map<number, { id: number; name: string }>()
 
-    cashierRoutes.forEach(route => {
+    ownerRoutes.forEach((route: any) => {
       const place = route.officeDestination.place
 
       if (!destinationsMap.has(place.id)) {
@@ -151,7 +151,7 @@ const ViajesOwnerListTable = () => {
     })
 
     return Array.from(destinationsMap.values())
-  }, [cashierRoutes])
+  }, [ownerRoutes])
 
   const apiFilters = useMemo((): TravelFilters => {
     const dateRange =
@@ -281,18 +281,16 @@ const ViajesOwnerListTable = () => {
           )
         }
       }),
-      columnHelper.accessor('tickets_app_count', {
+      columnHelper.accessor('seatsApp', {
         header: 'Vendidos App',
         cell: ({ row }) => {
-          const ticketCount = row.original.tickets_app_count || 0
+          const seatsApp = row.original.seatsApp || 0
           const appAmount = parseFloat(row.original.app_amount || '0')
-          const seatsPerTicket = 1
-          const seatsSold = ticketCount * seatsPerTicket
 
           return (
             <div className='flex flex-col'>
               <Typography variant='body2' fontWeight='medium'>
-                {ticketCount} asientos
+                {seatsApp} asientos
               </Typography>
               <Typography variant='caption' color='success.main'>
                 {formatCurrency(appAmount)}
@@ -301,18 +299,16 @@ const ViajesOwnerListTable = () => {
           )
         }
       }),
-      columnHelper.accessor('tickets_office_count', {
+      columnHelper.accessor('seatsOffice', {
         header: 'Vendidos Oficina',
         cell: ({ row }) => {
-          const ticketCount = row.original.tickets_office_count || 0
+          const seatsOffice = row.original.seatsOffice || 0
           const officeAmount = parseFloat(row.original.cash_amount || '0') + parseFloat(row.original.qr_amount || '0')
-          const seatsPerTicket = 1
-          const seatsSold = ticketCount * seatsPerTicket
 
           return (
             <div className='flex flex-col'>
               <Typography variant='body2' fontWeight='medium'>
-                {ticketCount} asientos
+                {seatsOffice} asientos
               </Typography>
               <Typography variant='caption' color='info.main'>
                 {formatCurrency(officeAmount)}
@@ -321,23 +317,21 @@ const ViajesOwnerListTable = () => {
           )
         }
       }),
-      columnHelper.accessor('tickets_count', {
+      columnHelper.accessor('totalSoldSeats', {
         header: 'Vendido Total',
         cell: ({ row }) => {
-          const totalTickets = (row.original.tickets_app_count || 0) + (row.original.tickets_office_count || 0)
+          const totalSoldSeats = row.original.totalSoldSeats || 0
+          const totalBusSeats = row.original.totalBusSeats || 0
 
           const totalSoldAmount =
             parseFloat(row.original.app_amount || '0') +
             parseFloat(row.original.cash_amount || '0') +
             parseFloat(row.original.qr_amount || '0')
 
-          const seatsAvailable = row.original.seatsAvailable || 0
-          const totalSeats = seatsAvailable + totalTickets
-
           return (
             <div className='flex flex-col'>
               <Typography variant='body2' fontWeight='bold'>
-                {totalTickets} de {totalSeats} asientos
+                {totalSoldSeats} de {totalBusSeats} asientos
               </Typography>
               <Typography variant='caption' color='primary.main' fontWeight='medium'>
                 {formatCurrency(totalSoldAmount)}
@@ -498,7 +492,7 @@ const ViajesOwnerListTable = () => {
                 Origen
               </Typography>
               <Typography variant='body2' fontWeight='medium' color='primary.main'>
-                {cashierPlaceName || 'Cargando...'}
+                {originPlaceName || 'Cargando...'}
               </Typography>
             </Box>
           </Box>
