@@ -32,6 +32,7 @@ import { useAssignPassengers } from '@/hooks/usePassengers'
 import type { CreateTicketDto, Ticket } from '@/types/api/tickets'
 import { formatDateHeader, formatTime } from './utils/dateFormatters'
 import { equipmentConfig } from './utils/equipmentConfig'
+import { useAuth } from '@/contexts/AuthContext'
 
 // Componente de fila responsive para cada viaje
 interface TravelRowProps {
@@ -40,9 +41,17 @@ interface TravelRowProps {
   onViewTickets: (travelId: number) => void
   onViewImages: (travel: Travel) => void
   onCloseTravel: (travel: Travel) => void
+  isSeller?: boolean
 }
 
-const TravelRow = ({ travel, onSellClick, onViewTickets, onViewImages, onCloseTravel }: TravelRowProps) => {
+const TravelRow = ({
+  travel,
+  onSellClick,
+  onViewTickets,
+  onViewImages,
+  onCloseTravel,
+  isSeller = false
+}: TravelRowProps) => {
   const [equipmentAnchor, setEquipmentAnchor] = React.useState<HTMLElement | null>(null)
   const [selectedEquipment, setSelectedEquipment] = React.useState<{ icon: string; label: string } | null>(null)
   const [selectedEquipmentKey, setSelectedEquipmentKey] = React.useState<string | null>(null)
@@ -400,27 +409,29 @@ const TravelRow = ({ travel, onSellClick, onViewTickets, onViewImages, onCloseTr
               <i className='tabler-photo' style={{ fontSize: '18px' }} />
             </IconButton>
           </Tooltip>
-          <Tooltip title='Cerrar Viaje'>
-            <span>
-              <IconButton
-                onClick={e => {
-                  e.stopPropagation()
-                  onCloseTravel(travel)
-                }}
-                disabled={travel.travel_status !== 'active'}
-                sx={{
-                  width: { xs: 34, md: 38 },
-                  height: { xs: 34, md: 38 },
-                  color: 'error.main',
-                  bgcolor: 'error.lighter',
-                  '&:hover': { bgcolor: 'error.main', color: 'white' },
-                  '&.Mui-disabled': { color: 'action.disabled', bgcolor: 'action.hover' }
-                }}
-              >
-                <i className='tabler-lock' style={{ fontSize: '18px' }} />
-              </IconButton>
-            </span>
-          </Tooltip>
+          {!isSeller && (
+            <Tooltip title='Cerrar Viaje'>
+              <span>
+                <IconButton
+                  onClick={e => {
+                    e.stopPropagation()
+                    onCloseTravel(travel)
+                  }}
+                  disabled={travel.travel_status !== 'active'}
+                  sx={{
+                    width: { xs: 34, md: 38 },
+                    height: { xs: 34, md: 38 },
+                    color: 'error.main',
+                    bgcolor: 'error.lighter',
+                    '&:hover': { bgcolor: 'error.main', color: 'white' },
+                    '&.Mui-disabled': { color: 'action.disabled', bgcolor: 'action.hover' }
+                  }}
+                >
+                  <i className='tabler-lock' style={{ fontSize: '18px' }} />
+                </IconButton>
+              </span>
+            </Tooltip>
+          )}
         </Box>
       </Box>
     </Box>
@@ -454,6 +465,8 @@ const TravelsForSale = () => {
     travel: Travel | null
   }>({ ticket: null, travel: null })
 
+  const { userRole } = useAuth()
+  const isSeller = userRole === 'CASHIER_SELLER'
   const { data: cashierRoutes } = useCashierRoutes()
 
   const cashierPlaceName = useMemo(() => {
@@ -1037,6 +1050,7 @@ const TravelsForSale = () => {
                         setSelectedTravel(t)
                         setOpenConfirmCloseDialog(true)
                       }}
+                      isSeller={isSeller}
                     />
                   ))}
                 </Box>

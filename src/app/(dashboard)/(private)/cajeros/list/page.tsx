@@ -2,7 +2,7 @@
 import Grid from '@mui/material/Grid2'
 import { Typography } from '@mui/material'
 
-import CajerosTable from '@/views/Dashboard/Cajeros/list/CashiersTable.tsx'
+import CajerosTable from '@/views/Dashboard/Cajeros/list/CashiersTable'
 
 const PageCajeros = () => {
   return (

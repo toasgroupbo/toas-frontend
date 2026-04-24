@@ -112,3 +112,32 @@ export const useCashierRoutes = () => {
     retry: false
   })
 }
+
+const searchStaffByCI = async (ci: string) => {
+  const response = await api.get(`/api/travels/for-cashier/staff/${ci}`)
+
+  return response.data
+}
+
+const assignStaffToTravel = async (travelId: number, data: any) => {
+  const response = await api.post(`/api/travels/for-cashier/assign-staff/${travelId}`, data)
+
+  return response.data
+}
+
+export const useSearchStaff = () => {
+  return useMutation({
+    mutationFn: searchStaffByCI
+  })
+}
+
+export const useAssignStaff = () => {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: ({ travelId, data }: { travelId: number; data: any }) => assignStaffToTravel(travelId, data),
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['cashier-travel', variables.travelId] })
+    }
+  })
+}
