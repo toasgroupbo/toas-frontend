@@ -1,4 +1,5 @@
 export interface RouteOffice {
+  name: string
   id: number
   city: string
   url_gps: string

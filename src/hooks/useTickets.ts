@@ -38,7 +38,25 @@ const fetchTicketsByTravel = async (travelId: number): Promise<Ticket[]> => {
   return response.data
 }
 
-// Hooks
+const fetchTicketsByTravelAndCompany = async (travelId: number): Promise<Ticket[]> => {
+  const actingAsCompany = localStorage.getItem('acting_as_company')
+  let url = `/api/tickets/${travelId}`
+
+  if (actingAsCompany) {
+    try {
+      const company = JSON.parse(actingAsCompany)
+
+      url = `/api/tickets/${travelId}?companyId=${company.id}`
+    } catch (error) {
+      console.error('Error parsing acting_as_company:', error)
+    }
+  }
+
+  const response = await api.get<Ticket[]>(url)
+
+  return response.data
+}
+
 export const useTickets = () => {
   const { companyId, hasCompany, isImpersonating } = useAuth()
 
@@ -99,5 +117,16 @@ export const useTicketsByTravel = (travelId: number | null) => {
     queryKey: ['tickets-by-travel', travelId],
     queryFn: () => fetchTicketsByTravel(travelId!),
     enabled: !!travelId
+  })
+}
+
+export const useTicketsByTravelAndCompany = (travelId: number | null) => {
+  const { hasCompany, isImpersonating } = useAuth()
+  const shouldFetch = (hasCompany || isImpersonating) && !!travelId
+
+  return useQuery({
+    queryKey: ['tickets-by-travel-company', travelId],
+    queryFn: () => fetchTicketsByTravelAndCompany(travelId!),
+    enabled: shouldFetch
   })
 }

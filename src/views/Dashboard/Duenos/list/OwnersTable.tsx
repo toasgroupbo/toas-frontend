@@ -118,6 +118,7 @@ const OwnersTable = () => {
   }) => {
     if (!data.email || !data.password) {
       showError('El email y la contraseña son requeridos')
+
       return
     }
 
@@ -168,7 +169,9 @@ const OwnersTable = () => {
 
       setUpdateDialogOpen(false)
       setSelectedOwner(null)
-      showSuccess(data.newPassword ? 'Dueño y contraseña actualizados correctamente' : 'Dueño actualizado correctamente')
+      showSuccess(
+        data.newPassword ? 'Dueño y contraseña actualizados correctamente' : 'Dueño actualizado correctamente'
+      )
     } catch (error: any) {
       console.error('Error al actualizar dueño:', error)
       showError(error?.response?.data?.message || 'Error al actualizar dueño')

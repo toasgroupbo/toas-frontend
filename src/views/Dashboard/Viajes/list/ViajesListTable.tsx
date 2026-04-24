@@ -12,6 +12,11 @@ import CircularProgress from '@mui/material/CircularProgress'
 import Alert from '@mui/material/Alert'
 import ToggleButton from '@mui/material/ToggleButton'
 import ToggleButtonGroup from '@mui/material/ToggleButtonGroup'
+import IconButton from '@mui/material/IconButton'
+import Tooltip from '@mui/material/Tooltip'
+import Dialog from '@mui/material/Dialog'
+import DialogTitle from '@mui/material/DialogTitle'
+import DialogContent from '@mui/material/DialogContent'
 import type { TextFieldProps } from '@mui/material/TextField'
 import classnames from 'classnames'
 import { rankItem } from '@tanstack/match-sorter-utils'
@@ -34,6 +39,8 @@ import CustomTextField from '@core/components/mui/TextField'
 import tableStyles from '@core/styles/table.module.css'
 import { useTravelsForAdmin, type TravelFilters } from '@/hooks/useTravels'
 import type { Travel } from '@/types/api/travels'
+import AdminTicketsTable from '../components/AdminTicketsTable'
+import TravelDetailDialog from '../components/TravelDetailDialog'
 
 type DateRangePreset = 'today' | 'last_week' | 'this_month' | 'last_month' | 'custom'
 
@@ -120,6 +127,10 @@ const ViajesListTable = () => {
   const [customEndDate, setCustomEndDate] = useState<string>('')
   const [originPlaceId, setOriginPlaceId] = useState<string>('')
   const [destinationPlaceId, setDestinationPlaceId] = useState<string>('')
+  const [ticketsDialogOpen, setTicketsDialogOpen] = useState(false)
+  const [selectedTravel, setSelectedTravel] = useState<Travel | null>(null)
+  const [reportDialogOpen, setReportDialogOpen] = useState(false)
+  const [reportTravel, setReportTravel] = useState<Travel | null>(null)
 
   const apiFilters = useMemo((): TravelFilters => {
     const dateRange =
@@ -206,6 +217,26 @@ const ViajesListTable = () => {
     return `Bs. ${numAmount.toFixed(2)}`
   }
 
+  const handleViewTickets = (travel: Travel) => {
+    setSelectedTravel(travel)
+    setTicketsDialogOpen(true)
+  }
+
+  const handleCloseTicketsDialog = () => {
+    setTicketsDialogOpen(false)
+    setSelectedTravel(null)
+  }
+
+  const handleViewReport = (travel: Travel) => {
+    setReportTravel(travel)
+    setReportDialogOpen(true)
+  }
+
+  const handleCloseReportDialog = () => {
+    setReportDialogOpen(false)
+    setReportTravel(null)
+  }
+
   const columns = useMemo<ColumnDef<Travel, any>[]>(
     () => [
       {
@@ -229,6 +260,39 @@ const ViajesListTable = () => {
             }}
           />
         )
+      },
+      {
+        id: 'actions',
+        header: 'Acciones',
+        cell: ({ row }) => (
+          <div className='flex items-center gap-1'>
+            <Tooltip title='Ver Tickets'>
+              <IconButton
+                size='small'
+                onClick={e => {
+                  e.stopPropagation()
+                  handleViewTickets(row.original)
+                }}
+                color='info'
+              >
+                <i className='tabler-ticket' style={{ fontSize: '18px' }} />
+              </IconButton>
+            </Tooltip>
+            <Tooltip title='Ver Reporte / Imprimir'>
+              <IconButton
+                size='small'
+                onClick={e => {
+                  e.stopPropagation()
+                  handleViewReport(row.original)
+                }}
+                color='primary'
+              >
+                <i className='tabler-printer' style={{ fontSize: '18px' }} />
+              </IconButton>
+            </Tooltip>
+          </div>
+        ),
+        enableSorting: false
       },
       columnHelper.accessor('bus', {
         header: 'Bus',
@@ -728,6 +792,39 @@ const ViajesListTable = () => {
           />
         </div>
       </Card>
+
+      <Dialog open={ticketsDialogOpen} onClose={handleCloseTicketsDialog} maxWidth='xl' fullWidth>
+        <DialogTitle>
+          <Box display='flex' alignItems='center' justifyContent='space-between'>
+            <Box display='flex' alignItems='center' gap={2}>
+              <i className='tabler-ticket' style={{ fontSize: '28px', color: 'var(--mui-palette-primary-main)' }} />
+              <Box>
+                <Typography variant='h6' fontWeight={600}>
+                  Tickets del Viaje
+                </Typography>
+                {selectedTravel && (
+                  <Typography variant='caption' color='text.secondary'>
+                    {selectedTravel.route?.officeOrigin?.place?.name} → {selectedTravel.route?.officeDestination?.place?.name} |{' '}
+                    {formatDateTime(selectedTravel.departure_time)}
+                  </Typography>
+                )}
+              </Box>
+            </Box>
+            <IconButton onClick={handleCloseTicketsDialog} size='small'>
+              <i className='tabler-x' style={{ fontSize: '20px' }} />
+            </IconButton>
+          </Box>
+        </DialogTitle>
+        <DialogContent>
+          {selectedTravel && <AdminTicketsTable initialTravelId={selectedTravel.id} />}
+        </DialogContent>
+      </Dialog>
+
+      <TravelDetailDialog
+        open={reportDialogOpen}
+        onClose={handleCloseReportDialog}
+        travel={reportTravel}
+      />
     </Box>
   )
 }

@@ -245,7 +245,9 @@ const SellTicketDialog = ({ open, onClose, onSubmit, isLoading = false, preSelec
 
   return (
     <Dialog open={open} onClose={handleClose} maxWidth='lg' fullWidth fullScreen={isMobile}>
-      <DialogTitle sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', py: { xs: 1.5, sm: 2 } }}>
+      <DialogTitle
+        sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', py: { xs: 1.5, sm: 2 } }}
+      >
         <Box display='flex' alignItems='center' gap={{ xs: 1, sm: 2 }} minWidth={0} flex={1}>
           <i className='tabler-ticket' style={{ fontSize: isMobile ? '20px' : '24px', flexShrink: 0 }} />
           <Typography variant={isMobile ? 'body1' : 'h6'} fontWeight={600} noWrap>
@@ -361,7 +363,12 @@ const SellTicketDialog = ({ open, onClose, onSubmit, isLoading = false, preSelec
             {selectedTravel && (
               <>
                 <Grid item xs={12}>
-                  <Box display='flex' flexDirection={{ xs: 'column', sm: 'row' }} gap={{ xs: 1, sm: 2 }} alignItems={{ xs: 'stretch', sm: 'center' }}>
+                  <Box
+                    display='flex'
+                    flexDirection={{ xs: 'column', sm: 'row' }}
+                    gap={{ xs: 1, sm: 2 }}
+                    alignItems={{ xs: 'stretch', sm: 'center' }}
+                  >
                     <Alert severity='info' icon={<i className='tabler-info-circle' />} sx={{ flex: 1 }}>
                       <Typography variant={isMobile ? 'caption' : 'body2'}>
                         Selecciona los asientos. Total: {selectedSeats.size}

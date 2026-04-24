@@ -11,7 +11,6 @@ import Alert from '@mui/material/Alert'
 import MenuItem from '@mui/material/MenuItem'
 import IconButton from '@mui/material/IconButton'
 import Tooltip from '@mui/material/Tooltip'
-import Button from '@mui/material/Button'
 import classnames from 'classnames'
 import { rankItem } from '@tanstack/match-sorter-utils'
 import {
@@ -31,14 +30,13 @@ import { Pagination } from '@mui/material'
 
 import CustomTextField from '@core/components/mui/TextField'
 import tableStyles from '@core/styles/table.module.css'
-import { useTicketsByTravel, useCancelTicket } from '@/hooks/useTickets'
-import { useCashierTravels } from '@/hooks/useCashierTravels'
+import { useTicketsByTravelAndCompany } from '@/hooks/useTickets'
 import type { Ticket } from '@/types/api/tickets'
-import DebouncedInput from './components/DebouncedInput'
-import TicketDetailDialog from './components/TicketDetailDialog'
-import CancelTicketDialog from './components/CancelTicketDialog'
-import { getStatusColor, getStatusLabel } from './utils/ticketStatus'
-import { formatDate, formatTime } from '../sale/utils/dateFormatters'
+import DebouncedInput from '@/views/Dashboard/Tickets/sold/components/DebouncedInput'
+import TicketDetailDialog from '@/views/Dashboard/Tickets/sold/components/TicketDetailDialog'
+import { getStatusColor, getStatusLabel } from '@/views/Dashboard/Tickets/sold/utils/ticketStatus'
+import { formatDate, formatTime } from '@/views/Dashboard/Tickets/sale/utils/dateFormatters'
+import { printTicketReceipt } from '@/views/Dashboard/Tickets/sold/utils/printReceipt'
 
 type TicketWithActionsType = Ticket & {
   actions?: string
@@ -46,6 +44,7 @@ type TicketWithActionsType = Ticket & {
 
 interface TicketsTableProps {
   initialTravelId?: number | null
+  showCancelButton?: boolean
 }
 
 const fuzzyFilter: FilterFn<any> = (row, columnId, value, addMeta) => {
@@ -58,20 +57,16 @@ const fuzzyFilter: FilterFn<any> = (row, columnId, value, addMeta) => {
 
 const columnHelper = createColumnHelper<TicketWithActionsType>()
 
-const TicketsTable = ({ initialTravelId }: TicketsTableProps) => {
+const TicketsTable = ({ initialTravelId, showCancelButton = false }: TicketsTableProps) => {
   const [currentPage, setCurrentPage] = useState(1)
   const [pageSize, setPageSize] = useState(10)
   const [searchQuery, setSearchQuery] = useState('')
   const [selectedTravelId, setSelectedTravelId] = useState<number | null>(initialTravelId || null)
-  const [openCancelDialog, setOpenCancelDialog] = useState(false)
-  const [ticketToCancel, setTicketToCancel] = useState<Ticket | null>(null)
   const [openDetailDialog, setOpenDetailDialog] = useState(false)
   const [selectedTicket, setSelectedTicket] = useState<Ticket | null>(null)
   const [statusFilter, setStatusFilter] = useState<string>('all')
 
-  const { data: travels, isLoading: travelsLoading } = useCashierTravels()
-  const { data: tickets, isLoading, error } = useTicketsByTravel(selectedTravelId)
-  const cancelTicketMutation = useCancelTicket()
+  const { data: tickets, isLoading, error } = useTicketsByTravelAndCompany(selectedTravelId)
 
   const [data, setData] = useState<Ticket[]>([])
 
@@ -94,25 +89,9 @@ const TicketsTable = ({ initialTravelId }: TicketsTableProps) => {
     return data.filter(ticket => ticket.status === statusFilter)
   }, [data, statusFilter])
 
-  const handleCancelTicket = async () => {
-    if (!ticketToCancel) return
-
-    try {
-      await cancelTicketMutation.mutateAsync(ticketToCancel.id)
-      setOpenCancelDialog(false)
-      setTicketToCancel(null)
-    } catch (error) {
-      console.error('Error cancelling ticket:', error)
-    }
-  }
-
   const handleViewTicket = (ticket: Ticket) => {
     setSelectedTicket(ticket)
     setOpenDetailDialog(true)
-  }
-
-  const isTicketCancellable = (ticket: Ticket) => {
-    return ticket.status !== 'cancelled' && ticket.status !== 'cancelado' && ticket.type === 'IN_OFFICE'
   }
 
   const columns = useMemo<ColumnDef<TicketWithActionsType, any>[]>(
@@ -132,7 +111,7 @@ const TicketsTable = ({ initialTravelId }: TicketsTableProps) => {
       columnHelper.accessor('actions', {
         header: 'Acciones',
         cell: ({ row }) => (
-          <div className='flex items-center gap-2'>
+          <div className='flex items-center gap-1'>
             <Tooltip title='Ver Detalle'>
               <IconButton
                 size='small'
@@ -140,35 +119,22 @@ const TicketsTable = ({ initialTravelId }: TicketsTableProps) => {
                   e.stopPropagation()
                   handleViewTicket(row.original)
                 }}
-                sx={{
-                  color: 'info.main',
-                  '&:hover': { backgroundColor: 'info.light', color: 'white' }
-                }}
+                color='info'
               >
                 <i className='tabler-eye' style={{ fontSize: '18px' }} />
               </IconButton>
             </Tooltip>
-            <Tooltip
-              title={row.original.type === 'IN_APP' ? 'Tickets de aplicación no se pueden cancelar' : 'Cancelar Ticket'}
-            >
-              <span>
-                <IconButton
-                  size='small'
-                  onClick={e => {
-                    e.stopPropagation()
-                    setTicketToCancel(row.original)
-                    setOpenCancelDialog(true)
-                  }}
-                  disabled={!isTicketCancellable(row.original)}
-                  sx={{
-                    color: 'error.main',
-                    '&:hover': { backgroundColor: 'error.light', color: 'white' },
-                    '&.Mui-disabled': { color: 'action.disabled' }
-                  }}
-                >
-                  <i className='tabler-x' style={{ fontSize: '18px' }} />
-                </IconButton>
-              </span>
+            <Tooltip title='Imprimir'>
+              <IconButton
+                size='small'
+                onClick={e => {
+                  e.stopPropagation()
+                  printTicketReceipt(row.original)
+                }}
+                color='primary'
+              >
+                <i className='tabler-printer' style={{ fontSize: '18px' }} />
+              </IconButton>
             </Tooltip>
           </div>
         ),
@@ -343,84 +309,19 @@ const TicketsTable = ({ initialTravelId }: TicketsTableProps) => {
             <i className='tabler-ticket' style={{ fontSize: '32px', color: 'var(--mui-palette-primary-main)' }} />
             <div>
               <Typography variant='h5' fontWeight='bold'>
-                Tickets Vendidos
+                Tickets del Viaje
               </Typography>
               <Typography variant='body2' color='text.secondary'>
                 {initialTravelId
                   ? 'Mostrando tickets del viaje seleccionado'
-                  : 'Selecciona un viaje para ver sus tickets vendidos'}
+                  : 'Selecciona un viaje para ver sus tickets'}
               </Typography>
             </div>
           </Box>
-          {(selectedTravelId || initialTravelId) && tickets && tickets.length > 0 && (
-            <Button variant='outlined' color='primary' startIcon={<i className='tabler-file-download' />}>
-              Descargar PDF
-            </Button>
-          )}
         </Box>
 
         <Box sx={{ padding: '0 20px', display: 'flex', flexDirection: 'column', gap: 2 }}>
           <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap', alignItems: 'flex-start' }}>
-            {!initialTravelId && (
-              <CustomTextField
-                select
-                value={selectedTravelId || ''}
-                onChange={e => {
-                  setSelectedTravelId(e.target.value ? Number(e.target.value) : null)
-                  setCurrentPage(1)
-                }}
-                label='Seleccionar Viaje'
-                sx={{ minWidth: 300 }}
-                InputProps={{
-                  startAdornment: (
-                    <Box sx={{ mr: 1, display: 'flex', alignItems: 'center' }}>
-                      <i className='tabler-bus' />
-                    </Box>
-                  )
-                }}
-              >
-                <MenuItem value=''>
-                  <em>Selecciona un viaje...</em>
-                </MenuItem>
-                {travelsLoading ? (
-                  <MenuItem disabled>
-                    <CircularProgress size={20} />
-                    <span style={{ marginLeft: 8 }}>Cargando viajes...</span>
-                  </MenuItem>
-                ) : travels && travels.length > 0 ? (
-                  travels.map(travel => (
-                    <MenuItem key={travel.id} value={travel.id}>
-                      <Box sx={{ display: 'flex', flexDirection: 'column', width: '100%' }}>
-                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                          <i
-                            className='tabler-flag'
-                            style={{ fontSize: '14px', color: 'var(--mui-palette-success-main)' }}
-                          />
-                          <Typography variant='body2'>
-                            {travel.route.officeOrigin.place?.name || travel.route.officeOrigin.city}
-                          </Typography>
-                          <i className='tabler-arrow-right' style={{ fontSize: '14px' }} />
-                          <i
-                            className='tabler-flag-filled'
-                            style={{ fontSize: '14px', color: 'var(--mui-palette-error-main)' }}
-                          />
-                          <Typography variant='body2'>
-                            {travel.route.officeDestination.place?.name || travel.route.officeDestination.city}
-                          </Typography>
-                        </Box>
-                        <Typography variant='caption' color='text.secondary'>
-                          {formatDate(travel.departure_time)} {formatTime(travel.departure_time)} - {travel.bus.name} (
-                          {travel.bus.plaque})
-                        </Typography>
-                      </Box>
-                    </MenuItem>
-                  ))
-                ) : (
-                  <MenuItem disabled>No hay viajes disponibles</MenuItem>
-                )}
-              </CustomTextField>
-            )}
-
             {(selectedTravelId || initialTravelId) && (
               <>
                 <CustomTextField
@@ -543,7 +444,7 @@ const TicketsTable = ({ initialTravelId }: TicketsTableProps) => {
                         style={{ fontSize: '48px', color: 'var(--mui-palette-text-disabled)' }}
                       />
                       <Typography variant='h6' color='text.secondary'>
-                        Selecciona un viaje para ver sus tickets vendidos
+                        Selecciona un viaje para ver sus tickets
                       </Typography>
                     </Box>
                   </td>
@@ -616,17 +517,6 @@ const TicketsTable = ({ initialTravelId }: TicketsTableProps) => {
           setSelectedTicket(null)
         }}
         ticket={selectedTicket}
-      />
-
-      <CancelTicketDialog
-        open={openCancelDialog}
-        onClose={() => {
-          setOpenCancelDialog(false)
-          setTicketToCancel(null)
-        }}
-        ticket={ticketToCancel}
-        onConfirmCancel={handleCancelTicket}
-        isLoading={cancelTicketMutation.isPending}
       />
     </Box>
   )

@@ -64,20 +64,18 @@ export interface Travel {
   qr_amount?: string
   app_amount?: string
 
-  // NUEVOS CAMPOS (opcionales para no romper código existente)
   totalBusSeats?: number
   seatsApp?: number
   seatsOffice?: number
   seatsAvailable?: number
   totalSoldSeats?: number
 
-  // CAMPOS EXISTENTES (mantener)
   tickets_app_count?: number
   tickets_office_count?: number
   tickets_count?: number
 
   bus: TravelBus
-  travelSeats?: TravelSeat[]
+  travelSeats: TravelSeat[]
   route: Route
   drivers?: Driver[] | null
   assistants?: Assistant[] | null
