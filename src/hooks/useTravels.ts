@@ -291,6 +291,12 @@ export const useCreateTravelForCashier = () => {
     mutationFn: createTravelForCashier,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['travelsForCashier'] })
+
+      queryClient.invalidateQueries({ queryKey: ['cashier-travels'] })
+
+      queryClient.invalidateQueries({ queryKey: ['tickets'] })
+      queryClient.invalidateQueries({ queryKey: ['tickets-by-travel'] })
+      queryClient.invalidateQueries({ queryKey: ['tickets-by-travel-company'] })
     },
     onError: error => {
       console.error('Error creating travel:', error)
@@ -343,6 +349,9 @@ export const useDeleteTravelForCashier = () => {
     mutationFn: deleteTravelForCashier,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['travelsForCashier'] })
+      queryClient.invalidateQueries({ queryKey: ['tickets-by-travel'] })
+      queryClient.invalidateQueries({ queryKey: ['tickets'] })
+      queryClient.invalidateQueries({ queryKey: ['tickets-by-travel-company'] })
     }
   })
 }
@@ -354,6 +363,9 @@ export const useCancelTravelForCashier = () => {
     mutationFn: cancelTravelForCashier,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['travelsForCashier'] })
+      queryClient.invalidateQueries({ queryKey: ['tickets-by-travel'] })
+      queryClient.invalidateQueries({ queryKey: ['tickets'] })
+      queryClient.invalidateQueries({ queryKey: ['tickets-by-travel-company'] })
     }
   })
 }
