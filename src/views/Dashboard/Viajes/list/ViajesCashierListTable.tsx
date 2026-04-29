@@ -266,11 +266,11 @@ const ViajesCashierListTable = () => {
     setDetailTravel(null)
   }
 
-  const handleConfirmCancel = async () => {
+  const handleConfirmCancel = async (password: string) => {
     if (!selectedTravel) return
 
     try {
-      await cancelMutation.mutateAsync(selectedTravel.id)
+      await cancelMutation.mutateAsync({ id: selectedTravel.id, password })
       showSuccess('Viaje cancelado correctamente')
       handleCloseCancelDialog()
     } catch (error: any) {
@@ -533,9 +533,25 @@ const ViajesCashierListTable = () => {
         cell: ({ row }) => {
           if (!row.original.closedAt) return <Typography variant='caption'>-</Typography>
 
+          const date = new Date(row.original.closedAt)
+
+          const fecha = date.toLocaleDateString('es-BO', {
+            timeZone: 'America/La_Paz',
+            year: 'numeric',
+            month: 'short',
+            day: 'numeric'
+          })
+
+          const hora = date.toLocaleTimeString('es-BO', {
+            timeZone: 'America/La_Paz',
+            hour: '2-digit',
+            minute: '2-digit'
+          })
+
           return (
-            <div className='flex flex-col'>
-              <Typography variant='caption'>{formatDateOnly(row.original.closedAt)}</Typography>
+            <div className='flex flex-col items-center'>
+              <Typography variant='caption'>{fecha}</Typography>
+              <Typography variant='caption'>{hora}</Typography>
             </div>
           )
         }

@@ -235,8 +235,8 @@ const deleteTravelForCashier = async (id: number): Promise<void> => {
   await api.delete(`/api/travels/for-cashier/${id}`)
 }
 
-const cancelTravelForCashier = async (id: number): Promise<void> => {
-  await api.post(`/api/travels/for-cashier/cancel/${id}`)
+const cancelTravelForCashier = async ({ id, password }: { id: number; password: string }): Promise<void> => {
+  await api.post(`/api/travels/for-cashier/cancel/${id}`, { password })
 }
 
 export const useTravels = (params: UseTravelsParams) => {

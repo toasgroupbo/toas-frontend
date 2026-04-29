@@ -1,5 +1,7 @@
 'use client'
 
+import { useState } from 'react'
+
 import Dialog from '@mui/material/Dialog'
 import DialogTitle from '@mui/material/DialogTitle'
 import DialogContent from '@mui/material/DialogContent'
@@ -11,17 +13,31 @@ import CircularProgress from '@mui/material/CircularProgress'
 import IconButton from '@mui/material/IconButton'
 import Chip from '@mui/material/Chip'
 
+import CustomTextField from '@core/components/mui/TextField'
 import type { Travel } from '@/types/api/travels'
 
 interface CancelTravelDialogProps {
   open: boolean
   onClose: () => void
-  onConfirm: () => void
+  onConfirm: (password: string) => void
   travel: Travel | null
   isLoading?: boolean
 }
 
 const CancelTravelDialog = ({ open, onClose, onConfirm, travel, isLoading = false }: CancelTravelDialogProps) => {
+  const [password, setPassword] = useState('')
+  const [showPassword, setShowPassword] = useState(false)
+
+  const handleClose = () => {
+    setPassword('')
+    setShowPassword(false)
+    onClose()
+  }
+
+  const handleConfirm = () => {
+    onConfirm(password)
+  }
+
   const formatDateTime = (dateString: string) => {
     const dateWithoutZ = dateString.replace('Z', '')
     const date = new Date(dateWithoutZ)
@@ -36,13 +52,13 @@ const CancelTravelDialog = ({ open, onClose, onConfirm, travel, isLoading = fals
   }
 
   return (
-    <Dialog open={open} onClose={isLoading ? undefined : onClose} maxWidth='sm' fullWidth>
+    <Dialog open={open} onClose={isLoading ? undefined : handleClose} maxWidth='sm' fullWidth>
       <DialogTitle sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <div className='flex items-center gap-2'>
           <i className='tabler-ban' style={{ fontSize: '24px', color: 'var(--mui-palette-warning-main)' }} />
           <span>Cancelar Viaje</span>
         </div>
-        <IconButton onClick={onClose} disabled={isLoading}>
+        <IconButton onClick={handleClose} disabled={isLoading}>
           <i className='tabler-x' />
         </IconButton>
       </DialogTitle>
@@ -60,7 +76,8 @@ const CancelTravelDialog = ({ open, onClose, onConfirm, travel, isLoading = fals
               bgcolor: 'action.hover',
               display: 'flex',
               flexDirection: 'column',
-              gap: 2
+              gap: 2,
+              mb: 3
             }}
           >
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
@@ -87,17 +104,38 @@ const CancelTravelDialog = ({ open, onClose, onConfirm, travel, isLoading = fals
             </Box>
           </Box>
         )}
+
+        <Box sx={{ mt: 2 }}>
+          <Typography variant='body2' color='text.secondary' sx={{ mb: 1 }}>
+            Para confirmar, ingrese su contraseña:
+          </Typography>
+          <CustomTextField
+            fullWidth
+            type={showPassword ? 'text' : 'password'}
+            label='Contraseña'
+            value={password}
+            onChange={e => setPassword(e.target.value)}
+            disabled={isLoading}
+            InputProps={{
+              endAdornment: (
+                <IconButton onClick={() => setShowPassword(!showPassword)} edge='end' size='small'>
+                  <i className={showPassword ? 'tabler-eye-off' : 'tabler-eye'} style={{ fontSize: '18px' }} />
+                </IconButton>
+              )
+            }}
+          />
+        </Box>
       </DialogContent>
 
       <DialogActions sx={{ px: 3, pb: 3 }}>
-        <Button onClick={onClose} variant='outlined' color='secondary' disabled={isLoading}>
+        <Button onClick={handleClose} variant='outlined' color='secondary' disabled={isLoading}>
           No, mantener
         </Button>
         <Button
-          onClick={onConfirm}
+          onClick={handleConfirm}
           variant='contained'
           color='warning'
-          disabled={isLoading}
+          disabled={isLoading || !password.trim()}
           startIcon={isLoading ? <CircularProgress size={20} /> : <i className='tabler-ban' />}
         >
           {isLoading ? 'Cancelando...' : 'Sí, cancelar viaje'}
