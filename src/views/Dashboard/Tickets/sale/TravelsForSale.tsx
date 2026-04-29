@@ -298,36 +298,57 @@ const TravelRow = ({
             minWidth: { xs: 70, md: 85 }
           }}
         >
+          <Typography
+            variant='caption'
+            color='text.secondary'
+            fontWeight={600}
+            sx={{ fontSize: { xs: '0.7rem', md: '0.8rem' } }}
+          >
+            Precios
+          </Typography>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-            <Typography variant='caption' color='text.secondary' sx={{ fontSize: { xs: '0.65rem', md: '0.75rem' } }}>
+            <Typography variant='caption' color='text.secondary'>
               P1:
             </Typography>
-            <Typography
-              variant='body2'
-              fontWeight={700}
-              color='success.main'
-              sx={{ fontSize: { xs: '0.8rem', md: '0.9rem' } }}
-            >
+            <Typography variant='body2' fontWeight={700} color='success.main'>
               Bs.{parseFloat(travel.price_deck_1).toFixed(0)}
             </Typography>
           </Box>
           {travel.bus?.decks && (
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-              <Typography variant='caption' color='text.secondary' sx={{ fontSize: { xs: '0.65rem', md: '0.75rem' } }}>
+              <Typography variant='caption' color='text.secondary'>
                 P2:
               </Typography>
-              <Typography
-                variant='body2'
-                fontWeight={700}
-                color='success.main'
-                sx={{ fontSize: { xs: '0.8rem', md: '0.9rem' } }}
-              >
+              <Typography variant='body2' fontWeight={700} color='success.main'>
                 Bs.{parseFloat(travel.price_deck_2).toFixed(0)}
               </Typography>
             </Box>
           )}
         </Box>
-
+        <Box
+          sx={{
+            display: 'flex',
+            flexDirection: 'column',
+            justifyContent: 'center',
+            alignItems: 'center',
+            minWidth: { xs: 60, md: 75 }
+          }}
+        >
+          <Typography
+            variant='caption'
+            color='text.secondary'
+            fontWeight={600}
+            sx={{ fontSize: { xs: '0.7rem', md: '0.8rem' } }}
+          >
+            Vendidos
+          </Typography>
+          <Typography variant='h6' fontWeight={700} color='info.main' sx={{ fontSize: { xs: '1rem', md: '1.1rem' } }}>
+            {travel.totalSoldSeats || 0}
+          </Typography>
+          <Typography variant='caption' color='text.secondary' sx={{ fontSize: { xs: '0.6rem', md: '0.7rem' } }}>
+            de {travel.totalBusSeats || 0}
+          </Typography>
+        </Box>
         <Box
           sx={{
             display: 'flex',
@@ -360,15 +381,14 @@ const TravelRow = ({
             </Typography>
           </Box>
           <Typography variant='caption' color='text.secondary' sx={{ fontSize: { xs: '0.6rem', md: '0.75rem' } }}>
-            asientos
+            Asientos Libres
           </Typography>
         </Box>
 
         <Box
           sx={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(2, 1fr)',
-            gap: 0.5,
+            display: 'flex',
+            gap: 1,
             ml: 'auto'
           }}
         >
@@ -389,6 +409,7 @@ const TravelRow = ({
               <i className='tabler-ticket' style={{ fontSize: '18px' }} />
             </IconButton>
           </Tooltip>
+
           <Tooltip title='Ver Imágenes'>
             <IconButton
               onClick={e => {
@@ -406,6 +427,7 @@ const TravelRow = ({
               <i className='tabler-photo' style={{ fontSize: '18px' }} />
             </IconButton>
           </Tooltip>
+
           {!isSeller && (
             <Tooltip title='Cerrar Viaje'>
               <span>

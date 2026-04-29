@@ -178,7 +178,7 @@ const ViajesOwnerListTable = () => {
         : getDateRange(datePreset)
 
     return {
-      status: statusFilter !== 'all' ? (statusFilter as 'active' | 'closed') : undefined,
+      status: statusFilter !== 'all' ? (statusFilter as 'active' | 'closed' | 'cancelled') : undefined,
       startDate: dateRange.startDate,
       endDate: dateRange.endDate,
       origin_placeId: originPlaceId ? Number(originPlaceId) : undefined,
@@ -410,9 +410,25 @@ const ViajesOwnerListTable = () => {
         cell: ({ row }) => {
           if (!row.original.closedAt) return <Typography variant='caption'>-</Typography>
 
+          const date = new Date(row.original.closedAt)
+
+          const fecha = date.toLocaleDateString('es-BO', {
+            timeZone: 'America/La_Paz',
+            year: 'numeric',
+            month: 'short',
+            day: 'numeric'
+          })
+
+          const hora = date.toLocaleTimeString('es-BO', {
+            timeZone: 'America/La_Paz',
+            hour: '2-digit',
+            minute: '2-digit'
+          })
+
           return (
-            <div className='flex flex-col'>
-              <Typography variant='caption'>{formatDateOnly(row.original.closedAt)}</Typography>
+            <div className='flex flex-col items-center'>
+              <Typography variant='caption'>{fecha}</Typography>
+              <Typography variant='caption'>{hora}</Typography>
             </div>
           )
         }
@@ -563,6 +579,7 @@ const ViajesOwnerListTable = () => {
             <MenuItem value='all'>Todos</MenuItem>
             <MenuItem value='active'>Activo</MenuItem>
             <MenuItem value='closed'>Cerrado</MenuItem>
+            <MenuItem value='cancelled'>Cancelado</MenuItem>
           </CustomTextField>
         </div>
 
