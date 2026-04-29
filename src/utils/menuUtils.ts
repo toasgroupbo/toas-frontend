@@ -31,7 +31,8 @@ export const filterMenuByRole = (
           'Reporte de Usuarios',
           'Usuarios de Aplicación',
           'CONFIGURACIÓN',
-          'Configuraciones y términos de uso'
+          'Configuraciones y términos de uso',
+          'Lugares'
         ]
 
         if (isImpersonating) {

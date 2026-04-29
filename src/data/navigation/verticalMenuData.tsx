@@ -31,6 +31,11 @@ const verticalMenuData = (): VerticalMenuDataType[] => [
     icon: 'tabler-shield',
     href: '/roles/list'
   },
+  {
+    label: 'Lugares',
+    icon: 'tabler-map-pin',
+    href: '/lugares/list'
+  },
 
   //REPORTES GLOBALES
 

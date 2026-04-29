@@ -60,6 +60,8 @@ const AssignPassengersDialog = ({
   const [duplicateCIError, setDuplicateCIError] = useState<string | null>(null)
   const [searchError, setSearchError] = useState<string | null>(null)
   const [foundPassenger, setFoundPassenger] = useState<Passenger | null>(null)
+  const [editingSeat, setEditingSeat] = useState<string | null>(null)
+  const [editedName, setEditedName] = useState('')
 
   const customerId = (ticket as any)?.buyer?.id || null
   const searchPassengerMutation = useSearchPassengerByCI()
@@ -112,6 +114,8 @@ const AssignPassengersDialog = ({
       setNewPassengerCI('')
       setDuplicateCIError(null)
       setSearchError(null)
+      setEditingSeat(null)
+      setEditedName('')
     }
   }, [open, ticket])
 
@@ -151,6 +155,42 @@ const AssignPassengersDialog = ({
       ...prev,
       [seatNumber]: null
     }))
+  }
+
+  const handleStartEdit = (seatNumber: string) => {
+    const passenger = assignments[seatNumber]
+
+    if (passenger) {
+      setEditingSeat(seatNumber)
+      setEditedName(passenger.fullName)
+    }
+  }
+
+  const handleSaveEdit = () => {
+    if (editingSeat && editedName.trim()) {
+      setAssignments(prev => {
+        const currentPassenger = prev[editingSeat]
+
+        if (currentPassenger) {
+          return {
+            ...prev,
+            [editingSeat]: {
+              ...currentPassenger,
+              fullName: editedName.trim()
+            }
+          }
+        }
+
+        return prev
+      })
+      setEditingSeat(null)
+      setEditedName('')
+    }
+  }
+
+  const handleCancelEdit = () => {
+    setEditingSeat(null)
+    setEditedName('')
   }
 
   const handleCreatePassenger = () => {
@@ -264,22 +304,67 @@ const AssignPassengersDialog = ({
 
                       <Box display='flex' alignItems='center' gap={1} width={{ xs: '100%', sm: 'auto' }}>
                         {assignedPassenger ? (
-                          <Chip
-                            label={`${assignedPassenger.fullName} - CI: ${assignedPassenger.ci}`}
-                            color='success'
-                            variant='outlined'
-                            size={isMobile ? 'small' : 'medium'}
-                            onDelete={() => handleRemoveAssignment(seat.seatNumber)}
-                            deleteIcon={<i className='tabler-x' />}
-                            sx={{
-                              maxWidth: { xs: '100%', sm: 'none' },
-                              '& .MuiChip-label': {
-                                overflow: 'hidden',
-                                textOverflow: 'ellipsis',
-                                whiteSpace: 'nowrap'
-                              }
-                            }}
-                          />
+                          editingSeat === seat.seatNumber ? (
+                            <Box display='flex' alignItems='center' gap={0.5} width='100%'>
+                              <CustomTextField
+                                size='small'
+                                value={editedName}
+                                onChange={e => setEditedName(e.target.value)}
+                                placeholder='Nombre del pasajero'
+                                autoFocus
+                                sx={{ minWidth: { xs: 120, sm: 180 } }}
+                                onKeyDown={e => {
+                                  if (e.key === 'Enter') {
+                                    e.preventDefault()
+                                    handleSaveEdit()
+                                  }
+
+                                  if (e.key === 'Escape') {
+                                    handleCancelEdit()
+                                  }
+                                }}
+                              />
+                              <IconButton size='small' color='success' onClick={handleSaveEdit}>
+                                <i className='tabler-check' style={{ fontSize: '16px' }} />
+                              </IconButton>
+                              <IconButton size='small' color='error' onClick={handleCancelEdit}>
+                                <i className='tabler-x' style={{ fontSize: '16px' }} />
+                              </IconButton>
+                            </Box>
+                          ) : (
+                            <Box display='flex' alignItems='center' gap={0.5}>
+                              <Chip
+                                label={`${assignedPassenger.fullName} - CI: ${assignedPassenger.ci}`}
+                                color='success'
+                                variant='outlined'
+                                size={isMobile ? 'small' : 'medium'}
+                                sx={{
+                                  maxWidth: { xs: '100%', sm: 'none' },
+                                  '& .MuiChip-label': {
+                                    overflow: 'hidden',
+                                    textOverflow: 'ellipsis',
+                                    whiteSpace: 'nowrap'
+                                  }
+                                }}
+                              />
+                              <IconButton
+                                size='small'
+                                color='primary'
+                                onClick={() => handleStartEdit(seat.seatNumber)}
+                                disabled={isLoading}
+                              >
+                                <i className='tabler-pencil' style={{ fontSize: '16px' }} />
+                              </IconButton>
+                              <IconButton
+                                size='small'
+                                color='error'
+                                onClick={() => handleRemoveAssignment(seat.seatNumber)}
+                                disabled={isLoading}
+                              >
+                                <i className='tabler-trash' style={{ fontSize: '16px' }} />
+                              </IconButton>
+                            </Box>
+                          )
                         ) : (
                           <Button
                             variant='outlined'
