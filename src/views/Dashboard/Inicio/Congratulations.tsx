@@ -42,10 +42,10 @@ const WelcomeFleetCard = () => {
   const officeName = user?.office?.place?.name
 
   return (
-    <Card>
-      <Grid container>
-        <Grid size={{ xs: 12, sm: 8 }}>
-          <CardContent>
+    <Card className='h-full'>
+      <Grid container className='h-full'>
+        <Grid size={{ xs: 12, sm: 8 }} className='flex'>
+          <CardContent className='flex flex-col justify-center'>
             <Typography variant='h5' className='mbe-4'>
               {greeting} {userName}!
             </Typography>
