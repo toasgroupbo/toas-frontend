@@ -15,6 +15,12 @@ export const filterMenuByRole = (
 ): VerticalMenuDataType[] => {
   return menuItems.filter((item: any) => {
     if (item.label === 'Inicio') {
+      const cashierRoles = ['CASHIER', 'CASHIER_TRIPS', 'CASHIER_SELLER', 'CASHIER_OWNER']
+
+      if (cashierRoles.includes(userRole)) {
+        return false
+      }
+
       return true
     }
 

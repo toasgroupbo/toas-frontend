@@ -1,5 +1,7 @@
 'use client'
 
+import { useMemo } from 'react'
+
 // MUI Imports
 import Card from '@mui/material/Card'
 import CardContent from '@mui/material/CardContent'
@@ -24,7 +26,7 @@ type StatItem = {
   color: ThemeColor
 }
 
-const statItems: StatItem[] = [
+const allStatItems: StatItem[] = [
   {
     key: 'companies',
     title: 'Empresas',
@@ -66,13 +68,30 @@ const statItems: StatItem[] = [
 interface SummaryCardsProps {
   data?: DashboardSummary
   isLoading?: boolean
+  isCompanyMode?: boolean
 }
 
-const SummaryCards = ({ data, isLoading }: SummaryCardsProps) => {
+const SummaryCards = ({ data, isLoading, isCompanyMode = false }: SummaryCardsProps) => {
+  // Filter out 'companies' stat when in company mode
+  const statItems = useMemo(() => {
+    if (isCompanyMode) {
+      return allStatItems.filter(item => item.key !== 'companies')
+    }
+
+    return allStatItems
+  }, [isCompanyMode])
+
+  // Calculate grid size based on number of items
+  // 6 items: xs:6 sm:4 md:2 (fits 6 in a row on md)
+  // 5 items: xs:6 sm:4 md:2.4 (fits 5 in a row on md)
+  const gridSize = isCompanyMode
+    ? { xs: 6, sm: 4, md: 2.4 }
+    : { xs: 6, sm: 4, md: 2 }
+
   return (
     <Grid container spacing={4}>
       {statItems.map(item => (
-        <Grid key={item.key} size={{ xs: 6, sm: 4, md: 2 }}>
+        <Grid key={item.key} size={gridSize}>
           <Card
             sx={{
               transition: 'transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out',

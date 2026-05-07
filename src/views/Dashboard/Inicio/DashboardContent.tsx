@@ -28,7 +28,7 @@ const DashboardContent = () => {
     <Grid container spacing={4}>
       {/* Summary Cards Row */}
       <Grid size={{ xs: 12 }}>
-        <SummaryCards data={data?.summary} isLoading={isLoading} />
+        <SummaryCards data={data?.summary} isLoading={isLoading} isCompanyMode={data?.isCompanyMode} />
       </Grid>
 
       {/* Upcoming Departures Table */}

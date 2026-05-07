@@ -1,5 +1,6 @@
+// Summary for admin dashboard (includes companies count)
 export interface DashboardSummary {
-  companies: number
+  companies?: number
   owners: number
   buses: number
   offices: number
@@ -36,6 +37,7 @@ export interface DashboardBus {
   model: string
   decks: boolean
   createdAt: string
+  capacity?: number // Total de asientos del bus (pedir al backend)
 }
 
 export interface DashboardPlace {
@@ -69,9 +71,9 @@ export interface DashboardCompany {
   id: number
   name: string
   logo: string
-  commission: number
-  hours_before_closing: number
-  createdAt: string
+  commission?: number
+  hours_before_closing?: number
+  createdAt?: string
 }
 
 export interface DashboardTravel {
@@ -95,7 +97,10 @@ export interface DashboardTravel {
   app_amount: string
   tickets_app_count: number
   tickets_office_count: number
+  tickets_office_qr_count?: number // Vendidos oficina QR (pedir al backend)
+  tickets_office_cash_count?: number // Vendidos oficina efectivo (pedir al backend)
   tickets_count: number
+  total_seats?: number // Total de asientos disponibles para este viaje (pedir al backend)
   drivers: DashboardDriver[] | null
   assistants: DashboardDriver[] | null
   bus: DashboardBus
@@ -103,9 +108,29 @@ export interface DashboardTravel {
   company: DashboardCompany
 }
 
+// Admin dashboard data (Super Admin)
 export interface DashboardData {
   summary: DashboardSummary
   travels_today: TravelsToday
   depositos: Depositos
   travels: DashboardTravel[]
+}
+
+// Company dashboard data (Company Admin or Acting as Company)
+export interface CompanyDashboardData {
+  company: DashboardCompany
+  summary: DashboardSummary
+  travels_today: TravelsToday
+  deposits: Depositos
+  travels: DashboardTravel[]
+}
+
+// Unified dashboard data type
+export interface UnifiedDashboardData {
+  company?: DashboardCompany
+  summary: DashboardSummary
+  travels_today: TravelsToday
+  depositos: Depositos
+  travels: DashboardTravel[]
+  isCompanyMode: boolean
 }

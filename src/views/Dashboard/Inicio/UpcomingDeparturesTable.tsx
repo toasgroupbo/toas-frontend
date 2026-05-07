@@ -10,6 +10,7 @@ import Typography from '@mui/material/Typography'
 import ToggleButton from '@mui/material/ToggleButton'
 import ToggleButtonGroup from '@mui/material/ToggleButtonGroup'
 import Box from '@mui/material/Box'
+import Tooltip from '@mui/material/Tooltip'
 import { DataGrid, type GridColDef, type GridRenderCellParams } from '@mui/x-data-grid'
 
 // Types
@@ -102,7 +103,7 @@ const UpcomingDeparturesTable = ({ data, isLoading }: UpcomingDeparturesTablePro
     {
       field: 'company',
       headerName: 'EMPRESA',
-      width: 150,
+      width: 130,
       valueGetter: (_, row) => row.company?.name ?? '',
       renderCell: (params: GridRenderCellParams) => (
         <Typography variant='body2' className='font-medium'>
@@ -114,7 +115,7 @@ const UpcomingDeparturesTable = ({ data, isLoading }: UpcomingDeparturesTablePro
       field: 'route',
       headerName: 'RUTA',
       flex: 1,
-      minWidth: 200,
+      minWidth: 180,
       valueGetter: (_, row) =>
         row.route ? `${row.route.officeOrigin?.place?.name ?? ''} - ${row.route.officeDestination?.place?.name ?? ''}` : '',
       renderCell: (params: GridRenderCellParams) => (
@@ -126,7 +127,7 @@ const UpcomingDeparturesTable = ({ data, isLoading }: UpcomingDeparturesTablePro
     {
       field: 'lane',
       headerName: 'CARRIL',
-      width: 80,
+      width: 70,
       align: 'center',
       headerAlign: 'center',
       renderCell: (params: GridRenderCellParams) => (
@@ -136,52 +137,116 @@ const UpcomingDeparturesTable = ({ data, isLoading }: UpcomingDeparturesTablePro
     {
       field: 'bus',
       headerName: 'BUS',
-      width: 100,
+      width: 90,
       valueGetter: (_, row) => row.bus?.name ?? '',
       renderCell: (params: GridRenderCellParams) => (
         <Typography variant='body2'>{params.value}</Typography>
       )
     },
     {
-      field: 'tickets_app_count',
-      headerName: 'APP',
+      field: 'free_seats',
+      headerName: 'LIBRES',
       width: 70,
       align: 'center',
       headerAlign: 'center',
+      description: 'Asientos libres (requiere capacidad del bus)',
+      valueGetter: (_, row) => {
+        // TODO: Calcular cuando el backend devuelva total_seats o bus.capacity
+        const totalSeats = row.total_seats ?? row.bus?.capacity ?? null
+
+        if (totalSeats === null) return '-'
+
+        return totalSeats - row.tickets_count
+      },
       renderCell: (params: GridRenderCellParams) => (
-        <Typography variant='body2' color='info.main' className='font-medium'>
-          {params.value}
-        </Typography>
+        <Tooltip title='Asientos Libres'>
+          <Typography variant='body2' color='primary.main' className='font-medium'>
+            {params.value}
+          </Typography>
+        </Tooltip>
+      )
+    },
+    {
+      field: 'tickets_app_count',
+      headerName: 'VEND. APP',
+      width: 90,
+      align: 'center',
+      headerAlign: 'center',
+      description: 'Vendidos por App',
+      renderCell: (params: GridRenderCellParams) => (
+        <Tooltip title='Vendidos App'>
+          <Typography variant='body2' color='info.main' className='font-medium'>
+            {params.value}
+          </Typography>
+        </Tooltip>
+      )
+    },
+    {
+      field: 'tickets_office_qr_count',
+      headerName: 'OFIC. QR',
+      width: 80,
+      align: 'center',
+      headerAlign: 'center',
+      description: 'Vendidos en Oficina por QR',
+      valueGetter: (_, row) => row.tickets_office_qr_count ?? '-',
+      renderCell: (params: GridRenderCellParams) => (
+        <Tooltip title='Vendidos Oficina QR'>
+          <Typography variant='body2' color='secondary.main' className='font-medium'>
+            {params.value}
+          </Typography>
+        </Tooltip>
+      )
+    },
+    {
+      field: 'tickets_office_cash_count',
+      headerName: 'OFIC. EFEC.',
+      width: 90,
+      align: 'center',
+      headerAlign: 'center',
+      description: 'Vendidos en Oficina en Efectivo',
+      valueGetter: (_, row) => row.tickets_office_cash_count ?? '-',
+      renderCell: (params: GridRenderCellParams) => (
+        <Tooltip title='Vendidos Oficina Efectivo'>
+          <Typography variant='body2' color='warning.main' className='font-medium'>
+            {params.value}
+          </Typography>
+        </Tooltip>
       )
     },
     {
       field: 'tickets_office_count',
-      headerName: 'OFICINA',
-      width: 80,
+      headerName: 'TOTAL OFIC.',
+      width: 95,
       align: 'center',
       headerAlign: 'center',
+      description: 'Total Vendidos en Oficina',
       renderCell: (params: GridRenderCellParams) => (
-        <Typography variant='body2' color='warning.main' className='font-medium'>
-          {params.value}
-        </Typography>
+        <Tooltip title='Total Vendidos Oficina'>
+          <Typography variant='body2' color='warning.main' className='font-medium'>
+            {params.value}
+          </Typography>
+        </Tooltip>
       )
     },
     {
       field: 'tickets_count',
-      headerName: 'TOTAL',
-      width: 70,
+      headerName: 'TOTAL VEND.',
+      width: 100,
       align: 'center',
       headerAlign: 'center',
+      description: 'Total Vendidos',
       renderCell: (params: GridRenderCellParams) => (
-        <Typography variant='body2' className='font-bold'>
-          {params.value}
-        </Typography>
+        <Tooltip title='Total Vendidos'>
+          <Typography variant='body2' className='font-bold'>
+            {params.value}
+          </Typography>
+        </Tooltip>
       )
     },
     {
       field: 'total',
       headerName: 'TOTAL BS',
-      width: 110,
+      width: 100,
       align: 'right',
       headerAlign: 'right',
       renderCell: (params: GridRenderCellParams) => (
@@ -193,7 +258,7 @@ const UpcomingDeparturesTable = ({ data, isLoading }: UpcomingDeparturesTablePro
     {
       field: 'travel_status',
       headerName: 'ESTADO',
-      width: 120,
+      width: 110,
       align: 'center',
       headerAlign: 'center',
       renderCell: (params: GridRenderCellParams) => {
