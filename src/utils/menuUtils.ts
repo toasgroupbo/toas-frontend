@@ -123,15 +123,13 @@ export const filterMenuByRole = (
         ROUTE: 'Rutas',
         OWNER: 'Dueños',
         CASHIER: 'Cajeros',
-        TRAVEL: 'Salidas',
         TICKET: 'Venta de Tickets',
-        OFFICE: 'Oficinas',
-        TRIP: 'Viajes'
+        OFFICE: 'Oficinas'
       }
 
       const sectionToResourcesMap: Record<string, string[]> = {
         'MÓDULO ADMINISTRACIÓN': ['COMPANY', 'USER', 'ROL'],
-        'GESTIÓN DE EMPRESA': ['BUS', 'ROUTE', 'OWNER', 'CASHIER', 'OFFICE', 'TRIP'],
+        'GESTIÓN DE EMPRESA': ['BUS', 'ROUTE', 'OWNER', 'CASHIER', 'OFFICE'],
         OPERACIONES: ['TRAVEL', 'TICKET']
       }
 
@@ -146,6 +144,11 @@ export const filterMenuByRole = (
 
       if (item.label === 'OPERACIONES' || item.label === 'Salidas') {
         return isImpersonating
+      }
+
+      // Caso especial: Viajes usa TRAVEL con permiso READ
+      if (item.label === 'Viajes') {
+        return hasPermission(userPermissions, 'TRAVEL', 'READ')
       }
 
       if (item.isSection) {

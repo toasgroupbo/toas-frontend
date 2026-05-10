@@ -109,7 +109,7 @@ const verticalMenuData = (): VerticalMenuDataType[] => [
     icon: 'tabler-road',
     href: '/viajes/list',
     permission: {
-      resource: 'TRIP',
+      resource: 'TRAVEL',
       action: 'READ'
     }
   },

@@ -44,7 +44,9 @@ const HIDDEN_COMPANY_RESOURCES: ResourceType[] = [
   'TRAVEL',
   'CASHIER',
   'FILE',
-  'PAYMENTS'
+  'PAYMENTS',
+  'TRANSACTION',
+  'DASHBOARD'
 ]
 
 // Permisos completos que se asignan a los recursos ocultos
@@ -245,13 +247,19 @@ const RoleDialog = ({ open, onClose, onSubmit, isLoading, existingRoles = [], ro
       HIDDEN_COMPANY_RESOURCES.forEach(hiddenResource => {
         const existingIndex = permissions.findIndex(p => p.resourse === hiddenResource)
 
-        // Para CASHIER agregar READ_CASHIERS además de los permisos completos
+        // Permisos específicos por recurso
         const resourcePermissions: string[] =
           hiddenResource === 'CASHIER'
             ? [...FULL_PERMISSIONS, 'READ_CASHIERS']
             : hiddenResource === 'PAYMENTS'
               ? ['RECHARGE']
-              : [...FULL_PERMISSIONS]
+              : hiddenResource === 'TRANSACTION'
+                ? ['PAY']
+                : hiddenResource === 'TRAVEL'
+                  ? ['READ', 'READ_ADMIN']
+                  : hiddenResource === 'DASHBOARD'
+                    ? ['READ_ADMIN', 'READ_COMPANY']
+                    : [...FULL_PERMISSIONS]
 
         if (existingIndex !== -1) {
           permissions[existingIndex].permissions = resourcePermissions as PermissionType[]

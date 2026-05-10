@@ -35,7 +35,7 @@ const ROUTE_RESOURCE_MAP: Record<string, { resource: string; permission: string 
   '/arqueo/list': { resource: 'TICKET', permission: 'READ' },
   '/salidas/list': { resource: 'TRAVEL', permission: 'READ' },
   '/oficinas/list': { resource: 'OFFICE', permission: 'READ' },
-  '/viajes/list': { resource: 'TRIP', permission: 'READ' }
+  '/viajes/list': { resource: 'TRAVEL', permission: 'READ' }
 }
 
 const COMPANY_ROUTES = ['/buses', '/rutas', '/duenos', '/cajeros', '/tickets', '/arqueo', '/salidas', '/oficinas', '/viajes']

@@ -40,6 +40,8 @@ export type ResourceType =
   | 'FILE'
   | 'TICKET'
   | 'PAYMENTS'
+  | 'TRANSACTION'
+  | 'DASHBOARD'
 
 export type PermissionType =
   | 'CREATE'
@@ -51,6 +53,10 @@ export type PermissionType =
   | 'CONFIRM'
   | 'CANCEL'
   | 'RECHARGE'
+  | 'PAY'
+  | 'READ_ADMIN'
+  | 'READ_COMPANY'
+  | 'READ_CASHIERS'
 
 export const RESOURCES: Array<{ value: ResourceType; label: string }> = [
   /* { value: 'USER', label: 'Usuarios' }, */
