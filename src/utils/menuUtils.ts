@@ -33,7 +33,7 @@ export const filterMenuByRole = (
           'Roles',
           'REPORTES GLOBALES',
           'Reporte de Depósitos',
-          'Reporte de Ventas',
+          'Reporte de Comisiones',
           'Reporte de Usuarios',
           'Usuarios de Aplicación',
           'CONFIGURACIÓN',
@@ -62,7 +62,7 @@ export const filterMenuByRole = (
           'Roles',
           'REPORTES GLOBALES',
           'Reporte de Depósitos',
-          'Reporte de Ventas',
+          'Reporte de Comisiones',
           'Reporte de Usuarios',
           'Usuarios de Aplicación'
         ]
@@ -173,7 +173,7 @@ export const filterMenuByRole = (
         }
       }
 
-      const reportLabels = ['Reporte de Depósitos', 'Reporte de Ventas', 'Reporte de Usuarios', 'REPORTES GLOBALES']
+      const reportLabels = ['Reporte de Depósitos', 'Reporte de Comisiones', 'Reporte de Usuarios', 'REPORTES GLOBALES']
 
       if (reportLabels.includes(item.label) || item.label?.startsWith('Reporte')) {
         return false

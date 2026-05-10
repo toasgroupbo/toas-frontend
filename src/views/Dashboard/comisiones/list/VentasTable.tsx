@@ -28,7 +28,7 @@ import type { CompanySalesReport } from '@/types/api/companySales'
 import CustomTextField from '@core/components/mui/TextField'
 import AppReactDatepicker from '@/libs/styles/AppReactDatepicker'
 import tableStyles from '@core/styles/table.module.css'
-import SalesChartModal from '@/views/Dashboard/ventas/components/SalesChartModal'
+import SalesChartModal from '@/views/Dashboard/comisiones/components/SalesChartModal'
 
 const fuzzyFilter: FilterFn<any> = (row, columnId, value, addMeta) => {
   const itemRank = rankItem(row.getValue(columnId), value)

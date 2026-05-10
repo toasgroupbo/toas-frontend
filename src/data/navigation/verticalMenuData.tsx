@@ -49,9 +49,9 @@ const verticalMenuData = (): VerticalMenuDataType[] => [
     href: '/reportes/depositos'
   },
   {
-    label: 'Reporte de Ventas',
+    label: 'Reporte de Comisiones',
     icon: 'tabler-chart-line',
-    href: '/reportes/ventas'
+    href: '/reportes/comisiones'
   },
 
   /* {
