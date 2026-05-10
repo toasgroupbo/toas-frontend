@@ -1,8 +1,19 @@
-// Component Imports
-import Grid from '@mui/material/Grid2'
-import { Typography } from '@mui/material'
+'use client'
 
-import VentasTable from '@/views/Dashboard/comisiones/list/VentasTable'
+// Component Imports
+import dynamic from 'next/dynamic'
+
+import Grid from '@mui/material/Grid2'
+import { Typography, CircularProgress, Box } from '@mui/material'
+
+const VentasTable = dynamic(() => import('@/views/Dashboard/comisiones/list/VentasTable'), {
+  ssr: false,
+  loading: () => (
+    <Box display='flex' justifyContent='center' alignItems='center' minHeight='400px'>
+      <CircularProgress />
+    </Box>
+  )
+})
 
 const PageVentas = () => {
   return (
