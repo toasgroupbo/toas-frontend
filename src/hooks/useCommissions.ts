@@ -4,7 +4,6 @@ import { api } from '@/libs/axios'
 import { useAuth } from '@/contexts/AuthContext'
 import type { Commission, CommissionsFilters, UpdateCommissionPayload } from '@/types/api/commissions'
 
-// API Functions
 const fetchCommissions = async (
   filters: CommissionsFilters,
   isCompanyMode: boolean,
@@ -28,7 +27,6 @@ const fetchCommissions = async (
     params.search = filters.search
   }
 
-  // Use different endpoint for company mode and add companyId as query param
   const endpoint = isCompanyMode ? '/api/commissions/company' : '/api/commissions'
 
   if (isCompanyMode && companyId) {
@@ -37,7 +35,6 @@ const fetchCommissions = async (
 
   const response = await api.get<Commission[] | { data: Commission[] }>(endpoint, { params })
 
-  // Handle both array response and object with data property
   if (Array.isArray(response.data)) {
     return response.data
   } else if (response.data && typeof response.data === 'object' && 'data' in response.data) {
@@ -67,7 +64,6 @@ const updateCommission = async (id: number, payload: UpdateCommissionPayload): P
   return response.data
 }
 
-// Hook
 export const useCommissions = (filters: CommissionsFilters = {}) => {
   const { isImpersonating, actingAsCompany, isCompanyAdmin, user } = useAuth()
   const isCompanyMode = isImpersonating || isCompanyAdmin
@@ -89,15 +85,12 @@ export const useCommissions = (filters: CommissionsFilters = {}) => {
   }
 }
 
-// Update Commission Hook
 export const useUpdateCommission = () => {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: ({ id, payload }: { id: number; payload: UpdateCommissionPayload }) =>
-      updateCommission(id, payload),
+    mutationFn: ({ id, payload }: { id: number; payload: UpdateCommissionPayload }) => updateCommission(id, payload),
     onSuccess: () => {
-      // Invalidate all commission queries
       queryClient.invalidateQueries({ queryKey: ['commissions'] })
     }
   })

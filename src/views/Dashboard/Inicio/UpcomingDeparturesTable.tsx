@@ -2,7 +2,6 @@
 
 import { useState, useMemo } from 'react'
 
-// MUI Imports
 import Card from '@mui/material/Card'
 import CardHeader from '@mui/material/CardHeader'
 import Chip from '@mui/material/Chip'
@@ -13,34 +12,52 @@ import Box from '@mui/material/Box'
 import Tooltip from '@mui/material/Tooltip'
 import { DataGrid, type GridColDef, type GridRenderCellParams } from '@mui/x-data-grid'
 
-// Types
-import type { DashboardTravel } from '@/types/api/dashboard'
-
 type StatusFilter = 'all' | 'active' | 'closed' | 'cancelled'
 
 interface UpcomingDeparturesTableProps {
-  data?: DashboardTravel[]
+  data?: any[]
   isLoading?: boolean
 }
 
-const formatDate = (dateString: string): string => {
+const formatDateToBolivia = (dateString: string): string => {
   const date = new Date(dateString)
-  const options: Intl.DateTimeFormatOptions = {
-    weekday: 'short',
-    day: 'numeric',
-    month: 'short'
-  }
 
-  return date.toLocaleDateString('es-BO', options)
+  const boliviaTime = new Date(date.toLocaleString('en-US', { timeZone: 'America/La_Paz' }))
+
+  const weekdays = ['domingo', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado']
+
+  const months = [
+    'enero',
+    'febrero',
+    'marzo',
+    'abril',
+    'mayo',
+    'junio',
+    'julio',
+    'agosto',
+    'septiembre',
+    'octubre',
+    'noviembre',
+    'diciembre'
+  ]
+
+  const weekday = weekdays[boliviaTime.getDay()]
+  const day = boliviaTime.getDate()
+  const month = months[boliviaTime.getMonth()]
+
+  return `${weekday} ${day} de ${month}`
 }
 
-const formatTime = (dateString: string): string => {
+const formatTimeToBolivia = (dateString: string): string => {
   const date = new Date(dateString)
 
-  return date.toLocaleTimeString('es-BO', {
+  const boliviaTime = new Date(date.toLocaleString('en-US', { timeZone: 'America/La_Paz' }))
+
+  return boliviaTime.toLocaleTimeString('es-BO', {
     hour: '2-digit',
     minute: '2-digit',
-    hour12: true
+    hour12: true,
+    timeZone: 'America/La_Paz'
   })
 }
 
@@ -53,7 +70,7 @@ const getStatusConfig = (status: string) => {
     case 'cancelled':
       return { label: 'CANCELADO', color: 'error' as const }
     default:
-      return { label: status.toUpperCase(), color: 'default' as const }
+      return { label: status?.toUpperCase() || 'DESCONOCIDO', color: 'default' as const }
   }
 }
 
@@ -69,9 +86,12 @@ const UpcomingDeparturesTable = ({ data, isLoading }: UpcomingDeparturesTablePro
   const filteredData = useMemo(() => {
     if (!data) return []
 
-    const sorted = [...data].sort(
-      (a, b) => new Date(a.departure_time).getTime() - new Date(b.departure_time).getTime()
-    )
+    const sorted = [...data].sort((a, b) => {
+      const dateA = new Date(a.departure_time)
+      const dateB = new Date(b.departure_time)
+
+      return dateA.getTime() - dateB.getTime()
+    })
 
     if (statusFilter === 'all') return sorted
 
@@ -80,30 +100,29 @@ const UpcomingDeparturesTable = ({ data, isLoading }: UpcomingDeparturesTablePro
 
   const columns: GridColDef[] = [
     {
-      field: 'departure_time',
+      field: 'fecha',
       headerName: 'FECHA',
-      width: 120,
+      width: 180,
+      valueGetter: (_, row) => row.departure_time,
       renderCell: (params: GridRenderCellParams) => (
-        <Typography variant='body2' className='whitespace-nowrap'>
-          {formatDate(params.value as string)}
-        </Typography>
+        <Typography variant='body2'>{formatDateToBolivia(params.value as string)}</Typography>
       )
     },
     {
-      field: 'time',
+      field: 'hora',
       headerName: 'HORA',
       width: 90,
       valueGetter: (_, row) => row.departure_time,
       renderCell: (params: GridRenderCellParams) => (
-        <Typography variant='body2' className='whitespace-nowrap font-medium'>
-          {formatTime(params.value as string)}
+        <Typography variant='body2' className='font-medium'>
+          {formatTimeToBolivia(params.value as string)}
         </Typography>
       )
     },
     {
-      field: 'company',
+      field: 'empresa',
       headerName: 'EMPRESA',
-      width: 130,
+      width: 150,
       valueGetter: (_, row) => row.company?.name ?? '',
       renderCell: (params: GridRenderCellParams) => (
         <Typography variant='body2' className='font-medium'>
@@ -112,24 +131,23 @@ const UpcomingDeparturesTable = ({ data, isLoading }: UpcomingDeparturesTablePro
       )
     },
     {
-      field: 'route',
+      field: 'ruta',
       headerName: 'RUTA',
       flex: 1,
-      minWidth: 180,
+      minWidth: 200,
       valueGetter: (_, row) =>
-        row.route ? `${row.route.officeOrigin?.place?.name ?? ''} - ${row.route.officeDestination?.place?.name ?? ''}` : '',
-      renderCell: (params: GridRenderCellParams) => (
-        <Typography variant='body2' className='whitespace-nowrap'>
-          {params.value}
-        </Typography>
-      )
+        row.route
+          ? `${row.route.officeOrigin?.place?.name ?? ''} - ${row.route.officeDestination?.place?.name ?? ''}`
+          : '',
+      renderCell: (params: GridRenderCellParams) => <Typography variant='body2'>{params.value}</Typography>
     },
     {
-      field: 'lane',
+      field: 'carril',
       headerName: 'CARRIL',
-      width: 70,
+      width: 80,
       align: 'center',
       headerAlign: 'center',
+      valueGetter: (_, row) => row.lane ?? '',
       renderCell: (params: GridRenderCellParams) => (
         <Chip label={params.value} size='small' variant='outlined' color='primary' />
       )
@@ -137,29 +155,27 @@ const UpcomingDeparturesTable = ({ data, isLoading }: UpcomingDeparturesTablePro
     {
       field: 'bus',
       headerName: 'BUS',
-      width: 90,
+      width: 120,
       valueGetter: (_, row) => row.bus?.name ?? '',
-      renderCell: (params: GridRenderCellParams) => (
-        <Typography variant='body2'>{params.value}</Typography>
-      )
+      renderCell: (params: GridRenderCellParams) => <Typography variant='body2'>{params.value}</Typography>
     },
     {
-      field: 'free_seats',
-      headerName: 'LIBRES',
-      width: 70,
+      field: 'asientos_libres',
+      headerName: 'ASIENTOS LIBRES',
+      width: 130,
       align: 'center',
       headerAlign: 'center',
-      description: 'Asientos libres (requiere capacidad del bus)',
       valueGetter: (_, row) => {
-        // TODO: Calcular cuando el backend devuelva total_seats o bus.capacity
         const totalSeats = row.total_seats ?? row.bus?.capacity ?? null
 
-        if (totalSeats === null) return '-'
+        if (totalSeats === null) return 'N/D'
 
-        return totalSeats - row.tickets_count
+        const freeSeats = totalSeats - row.tickets_count
+
+        return freeSeats >= 0 ? freeSeats : 0
       },
       renderCell: (params: GridRenderCellParams) => (
-        <Tooltip title='Asientos Libres'>
+        <Tooltip title='Asientos disponibles'>
           <Typography variant='body2' color='primary.main' className='font-medium'>
             {params.value}
           </Typography>
@@ -167,14 +183,14 @@ const UpcomingDeparturesTable = ({ data, isLoading }: UpcomingDeparturesTablePro
       )
     },
     {
-      field: 'tickets_app_count',
-      headerName: 'VEND. APP',
-      width: 90,
+      field: 'vendidos_app',
+      headerName: 'VENDIDOS APP',
+      width: 120,
       align: 'center',
       headerAlign: 'center',
-      description: 'Vendidos por App',
+      valueGetter: (_, row) => row.tickets_app_count ?? 0,
       renderCell: (params: GridRenderCellParams) => (
-        <Tooltip title='Vendidos App'>
+        <Tooltip title='Boletos vendidos por App'>
           <Typography variant='body2' color='info.main' className='font-medium'>
             {params.value}
           </Typography>
@@ -182,15 +198,13 @@ const UpcomingDeparturesTable = ({ data, isLoading }: UpcomingDeparturesTablePro
       )
     },
     {
-      field: 'tickets_office_qr_count',
-      headerName: 'OFIC. QR',
-      width: 80,
+      field: 'vendidos_qr',
+      headerName: 'VENDIDOS QR',
+      width: 120,
       align: 'center',
       headerAlign: 'center',
-      description: 'Vendidos en Oficina por QR',
-      valueGetter: (_, row) => row.tickets_office_qr_count ?? '-',
       renderCell: (params: GridRenderCellParams) => (
-        <Tooltip title='Vendidos Oficina QR'>
+        <Tooltip title='Boletos vendidos por QR'>
           <Typography variant='body2' color='secondary.main' className='font-medium'>
             {params.value}
           </Typography>
@@ -198,15 +212,14 @@ const UpcomingDeparturesTable = ({ data, isLoading }: UpcomingDeparturesTablePro
       )
     },
     {
-      field: 'tickets_office_cash_count',
-      headerName: 'OFIC. EFEC.',
-      width: 90,
+      field: 'vendidos_efectivo',
+      headerName: 'VENDIDOS OFICINA EFECTIVO',
+      width: 180,
       align: 'center',
       headerAlign: 'center',
-      description: 'Vendidos en Oficina en Efectivo',
-      valueGetter: (_, row) => row.tickets_office_cash_count ?? '-',
+      valueGetter: (_, row) => row.tickets_office_cash_count ?? 0,
       renderCell: (params: GridRenderCellParams) => (
-        <Tooltip title='Vendidos Oficina Efectivo'>
+        <Tooltip title='Boletos vendidos en efectivo'>
           <Typography variant='body2' color='warning.main' className='font-medium'>
             {params.value}
           </Typography>
@@ -214,29 +227,14 @@ const UpcomingDeparturesTable = ({ data, isLoading }: UpcomingDeparturesTablePro
       )
     },
     {
-      field: 'tickets_office_count',
-      headerName: 'TOTAL OFIC.',
-      width: 95,
+      field: 'total_vendidos',
+      headerName: 'TOTAL VENDIDOS',
+      width: 130,
       align: 'center',
       headerAlign: 'center',
-      description: 'Total Vendidos en Oficina',
+      valueGetter: (_, row) => row.tickets_count ?? 0,
       renderCell: (params: GridRenderCellParams) => (
-        <Tooltip title='Total Vendidos Oficina'>
-          <Typography variant='body2' color='warning.main' className='font-medium'>
-            {params.value}
-          </Typography>
-        </Tooltip>
-      )
-    },
-    {
-      field: 'tickets_count',
-      headerName: 'TOTAL VEND.',
-      width: 100,
-      align: 'center',
-      headerAlign: 'center',
-      description: 'Total Vendidos',
-      renderCell: (params: GridRenderCellParams) => (
-        <Tooltip title='Total Vendidos'>
+        <Tooltip title='Total de boletos vendidos'>
           <Typography variant='body2' className='font-bold'>
             {params.value}
           </Typography>
@@ -244,23 +242,12 @@ const UpcomingDeparturesTable = ({ data, isLoading }: UpcomingDeparturesTablePro
       )
     },
     {
-      field: 'total',
-      headerName: 'TOTAL BS',
-      width: 100,
-      align: 'right',
-      headerAlign: 'right',
-      renderCell: (params: GridRenderCellParams) => (
-        <Typography variant='body2' color='success.main' className='font-bold'>
-          Bs {parseFloat(params.value as string).toLocaleString('es-BO')}
-        </Typography>
-      )
-    },
-    {
-      field: 'travel_status',
+      field: 'estado',
       headerName: 'ESTADO',
       width: 110,
       align: 'center',
       headerAlign: 'center',
+      valueGetter: (_, row) => row.travel_status ?? '',
       renderCell: (params: GridRenderCellParams) => {
         const statusConfig = getStatusConfig(params.value as string)
 

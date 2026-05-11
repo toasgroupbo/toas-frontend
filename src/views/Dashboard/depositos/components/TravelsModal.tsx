@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useMemo, useEffect } from 'react'
+import { useState, useMemo } from 'react'
 
 import {
   Dialog,
@@ -15,7 +15,6 @@ import {
   Alert,
   MenuItem,
   Grid,
-  TablePagination,
   Pagination,
   Chip
 } from '@mui/material'
@@ -25,8 +24,7 @@ import {
   flexRender,
   getCoreRowModel,
   useReactTable,
-  getSortedRowModel,
-  getPaginationRowModel
+  getSortedRowModel
 } from '@tanstack/react-table'
 
 import { useTravelsForAdmin } from '@/hooks/useDeposits'
@@ -74,7 +72,6 @@ const TravelsModal = ({ open, onClose, company }: TravelsModalProps) => {
 
   const { data: places } = usePlaces()
 
-  // Build filters - always filter by closed status
   const filters = useMemo(() => {
     return {
       companyId: Number(company.id),
@@ -89,6 +86,13 @@ const TravelsModal = ({ open, onClose, company }: TravelsModalProps) => {
 
   const { data: travels, isLoading, error } = useTravelsForAdmin(filters)
 
+  const paginatedData = useMemo(() => {
+    return travels.slice((currentPage - 1) * pageSize, currentPage * pageSize)
+  }, [travels, currentPage, pageSize])
+
+  const totalRecords = travels.length
+  const totalPages = Math.ceil(totalRecords / pageSize)
+
   const handleOpenTransactionDialog = (travel: Travel) => {
     setSelectedTravel(travel)
     setTransactionDialogOpen(true)
@@ -101,9 +105,10 @@ const TravelsModal = ({ open, onClose, company }: TravelsModalProps) => {
 
   const columns = useMemo<any[]>(
     () => [
-      columnHelper.accessor('bus.plaque', {
+      {
+        accessorKey: 'bus.plaque',
         header: 'Bus',
-        cell: ({ row }) => (
+        cell: ({ row }: any) => (
           <Box>
             <Typography variant='body2' fontWeight={500}>
               {row.original.bus.plaque}
@@ -113,11 +118,11 @@ const TravelsModal = ({ open, onClose, company }: TravelsModalProps) => {
             </Typography>
           </Box>
         )
-      }),
-
-      columnHelper.accessor('tickets_count', {
+      },
+      {
+        accessorKey: 'tickets_count',
         header: 'Tickets',
-        cell: ({ row }) => (
+        cell: ({ row }: any) => (
           <Box>
             <Typography variant='body2'>Total: {row.original.tickets_count}</Typography>
             <Typography variant='caption' color='text.secondary'>
@@ -125,22 +130,36 @@ const TravelsModal = ({ open, onClose, company }: TravelsModalProps) => {
             </Typography>
           </Box>
         )
-      }),
-      columnHelper.accessor('app_amount', {
-        header: 'Monto App',
-        cell: ({ row }) => <Typography variant='body2'>{formatCurrency(row.original.app_amount)}</Typography>
-      }),
-      columnHelper.accessor('total_commission', {
-        header: 'Comisión Total',
-        cell: ({ row }) => (
+      },
+
+      {
+        accessorKey: 'total_commission',
+        header: 'Comisión de la App',
+        cell: ({ row }: any) => (
           <Typography variant='body2' color='success.main'>
             {formatCurrency(row.original.total_commission)}
           </Typography>
         )
-      }),
-      columnHelper.accessor('travel_status', {
+      },
+      {
+        accessorKey: 'qr_amount',
+        header: 'Monto QR',
+        cell: ({ row }: any) => <Typography variant='body2'>{formatCurrency(row.original.qr_amount)}</Typography>
+      },
+      {
+        accessorKey: 'net_to_company',
+        header: 'Total a Pagar',
+        cell: ({ row }: any) => (
+          <Typography variant='body2' fontWeight={600} color='primary.main'>
+            {formatCurrency(row.original.net_to_company)}
+          </Typography>
+        )
+      },
+
+      /*       {
+        accessorKey: 'travel_status',
         header: 'Estado',
-        cell: ({ row }) => (
+        cell: ({ row }: any) => (
           <Chip
             label={row.original.travel_status}
             color={
@@ -153,10 +172,11 @@ const TravelsModal = ({ open, onClose, company }: TravelsModalProps) => {
             size='small'
           />
         )
-      }),
-      columnHelper.accessor('isPaid', {
+      }, */
+      {
+        accessorKey: 'isPaid',
         header: 'Pagado',
-        cell: ({ row }) => {
+        cell: ({ row }: any) => {
           const isPaid = row.original.isPaid
           const transactionStatus = row.original.transaction?.status
 
@@ -174,10 +194,11 @@ const TravelsModal = ({ open, onClose, company }: TravelsModalProps) => {
 
           return <Chip label='Pendiente' color='warning' size='small' />
         }
-      }),
-      columnHelper.accessor('bus.owner.name', {
+      },
+      {
+        accessorKey: 'bus.owner.name',
         header: 'Propietario / Datos Bancarios',
-        cell: ({ row }) => {
+        cell: ({ row }: any) => {
           const owner = row.original.bus.owner
           const bankAccount = owner.bankAccount
 
@@ -194,7 +215,6 @@ const TravelsModal = ({ open, onClose, company }: TravelsModalProps) => {
                   <Typography variant='caption' display='block' color='primary.main' sx={{ mt: 0.5 }}>
                     Cuenta: {bankAccount.account}
                   </Typography>
-
                   <Typography variant='caption' display='block' color='text.secondary'>
                     CI: {bankAccount.documentNumber}
                   </Typography>
@@ -203,11 +223,11 @@ const TravelsModal = ({ open, onClose, company }: TravelsModalProps) => {
             </Box>
           )
         }
-      }),
-      columnHelper.display({
+      },
+      {
         id: 'actions',
         header: 'Acciones',
-        cell: ({ row }) => {
+        cell: ({ row }: any) => {
           const isPaid = row.original.isPaid
           const transactionStatus = row.original.transaction?.status
 
@@ -244,23 +264,16 @@ const TravelsModal = ({ open, onClose, company }: TravelsModalProps) => {
           return null
         },
         enableSorting: false
-      })
+      }
     ],
     []
   )
 
   const table = useReactTable({
-    data: travels || [],
+    data: paginatedData,
     columns,
     getCoreRowModel: getCoreRowModel(),
-    getSortedRowModel: getSortedRowModel(),
-    getPaginationRowModel: getPaginationRowModel(),
-    state: {
-      pagination: {
-        pageIndex: currentPage - 1,
-        pageSize
-      }
-    }
+    getSortedRowModel: getSortedRowModel()
   })
 
   return (
@@ -281,7 +294,6 @@ const TravelsModal = ({ open, onClose, company }: TravelsModalProps) => {
         </DialogTitle>
 
         <DialogContent>
-          {/* Filters */}
           <Box mb={3}>
             <Grid container spacing={2}>
               <Grid item xs={12} sm={6} md={3}>
@@ -356,7 +368,6 @@ const TravelsModal = ({ open, onClose, company }: TravelsModalProps) => {
             </Grid>
           </Box>
 
-          {/* Table */}
           {isLoading ? (
             <Box display='flex' justifyContent='center' alignItems='center' minHeight='300px'>
               <CircularProgress />
@@ -384,9 +395,9 @@ const TravelsModal = ({ open, onClose, company }: TravelsModalProps) => {
                               >
                                 {flexRender(header.column.columnDef.header, header.getContext())}
                                 {{
-                                  asc: ' 🔼',
-                                  desc: ' 🔽'
-                                }[header.column.getIsSorted() as string] ?? null}
+                                  asc: <i className='tabler-chevron-up text-xl' />,
+                                  desc: <i className='tabler-chevron-down text-xl' />
+                                }[header.column.getIsSorted() as 'asc' | 'desc'] ?? null}
                               </div>
                             )}
                           </th>
@@ -416,29 +427,25 @@ const TravelsModal = ({ open, onClose, company }: TravelsModalProps) => {
                 </table>
               </div>
 
-              <Box display='flex' justifyContent='space-between' alignItems='center' mt={3}>
-                <TablePagination
-                  component='div'
-                  count={table.getFilteredRowModel().rows.length}
-                  page={currentPage - 1}
-                  onPageChange={(_, page) => setCurrentPage(page + 1)}
-                  rowsPerPage={pageSize}
-                  onRowsPerPageChange={e => {
-                    setPageSize(Number(e.target.value))
-                    setCurrentPage(1)
-                  }}
-                  rowsPerPageOptions={[5, 10, 25, 50]}
-                  labelRowsPerPage='Filas por página:'
-                />
-                <Pagination
-                  count={Math.ceil(table.getFilteredRowModel().rows.length / pageSize)}
-                  page={currentPage}
-                  onChange={(_, page) => setCurrentPage(page)}
-                  color='primary'
-                  variant='outlined'
-                  shape='rounded'
-                />
-              </Box>
+              <div className='flex justify-between items-center flex-wrap mt-3 gap-2'>
+                <Typography color='text.disabled'>
+                  {totalRecords > 0
+                    ? `Mostrando ${(currentPage - 1) * pageSize + 1} a ${Math.min(currentPage * pageSize, totalRecords)} de ${totalRecords} viajes`
+                    : 'Sin datos'}
+                </Typography>
+                {totalPages > 1 && (
+                  <Pagination
+                    shape='rounded'
+                    color='primary'
+                    variant='tonal'
+                    count={totalPages}
+                    page={currentPage}
+                    onChange={(_, page) => setCurrentPage(page)}
+                    showFirstButton
+                    showLastButton
+                  />
+                )}
+              </div>
             </>
           )}
         </DialogContent>

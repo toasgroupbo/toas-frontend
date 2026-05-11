@@ -9,9 +9,7 @@ import Button from '@mui/material/Button'
 import CircularProgress from '@mui/material/CircularProgress'
 import Alert from '@mui/material/Alert'
 import MenuItem from '@mui/material/MenuItem'
-import TablePagination from '@mui/material/TablePagination'
 import Pagination from '@mui/material/Pagination'
-import IconButton from '@mui/material/IconButton'
 import Tooltip from '@mui/material/Tooltip'
 import Avatar from '@mui/material/Avatar'
 import classnames from 'classnames'
@@ -20,8 +18,7 @@ import {
   flexRender,
   getCoreRowModel,
   useReactTable,
-  getSortedRowModel,
-  getPaginationRowModel
+  getSortedRowModel
 } from '@tanstack/react-table'
 import type { ColumnDef, FilterFn } from '@tanstack/react-table'
 import { rankItem } from '@tanstack/match-sorter-utils'
@@ -68,7 +65,6 @@ const formatDateTime = (dateString: string) => {
 }
 
 const formatPeriodKey = (periodKey: string) => {
-  // periodKey format: "2026-05" -> "Mayo 2026"
   const [year, month] = periodKey.split('-')
   const date = new Date(parseInt(year), parseInt(month) - 1, 1)
 
@@ -92,14 +88,12 @@ const VentasTable = () => {
   const [searchTerm, setSearchTerm] = useState('')
   const [debouncedSearch, setDebouncedSearch] = useState('')
 
-  // State for dialog
   const [selectedCommission, setSelectedCommission] = useState<Commission | null>(null)
   const [dialogOpen, setDialogOpen] = useState(false)
   const [chartModalOpen, setChartModalOpen] = useState(false)
   const [voucherModalOpen, setVoucherModalOpen] = useState(false)
   const [selectedVoucher, setSelectedVoucher] = useState<{ url: string; companyName: string } | null>(null)
 
-  // Debounce search term
   useEffect(() => {
     const timer = setTimeout(() => {
       setDebouncedSearch(searchTerm)
@@ -108,7 +102,6 @@ const VentasTable = () => {
     return () => clearTimeout(timer)
   }, [searchTerm])
 
-  // Build filters
   const filters = useMemo(() => {
     return {
       isPaid: isPaidFilter === 'all' ? undefined : isPaidFilter === 'paid',
@@ -120,7 +113,13 @@ const VentasTable = () => {
 
   const { data: commissions, isLoading, error } = useCommissions(filters)
 
-  // Handle actions
+  const paginatedData = useMemo(() => {
+    return commissions.slice((currentPage - 1) * pageSize, currentPage * pageSize)
+  }, [commissions, currentPage, pageSize])
+
+  const totalRecords = commissions.length
+  const totalPages = Math.ceil(totalRecords / pageSize)
+
   const handleUpdateClick = (commission: Commission) => {
     setSelectedCommission(commission)
     setDialogOpen(true)
@@ -145,10 +144,8 @@ const VentasTable = () => {
     if (!selectedCommission) return
 
     try {
-      // Format paid amount to match backend regex: ^\d+(\.\d{1,2})?$
       const formattedAmount = parseFloat(paidAmount).toFixed(2)
 
-      // Upload image first if there's a new file
       let voucherUrl = existingVoucher || ''
 
       if (voucherFile) {
@@ -162,10 +159,8 @@ const VentasTable = () => {
         }
       }
 
-      // Convert paidAt to ISO string for backend
       const paidAtISO = paidAt ? new Date(paidAt).toISOString() : new Date().toISOString()
 
-      // Update commission with the voucher URL and paidAt
       await updateMutation.mutateAsync({
         id: selectedCommission.id,
         payload: {
@@ -191,7 +186,7 @@ const VentasTable = () => {
 
   const columns = useMemo<ColumnDef<Commission, any>[]>(() => {
     const baseColumns: ColumnDef<Commission, any>[] = [
-      columnHelper.display({
+      {
         id: 'nro',
         header: 'NRO',
         cell: ({ row }) => (
@@ -199,16 +194,17 @@ const VentasTable = () => {
             {(currentPage - 1) * pageSize + row.index + 1}
           </Typography>
         )
-      }),
-      columnHelper.accessor('period_key', {
+      },
+      {
+        accessorKey: 'period_key',
         header: 'CUOTA CORRESPONDIENTE',
         cell: ({ row }) => (
           <Typography variant='body2' fontWeight={500}>
             {formatPeriodKey(row.original.period_key)}
           </Typography>
         )
-      }),
-      columnHelper.display({
+      },
+      {
         id: 'logo',
         header: 'LOGO',
         cell: ({ row }) => {
@@ -222,40 +218,45 @@ const VentasTable = () => {
             </Avatar>
           )
         }
-      }),
-      columnHelper.accessor('company.name', {
+      },
+      {
+        accessorKey: 'company.name',
         header: 'EMPRESA',
         cell: ({ row }) => (
           <Typography fontWeight={500} color='text.primary'>
             {row.original.company.name}
           </Typography>
         )
-      }),
-      columnHelper.accessor('tickets_app_count_total', {
+      },
+      {
+        accessorKey: 'tickets_app_count_total',
         header: 'CANT. VENTAS APP',
         cell: ({ row }) => (
           <Typography variant='body2' align='center'>
             {row.original.tickets_app_count_total}
           </Typography>
         )
-      }),
-      columnHelper.accessor('commission_app_total', {
+      },
+      {
+        accessorKey: 'commission_app_total',
         header: 'COMISION APP',
         cell: ({ row }) => (
           <Typography variant='body2' align='right'>
             {formatCurrency(row.original.commission_app_total)}
           </Typography>
         )
-      }),
-      columnHelper.accessor('commission_company', {
+      },
+      {
+        accessorKey: 'commission_company',
         header: 'COMISION EMPRESA',
         cell: ({ row }) => (
           <Typography variant='body2' fontWeight={600} color='primary' align='right'>
             {formatCurrency(row.original.commission_company)}
           </Typography>
         )
-      }),
-      columnHelper.accessor('paidAt', {
+      },
+      {
+        accessorKey: 'paidAt',
         header: 'FECHA PAGO',
         cell: ({ row }) => {
           if (!row.original.paidAt) {
@@ -272,84 +273,65 @@ const VentasTable = () => {
             </Typography>
           )
         }
-      }),
-      columnHelper.accessor('paid', {
+      },
+      {
+        accessorKey: 'paid',
         header: 'PAGADO',
         cell: ({ row }) => (
           <Typography variant='body2' align='right' fontWeight={600}>
             {formatCurrency(row.original.paid)}
           </Typography>
         )
-      })
+      }
     ]
 
-    // Only add COMPROBANTE column if user is not COMPANY_ADMIN
     if (!isCompanyAdmin) {
-      baseColumns.push(
-        columnHelper.display({
-          id: 'actions',
-          header: 'COMPROBANTE',
-          cell: ({ row }) => {
-            const hasVoucher = !!row.original.voucher
+      baseColumns.push({
+        id: 'actions',
+        header: 'COMPROBANTE',
+        cell: ({ row }) => {
+          const hasVoucher = !!row.original.voucher
 
-            return (
-              <Box display='flex' gap={1} justifyContent='center'>
-                {hasVoucher ? (
-                  <>
-                    <Tooltip title='Ver'>
-                      <Button size='small' color='info' variant='text' onClick={() => handleViewVoucher(row.original)}>
-                        Ver
-                      </Button>
-                    </Tooltip>
-                    <Tooltip title='Editar'>
-                      <Button
-                        size='small'
-                        color='primary'
-                        variant='text'
-                        onClick={() => handleUpdateClick(row.original)}
-                      >
-                        Editar
-                      </Button>
-                    </Tooltip>
-                  </>
-                ) : (
-                  <Tooltip title='Insertar Comprobante'>
-                    <Button size='small' color='primary' variant='text' onClick={() => handleUpdateClick(row.original)}>
-                      Insertar
+          return (
+            <Box display='flex' gap={1} justifyContent='center'>
+              {hasVoucher ? (
+                <>
+                  <Tooltip title='Ver'>
+                    <Button size='small' color='info' variant='text' onClick={() => handleViewVoucher(row.original)}>
+                      Ver
                     </Button>
                   </Tooltip>
-                )}
-              </Box>
-            )
-          }
-        })
-      )
+                  <Tooltip title='Editar'>
+                    <Button size='small' color='primary' variant='text' onClick={() => handleUpdateClick(row.original)}>
+                      Editar
+                    </Button>
+                  </Tooltip>
+                </>
+              ) : (
+                <Tooltip title='Insertar Comprobante'>
+                  <Button size='small' color='primary' variant='text' onClick={() => handleUpdateClick(row.original)}>
+                    Insertar
+                  </Button>
+                </Tooltip>
+              )}
+            </Box>
+          )
+        }
+      })
     }
 
     return baseColumns
   }, [currentPage, pageSize, isCompanyAdmin])
 
   const table = useReactTable<Commission>({
-    data: commissions,
+    data: paginatedData,
     columns,
     filterFns: {
       fuzzy: fuzzyFilter
     },
     getCoreRowModel: getCoreRowModel(),
-    getSortedRowModel: getSortedRowModel(),
-    getPaginationRowModel: getPaginationRowModel(),
-    initialState: {
-      pagination: {
-        pageSize: pageSize
-      }
-    }
+    getSortedRowModel: getSortedRowModel()
   })
-
-  const totalRecords = commissions.length
-  const totalPages = Math.ceil(totalRecords / pageSize)
-
-  // Obtener datos paginados manualmente
-  const paginatedData = commissions.slice((currentPage - 1) * pageSize, currentPage * pageSize)
 
   if (isLoading) {
     return (
@@ -477,86 +459,11 @@ const VentasTable = () => {
               </tbody>
             ) : (
               <tbody>
-                {paginatedData.map((row, index) => (
+                {table.getRowModel().rows.map(row => (
                   <tr key={row.id}>
-                    <td>
-                      <Typography variant='body2' fontWeight={500}>
-                        {(currentPage - 1) * pageSize + index + 1}
-                      </Typography>
-                    </td>
-                    <td>
-                      <Typography variant='body2' fontWeight={500}>
-                        {formatPeriodKey(row.period_key)}
-                      </Typography>
-                    </td>
-                    <td>
-                      <Avatar
-                        src={
-                          row.company.logo.startsWith('http')
-                            ? row.company.logo
-                            : `${process.env.NEXT_PUBLIC_API_URL}${row.company.logo}`
-                        }
-                        alt={row.company.name}
-                        sx={{ width: 38, height: 38 }}
-                      >
-                        {row.company.name.charAt(0)}
-                      </Avatar>
-                    </td>
-                    <td>
-                      <Typography fontWeight={500} color='text.primary'>
-                        {row.company.name}
-                      </Typography>
-                    </td>
-                    <td>
-                      <Typography variant='body2' align='center'>
-                        {row.tickets_app_count_total}
-                      </Typography>
-                    </td>
-                    <td>
-                      <Typography variant='body2' align='right'>
-                        {formatCurrency(row.commission_app_total)}
-                      </Typography>
-                    </td>
-                    <td>
-                      <Typography variant='body2' fontWeight={600} color='primary' align='right'>
-                        {formatCurrency(row.commission_company)}
-                      </Typography>
-                    </td>
-                    <td>
-                      <Typography variant='body2' align='center'>
-                        {row.paidAt ? formatDateTime(row.paidAt) : '-'}
-                      </Typography>
-                    </td>
-                    <td>
-                      <Typography variant='body2' align='right' fontWeight={600}>
-                        {formatCurrency(row.paid)}
-                      </Typography>
-                    </td>
-                    {!isCompanyAdmin && (
-                      <td>
-                        <Box display='flex' gap={1} justifyContent='center'>
-                          {row.voucher ? (
-                            <>
-                              <Button size='small' color='info' variant='text' onClick={() => handleViewVoucher(row)}>
-                                Ver
-                              </Button>
-                              <Button
-                                size='small'
-                                color='primary'
-                                variant='text'
-                                onClick={() => handleUpdateClick(row)}
-                              >
-                                Editar
-                              </Button>
-                            </>
-                          ) : (
-                            <Button size='small' color='primary' variant='text' onClick={() => handleUpdateClick(row)}>
-                              Insertar
-                            </Button>
-                          )}
-                        </Box>
-                      </td>
-                    )}
+                    {row.getVisibleCells().map(cell => (
+                      <td key={cell.id}>{flexRender(cell.column.columnDef.cell, cell.getContext())}</td>
+                    ))}
                   </tr>
                 ))}
               </tbody>
@@ -564,33 +471,25 @@ const VentasTable = () => {
           </table>
         </div>
 
-        <TablePagination
-          component={() => (
-            <div className='flex justify-between items-center flex-wrap pli-6 border-bs bs-auto plb-[12.5px] gap-2'>
-              <Typography color='text.disabled'>
-                {totalRecords > 0
-                  ? `Mostrando ${(currentPage - 1) * pageSize + 1} a ${Math.min(currentPage * pageSize, totalRecords)} de ${totalRecords} comisiones`
-                  : 'Sin datos'}
-              </Typography>
-              {totalPages > 1 && (
-                <Pagination
-                  shape='rounded'
-                  color='primary'
-                  variant='tonal'
-                  count={totalPages}
-                  page={currentPage}
-                  onChange={(_, page) => setCurrentPage(page)}
-                  showFirstButton
-                  showLastButton
-                />
-              )}
-            </div>
+        <div className='flex justify-between items-center flex-wrap pli-6 border-bs bs-auto plb-[12.5px] gap-2'>
+          <Typography color='text.disabled'>
+            {totalRecords > 0
+              ? `Mostrando ${(currentPage - 1) * pageSize + 1} a ${Math.min(currentPage * pageSize, totalRecords)} de ${totalRecords} comisiones`
+              : 'Sin datos'}
+          </Typography>
+          {totalPages > 1 && (
+            <Pagination
+              shape='rounded'
+              color='primary'
+              variant='tonal'
+              count={totalPages}
+              page={currentPage}
+              onChange={(_, page) => setCurrentPage(page)}
+              showFirstButton
+              showLastButton
+            />
           )}
-          count={totalRecords}
-          rowsPerPage={pageSize}
-          page={currentPage - 1}
-          onPageChange={() => {}}
-        />
+        </div>
       </Card>
 
       {selectedCommission && (

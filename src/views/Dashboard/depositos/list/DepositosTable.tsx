@@ -8,7 +8,6 @@ import Box from '@mui/material/Box'
 import Button from '@mui/material/Button'
 import CircularProgress from '@mui/material/CircularProgress'
 import Alert from '@mui/material/Alert'
-import TablePagination from '@mui/material/TablePagination'
 import Pagination from '@mui/material/Pagination'
 import Avatar from '@mui/material/Avatar'
 import classnames from 'classnames'
@@ -17,8 +16,7 @@ import {
   flexRender,
   getCoreRowModel,
   useReactTable,
-  getSortedRowModel,
-  getPaginationRowModel
+  getSortedRowModel
 } from '@tanstack/react-table'
 
 import { useCompanies } from '@/hooks/useCompanies'
@@ -36,6 +34,13 @@ const DepositosTable = () => {
 
   const { data: companies, isLoading, error } = useCompanies()
 
+  const paginatedData = useMemo(() => {
+    return (companies || []).slice((currentPage - 1) * pageSize, currentPage * pageSize)
+  }, [companies, currentPage, pageSize])
+
+  const totalRecords = companies?.length || 0
+  const totalPages = Math.ceil(totalRecords / pageSize)
+
   const handleOpenModal = (company: Company) => {
     setSelectedCompany(company)
     setModalOpen(true)
@@ -48,91 +53,80 @@ const DepositosTable = () => {
 
   const columns = useMemo<any[]>(
     () => [
-      columnHelper.accessor('logo', {
+      {
+        accessorKey: 'logo',
         header: 'Logo',
-        cell: ({ row }) => (
+        cell: ({ row }: any) => (
           <Box display='flex' alignItems='center'>
             <Avatar
-              src={row.original.logo.startsWith('http') ? row.original.logo : `${process.env.NEXT_PUBLIC_API_URL}${row.original.logo}`}
+              src={
+                row.original.logo.startsWith('http')
+                  ? row.original.logo
+                  : `${process.env.NEXT_PUBLIC_API_URL}${row.original.logo}`
+              }
               alt={row.original.name}
               sx={{ width: 40, height: 40, mr: 2 }}
             />
           </Box>
         ),
         enableSorting: false
-      }),
-      columnHelper.accessor('name', {
+      },
+      {
+        accessorKey: 'name',
         header: 'Empresa',
-        cell: ({ row }) => (
+        cell: ({ row }: any) => (
           <Typography variant='body2' fontWeight={500}>
             {row.original.name}
           </Typography>
         )
-      }),
-      columnHelper.accessor('commission', {
+      },
+      {
+        accessorKey: 'commission',
         header: 'Comisión',
-        cell: ({ row }) => (
-          <Typography variant='body2'>
-            {row.original.commission}%
-          </Typography>
-        )
-      }),
-      columnHelper.accessor('hours_before_closing', {
+        cell: ({ row }: any) => <Typography variant='body2'>{row.original.commission}%</Typography>
+      },
+      {
+        accessorKey: 'hours_before_closing',
         header: 'Horas antes de cierre',
-        cell: ({ row }) => (
-          <Typography variant='body2'>
-            {row.original.hours_before_closing}h
-          </Typography>
-        )
-      }),
-      columnHelper.accessor('bankAccount.titularName', {
+        cell: ({ row }: any) => <Typography variant='body2'>{row.original.hours_before_closing}h</Typography>
+      },
+      {
+        accessorKey: 'bankAccount.titularName',
         header: 'Titular',
-        cell: ({ row }) => (
-          <Typography variant='body2'>
-            {row.original.bankAccount?.titularName || 'N/A'}
-          </Typography>
+        cell: ({ row }: any) => (
+          <Typography variant='body2'>{row.original.bankAccount?.titularName || 'N/A'}</Typography>
         )
-      }),
-      columnHelper.accessor('bankAccount.account', {
+      },
+      {
+        accessorKey: 'bankAccount.account',
         header: 'Cuenta',
-        cell: ({ row }) => (
+        cell: ({ row }: any) => (
           <Typography variant='body2' fontFamily='monospace'>
             {row.original.bankAccount?.account || 'N/A'}
           </Typography>
         )
-      }),
-      columnHelper.display({
+      },
+      {
         id: 'actions',
         header: 'Acciones',
-        cell: ({ row }) => (
+        cell: ({ row }: any) => (
           <Box display='flex' gap={1}>
-            <Button
-              variant='contained'
-              size='small'
-              onClick={() => handleOpenModal(row.original)}
-            >
+            <Button variant='contained' size='small' onClick={() => handleOpenModal(row.original)}>
               Ver Viajes
             </Button>
           </Box>
         ),
         enableSorting: false
-      })
+      }
     ],
     []
   )
 
   const table = useReactTable({
-    data: companies || [],
+    data: paginatedData,
     columns,
     getCoreRowModel: getCoreRowModel(),
-    getSortedRowModel: getSortedRowModel(),
-    getPaginationRowModel: getPaginationRowModel(),
-    state: {
-      pagination: {
-        pageIndex: currentPage - 1,
-        pageSize
-      }
-    }
+    getSortedRowModel: getSortedRowModel()
   })
 
   if (isLoading) {
@@ -178,9 +172,9 @@ const DepositosTable = () => {
                           >
                             {flexRender(header.column.columnDef.header, header.getContext())}
                             {{
-                              asc: ' 🔼',
-                              desc: ' 🔽'
-                            }[header.column.getIsSorted() as string] ?? null}
+                              asc: <i className='tabler-chevron-up text-xl' />,
+                              desc: <i className='tabler-chevron-down text-xl' />
+                            }[header.column.getIsSorted() as 'asc' | 'desc'] ?? null}
                           </div>
                         )}
                       </th>
@@ -210,39 +204,29 @@ const DepositosTable = () => {
             </table>
           </div>
 
-          <Box display='flex' justifyContent='space-between' alignItems='center' mt={3}>
-            <TablePagination
-              component='div'
-              count={table.getFilteredRowModel().rows.length}
-              page={currentPage - 1}
-              onPageChange={(_, page) => setCurrentPage(page + 1)}
-              rowsPerPage={pageSize}
-              onRowsPerPageChange={e => {
-                setPageSize(Number(e.target.value))
-                setCurrentPage(1)
-              }}
-              rowsPerPageOptions={[5, 10, 25, 50]}
-              labelRowsPerPage='Filas por página:'
-            />
-            <Pagination
-              count={Math.ceil(table.getFilteredRowModel().rows.length / pageSize)}
-              page={currentPage}
-              onChange={(_, page) => setCurrentPage(page)}
-              color='primary'
-              variant='outlined'
-              shape='rounded'
-            />
-          </Box>
+          <div className='flex justify-between items-center flex-wrap mt-3 gap-2'>
+            <Typography color='text.disabled'>
+              {totalRecords > 0
+                ? `Mostrando ${(currentPage - 1) * pageSize + 1} a ${Math.min(currentPage * pageSize, totalRecords)} de ${totalRecords} empresas`
+                : 'Sin datos'}
+            </Typography>
+            {totalPages > 1 && (
+              <Pagination
+                shape='rounded'
+                color='primary'
+                variant='tonal'
+                count={totalPages}
+                page={currentPage}
+                onChange={(_, page) => setCurrentPage(page)}
+                showFirstButton
+                showLastButton
+              />
+            )}
+          </div>
         </Box>
       </Card>
 
-      {selectedCompany && (
-        <TravelsModal
-          open={modalOpen}
-          onClose={handleCloseModal}
-          company={selectedCompany}
-        />
-      )}
+      {selectedCompany && <TravelsModal open={modalOpen} onClose={handleCloseModal} company={selectedCompany} />}
     </>
   )
 }
