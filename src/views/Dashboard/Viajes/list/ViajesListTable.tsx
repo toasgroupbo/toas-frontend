@@ -122,7 +122,7 @@ const ViajesListTable = () => {
   const [rowSelection, setRowSelection] = useState({})
   const [searchQuery, setSearchQuery] = useState('')
   const [statusFilter, setStatusFilter] = useState<string>('all')
-  const [datePreset, setDatePreset] = useState<DateRangePreset>('custom')
+  const [datePreset, setDatePreset] = useState<DateRangePreset>('today')
   const [customStartDate, setCustomStartDate] = useState<string>('')
   const [customEndDate, setCustomEndDate] = useState<string>('')
   const [originPlaceId, setOriginPlaceId] = useState<string>('')
@@ -208,6 +208,17 @@ const ViajesListTable = () => {
       year: 'numeric',
       month: 'short',
       day: 'numeric'
+    })
+  }
+
+  const formatTimeOnly = (dateString: string) => {
+    if (!dateString) return '-'
+    const date = new Date(dateString)
+
+    return date.toLocaleTimeString('es-BO', {
+      timeZone: 'America/La_Paz',
+      hour: '2-digit',
+      minute: '2-digit'
     })
   }
 
@@ -465,8 +476,9 @@ const ViajesListTable = () => {
           if (!row.original.closedAt) return <Typography variant='caption'>-</Typography>
 
           return (
-            <div className='flex flex-col'>
+            <div className='flex flex-col items-center'>
               <Typography variant='caption'>{formatDateOnly(row.original.closedAt)}</Typography>
+              <Typography variant='caption'>{formatTimeOnly(row.original.closedAt)}</Typography>
             </div>
           )
         }
@@ -578,7 +590,19 @@ const ViajesListTable = () => {
               </MenuItem>
             ))}
           </CustomTextField>
-
+          <CustomTextField
+            select
+            label='Estado'
+            value={statusFilter}
+            onChange={e => setStatusFilter(e.target.value)}
+            size='small'
+            sx={{ minWidth: 120 }}
+          >
+            <MenuItem value='all'>Todos</MenuItem>
+            <MenuItem value='active'>Activo</MenuItem>
+            <MenuItem value='closed'>Cerrado</MenuItem>
+            <MenuItem value='cancelled'>Cancelado</MenuItem>
+          </CustomTextField>
           {datePreset === 'custom' && (
             <>
               <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
@@ -606,20 +630,6 @@ const ViajesListTable = () => {
               </Box>
             </>
           )}
-
-          <CustomTextField
-            select
-            label='Estado'
-            value={statusFilter}
-            onChange={e => setStatusFilter(e.target.value)}
-            size='small'
-            sx={{ minWidth: 120 }}
-          >
-            <MenuItem value='all'>Todos</MenuItem>
-            <MenuItem value='active'>Activo</MenuItem>
-            <MenuItem value='closed'>Cerrado</MenuItem>
-            <MenuItem value='cancelled'>Cancelado</MenuItem>
-          </CustomTextField>
         </div>
 
         <div className='flex flex-wrap justify-between items-center gap-4 px-6 pb-4'>
@@ -804,7 +814,8 @@ const ViajesListTable = () => {
                 </Typography>
                 {selectedTravel && (
                   <Typography variant='caption' color='text.secondary'>
-                    {selectedTravel.route?.officeOrigin?.place?.name} → {selectedTravel.route?.officeDestination?.place?.name} |{' '}
+                    {selectedTravel.route?.officeOrigin?.place?.name} →{' '}
+                    {selectedTravel.route?.officeDestination?.place?.name} |{' '}
                     {formatDateTime(selectedTravel.departure_time)}
                   </Typography>
                 )}
@@ -815,16 +826,10 @@ const ViajesListTable = () => {
             </IconButton>
           </Box>
         </DialogTitle>
-        <DialogContent>
-          {selectedTravel && <AdminTicketsTable initialTravelId={selectedTravel.id} />}
-        </DialogContent>
+        <DialogContent>{selectedTravel && <AdminTicketsTable initialTravelId={selectedTravel.id} />}</DialogContent>
       </Dialog>
 
-      <TravelDetailDialog
-        open={reportDialogOpen}
-        onClose={handleCloseReportDialog}
-        travel={reportTravel}
-      />
+      <TravelDetailDialog open={reportDialogOpen} onClose={handleCloseReportDialog} travel={reportTravel} />
     </Box>
   )
 }

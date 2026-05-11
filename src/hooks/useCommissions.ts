@@ -50,12 +50,16 @@ const fetchCommissions = async (
 }
 
 const updateCommission = async (id: number, payload: UpdateCommissionPayload): Promise<Commission> => {
-  const data: { paid: string; voucher?: string } = {
+  const data: { paid: string; voucher?: string; paidAt?: string } = {
     paid: payload.paid
   }
 
   if (payload.voucherUrl) {
     data.voucher = payload.voucherUrl
+  }
+
+  if (payload.paidAt) {
+    data.paidAt = payload.paidAt
   }
 
   const response = await api.patch<Commission>(`/api/commissions/${id}`, data)

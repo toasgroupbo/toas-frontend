@@ -14,7 +14,6 @@ import Pagination from '@mui/material/Pagination'
 import IconButton from '@mui/material/IconButton'
 import Tooltip from '@mui/material/Tooltip'
 import Avatar from '@mui/material/Avatar'
-import Chip from '@mui/material/Chip'
 import classnames from 'classnames'
 import {
   createColumnHelper,
@@ -27,8 +26,8 @@ import {
 import type { ColumnDef, FilterFn } from '@tanstack/react-table'
 import { rankItem } from '@tanstack/match-sorter-utils'
 
-import { useCommissions } from '@/hooks/useCommissions'
-import type { Commission } from '@/types/api/commissions'
+import { useCommissions, useUpdateCommission } from '@/hooks/useCommissions'
+import type { Commission, UpdateCommissionPayload } from '@/types/api/commissions'
 import CustomTextField from '@core/components/mui/TextField'
 import AppReactDatepicker from '@/libs/styles/AppReactDatepicker'
 import tableStyles from '@core/styles/table.module.css'
@@ -36,6 +35,8 @@ import UpdateCommissionDialog from '@/views/Dashboard/comisiones/components/Upda
 import CommissionsChartModal from '@/views/Dashboard/comisiones/components/CommissionsChartModal'
 import ViewVoucherModal from '@/views/Dashboard/comisiones/components/ViewVoucherModal'
 import { useAuth } from '@/contexts/AuthContext'
+import { useSnackbar } from '@/contexts/SnackbarContext'
+import { useUploadImage } from '@/hooks/useUploadImage'
 
 const fuzzyFilter: FilterFn<any> = (row, columnId, value, addMeta) => {
   const itemRank = rankItem(row.getValue(columnId), value)
@@ -53,16 +54,36 @@ const formatCurrency = (value: string | number) => {
   return `Bs. ${num.toFixed(2)}`
 }
 
-const formatDate = (dateString: string) => {
-  return new Date(dateString).toLocaleDateString('es-PE', {
+const formatDateTime = (dateString: string) => {
+  const date = new Date(dateString)
+
+  return date.toLocaleString('es-BO', {
+    timeZone: 'America/La_Paz',
     year: 'numeric',
     month: 'short',
-    day: 'numeric'
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit'
+  })
+}
+
+const formatPeriodKey = (periodKey: string) => {
+  // periodKey format: "2026-05" -> "Mayo 2026"
+  const [year, month] = periodKey.split('-')
+  const date = new Date(parseInt(year), parseInt(month) - 1, 1)
+
+  return date.toLocaleDateString('es-BO', {
+    year: 'numeric',
+    month: 'long'
   })
 }
 
 const VentasTable = () => {
   const { isCompanyAdmin } = useAuth()
+  const { showSuccess, showError } = useSnackbar()
+  const updateMutation = useUpdateCommission()
+  const uploadImageMutation = useUploadImage()
+
   const [pageSize, setPageSize] = useState(10)
   const [currentPage, setCurrentPage] = useState(1)
   const [startDate, setStartDate] = useState<Date | null>(null)
@@ -115,6 +136,54 @@ const VentasTable = () => {
     }
   }
 
+  const handleUpdateCommission = async (
+    paidAmount: string,
+    voucherFile: File | null,
+    paidAt: string,
+    existingVoucher: string | null
+  ) => {
+    if (!selectedCommission) return
+
+    try {
+      // Format paid amount to match backend regex: ^\d+(\.\d{1,2})?$
+      const formattedAmount = parseFloat(paidAmount).toFixed(2)
+
+      // Upload image first if there's a new file
+      let voucherUrl = existingVoucher || ''
+
+      if (voucherFile) {
+        try {
+          voucherUrl = await uploadImageMutation.mutateAsync(voucherFile)
+        } catch (error) {
+          console.error('Error al subir comprobante:', error)
+          showError('Error al subir el comprobante. Por favor, intente nuevamente.')
+
+          return
+        }
+      }
+
+      // Convert paidAt to ISO string for backend
+      const paidAtISO = paidAt ? new Date(paidAt).toISOString() : new Date().toISOString()
+
+      // Update commission with the voucher URL and paidAt
+      await updateMutation.mutateAsync({
+        id: selectedCommission.id,
+        payload: {
+          paid: formattedAmount,
+          voucherUrl: voucherUrl,
+          paidAt: paidAtISO
+        }
+      })
+
+      setDialogOpen(false)
+      setSelectedCommission(null)
+      showSuccess('Comisión actualizada exitosamente')
+    } catch (error: any) {
+      console.error('Error al actualizar comisión:', error)
+      showError(error?.response?.data?.message || 'Error al actualizar la comisión. Por favor intenta nuevamente.')
+    }
+  }
+
   const handleCloseDialog = () => {
     setDialogOpen(false)
     setSelectedCommission(null)
@@ -135,22 +204,24 @@ const VentasTable = () => {
         header: 'CUOTA CORRESPONDIENTE',
         cell: ({ row }) => (
           <Typography variant='body2' fontWeight={500}>
-            {row.original.period_key}
+            {formatPeriodKey(row.original.period_key)}
           </Typography>
         )
       }),
       columnHelper.display({
         id: 'logo',
         header: 'LOGO',
-        cell: ({ row }) => (
-          <Avatar
-            src={row.original.company.logo}
-            alt={row.original.company.name}
-            sx={{ width: 38, height: 38 }}
-          >
-            {row.original.company.name.charAt(0)}
-          </Avatar>
-        )
+        cell: ({ row }) => {
+          const logoUrl = row.original.company.logo.startsWith('http')
+            ? row.original.company.logo
+            : `${process.env.NEXT_PUBLIC_API_URL}${row.original.company.logo}`
+
+          return (
+            <Avatar src={logoUrl} alt={row.original.company.name} sx={{ width: 38, height: 38 }}>
+              {row.original.company.name.charAt(0)}
+            </Avatar>
+          )
+        }
       }),
       columnHelper.accessor('company.name', {
         header: 'EMPRESA',
@@ -184,30 +255,31 @@ const VentasTable = () => {
           </Typography>
         )
       }),
-      columnHelper.accessor('date_to_pay', {
+      columnHelper.accessor('paidAt', {
         header: 'FECHA PAGO',
-        cell: ({ row }) => (
-          <Typography variant='body2' align='center'>
-            {formatDate(row.original.date_to_pay)}
-          </Typography>
-        )
+        cell: ({ row }) => {
+          if (!row.original.paidAt) {
+            return (
+              <Typography variant='body2' align='center' color='text.secondary'>
+                -
+              </Typography>
+            )
+          }
+
+          return (
+            <Typography variant='body2' align='center'>
+              {formatDateTime(row.original.paidAt)}
+            </Typography>
+          )
+        }
       }),
       columnHelper.accessor('paid', {
         header: 'PAGADO',
-        cell: ({ row }) => {
-          const isPaid = row.original.paid === 'paid'
-
-          return (
-            <Box display='flex' justifyContent='center'>
-              <Chip
-                label={isPaid ? 'Pagado' : 'En Proceso'}
-                color={isPaid ? 'success' : 'warning'}
-                size='small'
-                variant='tonal'
-              />
-            </Box>
-          )
-        }
+        cell: ({ row }) => (
+          <Typography variant='body2' align='right' fontWeight={600}>
+            {formatCurrency(row.original.paid)}
+          </Typography>
+        )
       })
     ]
 
@@ -225,12 +297,7 @@ const VentasTable = () => {
                 {hasVoucher ? (
                   <>
                     <Tooltip title='Ver'>
-                      <Button
-                        size='small'
-                        color='info'
-                        variant='text'
-                        onClick={() => handleViewVoucher(row.original)}
-                      >
+                      <Button size='small' color='info' variant='text' onClick={() => handleViewVoucher(row.original)}>
                         Ver
                       </Button>
                     </Tooltip>
@@ -247,12 +314,7 @@ const VentasTable = () => {
                   </>
                 ) : (
                   <Tooltip title='Insertar Comprobante'>
-                    <Button
-                      size='small'
-                      color='primary'
-                      variant='text'
-                      onClick={() => handleUpdateClick(row.original)}
-                    >
+                    <Button size='small' color='primary' variant='text' onClick={() => handleUpdateClick(row.original)}>
                       Insertar
                     </Button>
                   </Tooltip>
@@ -380,14 +442,6 @@ const VentasTable = () => {
         <div className='overflow-x-auto'>
           <table className={tableStyles.table}>
             <thead>
-              <tr style={{ backgroundColor: 'var(--mui-palette-success-lightOpacity)' }}>
-                <th colSpan={isCompanyAdmin ? 9 : 10} style={{ textAlign: 'center', padding: '12px' }}>
-                  <Typography variant='subtitle1' fontWeight={600}>
-                    COMISION EMPRESA BS. 15
-                  </Typography>
-                </th>
-              </tr>
-
               {table.getHeaderGroups().map(headerGroup => (
                 <tr key={headerGroup.id}>
                   {headerGroup.headers.map(header => (
@@ -432,11 +486,19 @@ const VentasTable = () => {
                     </td>
                     <td>
                       <Typography variant='body2' fontWeight={500}>
-                        {row.period_key}
+                        {formatPeriodKey(row.period_key)}
                       </Typography>
                     </td>
                     <td>
-                      <Avatar src={row.company.logo} alt={row.company.name} sx={{ width: 38, height: 38 }}>
+                      <Avatar
+                        src={
+                          row.company.logo.startsWith('http')
+                            ? row.company.logo
+                            : `${process.env.NEXT_PUBLIC_API_URL}${row.company.logo}`
+                        }
+                        alt={row.company.name}
+                        sx={{ width: 38, height: 38 }}
+                      >
                         {row.company.name.charAt(0)}
                       </Avatar>
                     </td>
@@ -462,18 +524,13 @@ const VentasTable = () => {
                     </td>
                     <td>
                       <Typography variant='body2' align='center'>
-                        {formatDate(row.date_to_pay)}
+                        {row.paidAt ? formatDateTime(row.paidAt) : '-'}
                       </Typography>
                     </td>
                     <td>
-                      <Box display='flex' justifyContent='center'>
-                        <Chip
-                          label={row.paid === 'paid' ? 'Pagado' : 'En Proceso'}
-                          color={row.paid === 'paid' ? 'success' : 'warning'}
-                          size='small'
-                          variant='tonal'
-                        />
-                      </Box>
+                      <Typography variant='body2' align='right' fontWeight={600}>
+                        {formatCurrency(row.paid)}
+                      </Typography>
                     </td>
                     {!isCompanyAdmin && (
                       <td>
@@ -483,7 +540,12 @@ const VentasTable = () => {
                               <Button size='small' color='info' variant='text' onClick={() => handleViewVoucher(row)}>
                                 Ver
                               </Button>
-                              <Button size='small' color='primary' variant='text' onClick={() => handleUpdateClick(row)}>
+                              <Button
+                                size='small'
+                                color='primary'
+                                variant='text'
+                                onClick={() => handleUpdateClick(row)}
+                              >
                                 Editar
                               </Button>
                             </>
@@ -532,7 +594,13 @@ const VentasTable = () => {
       </Card>
 
       {selectedCommission && (
-        <UpdateCommissionDialog open={dialogOpen} commission={selectedCommission} onClose={handleCloseDialog} />
+        <UpdateCommissionDialog
+          open={dialogOpen}
+          commission={selectedCommission}
+          onClose={handleCloseDialog}
+          onSubmit={handleUpdateCommission}
+          isLoading={updateMutation.isPending || uploadImageMutation.isPending}
+        />
       )}
 
       <CommissionsChartModal open={chartModalOpen} onClose={() => setChartModalOpen(false)} data={commissions} />

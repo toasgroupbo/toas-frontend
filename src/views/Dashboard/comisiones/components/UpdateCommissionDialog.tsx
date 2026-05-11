@@ -21,35 +21,68 @@ import {
   CardMedia
 } from '@mui/material'
 
-import { useUpdateCommission } from '@/hooks/useCommissions'
-import { useUploadImage } from '@/hooks/useUploadImage'
 import type { Commission } from '@/types/api/commissions'
 
 interface UpdateCommissionDialogProps {
   open: boolean
   commission: Commission
   onClose: () => void
+  onSubmit: (
+    paidAmount: string,
+    voucherFile: File | null,
+    paidAt: string,
+    existingVoucher: string | null
+  ) => Promise<void>
+  isLoading: boolean
 }
 
-const UpdateCommissionDialog = ({ open, commission, onClose }: UpdateCommissionDialogProps) => {
+const UpdateCommissionDialog = ({ open, commission, onClose, onSubmit, isLoading }: UpdateCommissionDialogProps) => {
   const [paidAmount, setPaidAmount] = useState<string>('')
   const [voucherFile, setVoucherFile] = useState<File | null>(null)
   const [voucherPreview, setVoucherPreview] = useState<string | null>(null)
+  const [paidAt, setPaidAt] = useState<string>('')
   const [error, setError] = useState<string>('')
-  const [isUploading, setIsUploading] = useState(false)
 
-  const { mutate: updateCommission, isPending } = useUpdateCommission()
-  const uploadImageMutation = useUploadImage()
-
-  // Initialize paid amount and voucher preview
+  // Initialize paid amount, paidAt, and voucher preview
   useEffect(() => {
     if (open) {
-      setPaidAmount(commission.paid === 'paid' ? commission.commission_company : '')
+      // Pre-fill with the current paid amount, or use commission_company if paid is 0
+      const currentPaid = parseFloat(commission.paid)
+
+      setPaidAmount(currentPaid > 0 ? commission.paid : commission.commission_company)
       setVoucherFile(null)
       setError('')
 
+      // Initialize paidAt with existing value or current date/time
+      if (commission.paidAt) {
+        // Convert ISO string to datetime-local format (YYYY-MM-DDTHH:mm)
+        const date = new Date(commission.paidAt)
+        const year = date.getFullYear()
+        const month = String(date.getMonth() + 1).padStart(2, '0')
+        const day = String(date.getDate()).padStart(2, '0')
+        const hours = String(date.getHours()).padStart(2, '0')
+        const minutes = String(date.getMinutes()).padStart(2, '0')
+
+        setPaidAt(`${year}-${month}-${day}T${hours}:${minutes}`)
+      } else {
+        // Set to current date/time in Bolivia timezone
+        const now = new Date()
+        const year = now.getFullYear()
+        const month = String(now.getMonth() + 1).padStart(2, '0')
+        const day = String(now.getDate()).padStart(2, '0')
+        const hours = String(now.getHours()).padStart(2, '0')
+        const minutes = String(now.getMinutes()).padStart(2, '0')
+
+        setPaidAt(`${year}-${month}-${day}T${hours}:${minutes}`)
+      }
+
+      // Initialize voucher preview with full URL
       if (commission.voucher) {
-        setVoucherPreview(commission.voucher)
+        const voucherUrl = commission.voucher.startsWith('http')
+          ? commission.voucher
+          : `${process.env.NEXT_PUBLIC_API_URL}${commission.voucher}`
+
+        setVoucherPreview(voucherUrl)
       } else {
         setVoucherPreview(null)
       }
@@ -105,54 +138,8 @@ const UpdateCommissionDialog = ({ open, commission, onClose }: UpdateCommissionD
       return
     }
 
-    try {
-      setIsUploading(true)
-      setError('')
-
-      // Format paid amount to match backend regex: ^\d+(\.\d{1,2})?$
-      const formattedAmount = parseFloat(paidAmount).toFixed(2)
-
-      // Upload image first if there's a new file
-      let voucherUrl = commission.voucher || ''
-
-      if (voucherFile) {
-        try {
-          voucherUrl = await uploadImageMutation.mutateAsync(voucherFile)
-        } catch (error) {
-          console.error('Error al subir comprobante:', error)
-          setError('Error al subir el comprobante. Por favor, intente nuevamente.')
-          setIsUploading(false)
-
-          return
-        }
-      }
-
-      // Update commission with the voucher URL
-      updateCommission(
-        {
-          id: commission.id,
-          payload: {
-            paid: formattedAmount,
-            voucherUrl: voucherUrl
-          }
-        },
-        {
-          onSuccess: () => {
-            setIsUploading(false)
-            onClose()
-          },
-          onError: err => {
-            setIsUploading(false)
-            setError('Error al actualizar la comisión. Por favor intenta nuevamente.')
-            console.error('Error updating commission:', err)
-          }
-        }
-      )
-    } catch (error) {
-      setIsUploading(false)
-      setError('Error inesperado. Por favor intenta nuevamente.')
-      console.error('Unexpected error:', error)
-    }
+    setError('')
+    await onSubmit(paidAmount, voucherFile, paidAt, commission.voucher)
   }
 
   // Format currency
@@ -167,7 +154,8 @@ const UpdateCommissionDialog = ({ open, commission, onClose }: UpdateCommissionD
 
   // Format date
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('es-PE', {
+    return new Date(dateString).toLocaleDateString('es-BO', {
+      timeZone: 'America/La_Paz',
       year: 'numeric',
       month: 'long',
       day: 'numeric'
@@ -218,44 +206,6 @@ const UpdateCommissionDialog = ({ open, commission, onClose }: UpdateCommissionD
                   {commission.tickets_app_count_total}
                 </Typography>
               </Grid>
-              <Grid size={{ xs: 6, sm: 4 }}>
-                <Typography variant='caption' color='text.secondary'>
-                  Comisión App
-                </Typography>
-                <Typography variant='body1' fontWeight={600}>
-                  {formatCurrency(commission.commission_app_total)}
-                </Typography>
-              </Grid>
-              <Grid size={{ xs: 6, sm: 4 }}>
-                <Typography variant='caption' color='text.secondary'>
-                  Comisión Empresa
-                </Typography>
-                <Typography variant='body1' fontWeight={600} color='primary'>
-                  {formatCurrency(commission.commission_company)}
-                </Typography>
-              </Grid>
-              <Grid size={{ xs: 6, sm: 4 }}>
-                <Typography variant='caption' color='text.secondary'>
-                  Tasa de Comisión
-                </Typography>
-                <Typography variant='body1' fontWeight={600}>
-                  {commission.commission_rate_at_time}%
-                </Typography>
-              </Grid>
-              <Grid size={{ xs: 12 }}>
-                <Typography variant='caption' color='text.secondary'>
-                  Rango del Periodo
-                </Typography>
-                <Typography variant='body2'>
-                  {formatDate(commission.period_start)} - {formatDate(commission.period_end)}
-                </Typography>
-              </Grid>
-              <Grid size={{ xs: 12 }}>
-                <Typography variant='caption' color='text.secondary'>
-                  Fecha de Pago
-                </Typography>
-                <Typography variant='body2'>{formatDate(commission.date_to_pay)}</Typography>
-              </Grid>
             </Grid>
           </CardContent>
         </Card>
@@ -277,6 +227,20 @@ const UpdateCommissionDialog = ({ open, commission, onClose }: UpdateCommissionD
           sx={{ mb: 3 }}
         />
 
+        <TextField
+          fullWidth
+          label='Fecha y Hora de Pago'
+          type='datetime-local'
+          value={paidAt}
+          onChange={e => setPaidAt(e.target.value)}
+          slotProps={{
+            inputLabel: {
+              shrink: true
+            }
+          }}
+          sx={{ mb: 3 }}
+        />
+
         <Box sx={{ mb: 2 }}>
           <Typography variant='subtitle2' gutterBottom>
             Comprobante de Pago
@@ -289,7 +253,12 @@ const UpdateCommissionDialog = ({ open, commission, onClose }: UpdateCommissionD
 
         {voucherPreview && (
           <Card variant='outlined'>
-            <CardMedia component='img' image={voucherPreview} alt='Comprobante' sx={{ maxHeight: 400, objectFit: 'contain', p: 2 }} />
+            <CardMedia
+              component='img'
+              image={voucherPreview}
+              alt='Comprobante'
+              sx={{ maxHeight: 400, objectFit: 'contain', p: 2 }}
+            />
           </Card>
         )}
 
@@ -301,16 +270,16 @@ const UpdateCommissionDialog = ({ open, commission, onClose }: UpdateCommissionD
       </DialogContent>
 
       <DialogActions>
-        <Button onClick={onClose} disabled={isPending || isUploading}>
+        <Button onClick={onClose} disabled={isLoading}>
           Cancelar
         </Button>
         <Button
           onClick={handleSubmit}
           variant='contained'
-          disabled={isPending || isUploading}
-          startIcon={(isPending || isUploading) && <CircularProgress size={20} />}
+          disabled={isLoading}
+          startIcon={isLoading && <CircularProgress size={20} />}
         >
-          {isUploading ? 'Subiendo comprobante...' : isPending ? 'Actualizando...' : 'Actualizar'}
+          {isLoading ? 'Actualizando...' : 'Actualizar'}
         </Button>
       </DialogActions>
     </Dialog>

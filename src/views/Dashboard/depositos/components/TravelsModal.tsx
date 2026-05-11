@@ -114,14 +114,7 @@ const TravelsModal = ({ open, onClose, company }: TravelsModalProps) => {
           </Box>
         )
       }),
-      columnHelper.accessor('departure_time', {
-        header: 'Salida',
-        cell: ({ row }) => <Typography variant='body2'>{formatDate(row.original.departure_time)}</Typography>
-      }),
-      columnHelper.accessor('arrival_time', {
-        header: 'Llegada',
-        cell: ({ row }) => <Typography variant='body2'>{formatDate(row.original.arrival_time)}</Typography>
-      }),
+
       columnHelper.accessor('tickets_count', {
         header: 'Tickets',
         cell: ({ row }) => (
@@ -163,37 +156,92 @@ const TravelsModal = ({ open, onClose, company }: TravelsModalProps) => {
       }),
       columnHelper.accessor('isPaid', {
         header: 'Pagado',
-        cell: ({ row }) => (
-          <Chip
-            label={row.original.isPaid ? 'Sí' : 'No'}
-            color={row.original.isPaid ? 'success' : 'warning'}
-            size='small'
-          />
-        )
+        cell: ({ row }) => {
+          const isPaid = row.original.isPaid
+          const transactionStatus = row.original.transaction?.status
+
+          if (!isPaid) {
+            return <Chip label='No' color='error' size='small' />
+          }
+
+          if (isPaid && transactionStatus === 'COMPLETED') {
+            return <Chip label='Sí' color='success' size='small' />
+          }
+
+          if (isPaid && (transactionStatus === 'AUTHORIZED' || transactionStatus === 'IN_PROGRESS')) {
+            return <Chip label='Pendiente' color='warning' size='small' />
+          }
+
+          return <Chip label='Pendiente' color='warning' size='small' />
+        }
       }),
       columnHelper.accessor('bus.owner.name', {
-        header: 'Propietario',
-        cell: ({ row }) => <Typography variant='body2'>{row.original.bus.owner.name}</Typography>
+        header: 'Propietario / Datos Bancarios',
+        cell: ({ row }) => {
+          const owner = row.original.bus.owner
+          const bankAccount = owner.bankAccount
+
+          return (
+            <Box>
+              <Typography variant='body2' fontWeight={500}>
+                {owner.name}
+              </Typography>
+              {bankAccount && (
+                <>
+                  <Typography variant='caption' display='block' color='text.secondary'>
+                    CI: {owner.ci} | Tel: {owner.phone}
+                  </Typography>
+                  <Typography variant='caption' display='block' color='primary.main' sx={{ mt: 0.5 }}>
+                    Cuenta: {bankAccount.account}
+                  </Typography>
+
+                  <Typography variant='caption' display='block' color='text.secondary'>
+                    CI: {bankAccount.documentNumber}
+                  </Typography>
+                </>
+              )}
+            </Box>
+          )
+        }
       }),
       columnHelper.display({
         id: 'actions',
         header: 'Acciones',
         cell: ({ row }) => {
-          const hasAuthorizedTransaction = row.original.transaction?.status === 'AUTHORIZED'
+          const isPaid = row.original.isPaid
+          const transactionStatus = row.original.transaction?.status
 
-          const isDisabled =
-            !hasAuthorizedTransaction && (row.original.isPaid || row.original.travel_status !== 'closed')
+          if (!isPaid) {
+            return (
+              <Button
+                variant='contained'
+                size='small'
+                color='primary'
+                onClick={() => handleOpenTransactionDialog(row.original)}
+              >
+                Realizar Pago
+              </Button>
+            )
+          }
 
-          return (
-            <Button
-              variant='contained'
-              size='small'
-              onClick={() => handleOpenTransactionDialog(row.original)}
-              disabled={isDisabled}
-            >
-              {hasAuthorizedTransaction ? 'Verificar' : 'Realizar Pago'}
-            </Button>
-          )
+          if (isPaid && (transactionStatus === 'AUTHORIZED' || transactionStatus === 'IN_PROGRESS')) {
+            return (
+              <Button
+                variant='contained'
+                size='small'
+                color='info'
+                onClick={() => handleOpenTransactionDialog(row.original)}
+              >
+                Verificar
+              </Button>
+            )
+          }
+
+          if (isPaid && transactionStatus === 'COMPLETED') {
+            return null
+          }
+
+          return null
         },
         enableSorting: false
       })

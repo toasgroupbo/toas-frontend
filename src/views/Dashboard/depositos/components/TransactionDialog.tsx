@@ -12,20 +12,13 @@ import {
   Typography,
   CircularProgress,
   Alert,
-  Stepper,
-  Step,
-  StepLabel,
   Card,
   CardContent,
-  Divider,
-  List,
-  ListItem,
-  ListItemText
+  Divider
 } from '@mui/material'
 
 import { useProcessTransaction, useVerifyTransaction } from '@/hooks/useDeposits'
 import type { Travel } from '@/types/api/deposits'
-import type { ProcessTransactionResponse, VerifyTransactionResponse } from '@/types/api/transactions'
 
 interface TransactionDialogProps {
   open: boolean
@@ -33,102 +26,97 @@ interface TransactionDialogProps {
   travel: Travel
 }
 
+type DialogMode = 'confirm-process' | 'confirm-verify' | 'loading' | 'error' | 'success' | 'inprogress' | 'failed'
+
 const TransactionDialog = ({ open, onClose, travel }: TransactionDialogProps) => {
-  const [activeStep, setActiveStep] = useState(-1) // -1 = confirmation step
-  const [processResponse, setProcessResponse] = useState<ProcessTransactionResponse | null>(null)
-  const [verifyResponse, setVerifyResponse] = useState<VerifyTransactionResponse | null>(null)
+  const [mode, setMode] = useState<DialogMode>('confirm-process')
   const [error, setError] = useState<string | null>(null)
+  const [isVerifyMode, setIsVerifyMode] = useState(false)
 
   const processTransaction = useProcessTransaction()
   const verifyTransaction = useVerifyTransaction()
 
-  const steps = ['Procesar Transacción', 'Autorización', 'Verificación', 'Completado']
-
   useEffect(() => {
     if (open && travel) {
-      // Reset state when dialog opens
-      setVerifyResponse(null)
       setError(null)
 
-      // If travel already has AUTHORIZED transaction, skip to verification
-      if (travel.transaction && travel.transaction.status === 'AUTHORIZED') {
-        setProcessResponse({
-          id: travel.transaction.id,
-          transactionId: travel.transaction.transactionId,
-          status: travel.transaction.status,
-          processRequest: { spreadsheet: [] }, // Empty for existing transactions
-          createdAt: '',
-          updatedAt: ''
-        })
-        setActiveStep(-2) // Special step for verify-only confirmation
+      // Determine mode based on transaction status
+      if (travel.transaction) {
+        const status = travel.transaction.status
+
+        if (status === 'AUTHORIZED' || status === 'IN_PROGRESS') {
+          setIsVerifyMode(true)
+          setMode('confirm-verify')
+        } else if (status === 'FAILED') {
+          // Allow retry for failed transactions
+          setIsVerifyMode(false)
+          setMode('confirm-process')
+        } else {
+          setIsVerifyMode(false)
+          setMode('confirm-process')
+        }
       } else {
-        setActiveStep(-1) // Normal confirmation step
-        setProcessResponse(null)
+        setIsVerifyMode(false)
+        setMode('confirm-process')
       }
     }
   }, [open, travel])
 
   const handleProcessTransaction = async () => {
     try {
-      setActiveStep(0)
+      setMode('loading')
       setError(null)
 
-      // Step 1: Process transaction
       const response = await processTransaction.mutateAsync(travel.id)
 
-      setProcessResponse(response)
-      setActiveStep(1)
-
-      // Automatically proceed to verification if status is AUTHORIZED
+      // Show success message based on response
       if (response.status === 'AUTHORIZED') {
-        setTimeout(() => {
-          handleVerifyTransaction(response.id)
-        }, 1500) // Small delay to show the authorization step
+        setMode('success')
+      } else if (response.status === 'IN_PROGRESS') {
+        setMode('inprogress')
+      } else if (response.status === 'FAILED') {
+        setMode('failed')
       } else {
-        setError('La transacción no fue autorizada')
+        setMode('success')
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Error al procesar la transacción')
-      setActiveStep(0)
+      setMode('error')
     }
   }
 
-  const handleVerifyTransaction = async (transactionId: number) => {
+  const handleVerifyTransaction = async () => {
     try {
-      setActiveStep(2)
+      setMode('loading')
       setError(null)
 
-      // Step 2: Verify transaction - use the id (not transactionId string)
-      const response = await verifyTransaction.mutateAsync(transactionId.toString())
+      if (!travel.transaction?.id) {
+        throw new Error('No se encontró el ID de la transacción')
+      }
 
-      setVerifyResponse(response)
+      const response = await verifyTransaction.mutateAsync(travel.transaction.id.toString())
 
+      // Show result based on verification response
       if (response.status === 'COMPLETED') {
-        setActiveStep(3)
+        setMode('success')
+      } else if (response.status === 'IN_PROGRESS') {
+        setMode('inprogress')
+      } else if (response.status === 'FAILED') {
+        setMode('failed')
       } else {
-        setError('La verificación de la transacción falló')
+        setMode('success')
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Error al verificar la transacción')
-      setActiveStep(2)
+      setMode('error')
     }
   }
 
-  const handleRetryVerification = () => {
-    if (processResponse) {
-      handleVerifyTransaction(processResponse.id)
-    }
-  }
-
-  const handleStartVerification = () => {
-    if (processResponse) {
-      handleVerifyTransaction(processResponse.id)
-    }
-  }
-
-  const handleClose = () => {
-    if (activeStep === 3 || error) {
-      onClose()
+  const handleRetry = () => {
+    if (isVerifyMode) {
+      handleVerifyTransaction()
+    } else {
+      handleProcessTransaction()
     }
   }
 
@@ -138,15 +126,21 @@ const TransactionDialog = ({ open, onClose, travel }: TransactionDialogProps) =>
     return `Bs. ${num.toFixed(2)}`
   }
 
+  const canClose = mode !== 'loading'
+
   return (
-    <Dialog open={open} onClose={handleClose} maxWidth='md' fullWidth>
+    <Dialog
+      open={open}
+      onClose={canClose ? onClose : undefined}
+      maxWidth='md'
+      fullWidth
+      disableEscapeKeyDown={!canClose}
+    >
       <DialogTitle>
         <Box display='flex' alignItems='center' gap={2}>
           <i className='tabler-cash' style={{ fontSize: '24px' }} />
           <Box>
-            <Typography variant='h6'>
-              {activeStep === -2 ? 'Verificar Transacción' : 'Procesar Transacción'}
-            </Typography>
+            <Typography variant='h6'>{isVerifyMode ? 'Verificar Transacción' : 'Procesar Transacción'}</Typography>
             <Typography variant='body2' color='text.secondary'>
               Bus: {travel.bus.plaque} - {travel.bus.name}
             </Typography>
@@ -158,13 +152,80 @@ const TransactionDialog = ({ open, onClose, travel }: TransactionDialogProps) =>
       </DialogTitle>
 
       <DialogContent>
-        {/* Step -2: Verify-only Confirmation */}
-        {activeStep === -2 && (
+        {/* Confirm Process Mode */}
+        {mode === 'confirm-process' && (
+          <Box py={3}>
+            <Alert severity='warning' icon={<i className='tabler-alert-triangle' />} sx={{ mb: 3 }}>
+              <Typography variant='subtitle2'>¿Estás seguro?</Typography>
+              <Typography variant='body2'>Esta acción procesará la transacción bancaria para este viaje.</Typography>
+            </Alert>
+
+            <Card variant='outlined'>
+              <CardContent>
+                <Typography variant='h6' gutterBottom>
+                  Detalles del Viaje
+                </Typography>
+                <Divider sx={{ my: 2 }} />
+                <Box display='grid' gridTemplateColumns='1fr 1fr' gap={3}>
+                  <Box>
+                    <Typography variant='caption' color='text.secondary'>
+                      Bus
+                    </Typography>
+                    <Typography variant='body2' fontWeight={600}>
+                      {travel.bus.plaque} - {travel.bus.name}
+                    </Typography>
+                  </Box>
+                  <Box>
+                    <Typography variant='caption' color='text.secondary'>
+                      Propietario
+                    </Typography>
+                    <Typography variant='body2' fontWeight={600}>
+                      {travel.bus.owner.name}
+                    </Typography>
+                  </Box>
+                  <Box>
+                    <Typography variant='caption' color='text.secondary'>
+                      Monto App
+                    </Typography>
+                    <Typography variant='body2' color='primary.main' fontWeight={600}>
+                      {formatCurrency(travel.app_amount)}
+                    </Typography>
+                  </Box>
+                  <Box>
+                    <Typography variant='caption' color='text.secondary'>
+                      Comisión Total
+                    </Typography>
+                    <Typography variant='body2' color='success.main' fontWeight={600}>
+                      {formatCurrency(travel.total_commission)}
+                    </Typography>
+                  </Box>
+                  <Box>
+                    <Typography variant='caption' color='text.secondary'>
+                      Cuenta Bancaria
+                    </Typography>
+                    <Typography variant='body2' fontFamily='monospace'>
+                      {travel.bus.owner.bankAccount.account}
+                    </Typography>
+                  </Box>
+                  <Box>
+                    <Typography variant='caption' color='text.secondary'>
+                      Titular
+                    </Typography>
+                    <Typography variant='body2'>{travel.bus.owner.bankAccount.titularName}</Typography>
+                  </Box>
+                </Box>
+              </CardContent>
+            </Card>
+          </Box>
+        )}
+
+        {/* Confirm Verify Mode */}
+        {mode === 'confirm-verify' && (
           <Box py={3}>
             <Alert severity='info' icon={<i className='tabler-info-circle' />} sx={{ mb: 3 }}>
               <Typography variant='subtitle2'>Verificar Transacción Autorizada</Typography>
               <Typography variant='body2'>
-                Esta transacción ya fue autorizada previamente. ¿Deseas verificar su estado con el banco?
+                Esta transacción ya fue autorizada. ¿Deseas verificar su estado con el banco?
               </Typography>
             </Alert>
 
@@ -213,319 +274,72 @@ const TransactionDialog = ({ open, onClose, travel }: TransactionDialogProps) =>
           </Box>
         )}
 
-        {/* Step -1: Confirmation */}
-        {activeStep === -1 && (
-          <Box py={3}>
-            <Alert severity='warning' icon={<i className='tabler-alert-triangle' />} sx={{ mb: 3 }}>
-              <Typography variant='subtitle2'>¿Estás seguro?</Typography>
-              <Typography variant='body2'>
-                Esta acción procesará la transacción bancaria para este viaje. Una vez iniciado el proceso no se puede cancelar.
-              </Typography>
-            </Alert>
-
-            <Card variant='outlined'>
-              <CardContent>
-                <Typography variant='h6' gutterBottom>
-                  Detalles del Viaje
-                </Typography>
-                <Divider sx={{ my: 2 }} />
-                <Box display='grid' gridTemplateColumns='1fr 1fr' gap={3}>
-                  <Box>
-                    <Typography variant='caption' color='text.secondary'>
-                      Bus
-                    </Typography>
-                    <Typography variant='body2' fontWeight={600}>
-                      {travel.bus.plaque} - {travel.bus.name}
-                    </Typography>
-                  </Box>
-                  <Box>
-                    <Typography variant='caption' color='text.secondary'>
-                      Propietario
-                    </Typography>
-                    <Typography variant='body2' fontWeight={600}>
-                      {travel.bus.owner.name}
-                    </Typography>
-                  </Box>
-                  <Box>
-                    <Typography variant='caption' color='text.secondary'>
-                      Salida
-                    </Typography>
-                    <Typography variant='body2'>
-                      {new Date(travel.departure_time).toLocaleString('es-PE')}
-                    </Typography>
-                  </Box>
-                  <Box>
-                    <Typography variant='caption' color='text.secondary'>
-                      Llegada
-                    </Typography>
-                    <Typography variant='body2'>
-                      {new Date(travel.arrival_time).toLocaleString('es-PE')}
-                    </Typography>
-                  </Box>
-                  <Box>
-                    <Typography variant='caption' color='text.secondary'>
-                      Monto App
-                    </Typography>
-                    <Typography variant='body2' color='primary.main' fontWeight={600}>
-                      {formatCurrency(travel.app_amount)}
-                    </Typography>
-                  </Box>
-                  <Box>
-                    <Typography variant='caption' color='text.secondary'>
-                      Comisión Total
-                    </Typography>
-                    <Typography variant='body2' color='success.main' fontWeight={600}>
-                      {formatCurrency(travel.total_commission)}
-                    </Typography>
-                  </Box>
-                  <Box>
-                    <Typography variant='caption' color='text.secondary'>
-                      Cuenta Bancaria
-                    </Typography>
-                    <Typography variant='body2' fontFamily='monospace'>
-                      {travel.bus.owner.bankAccount.account}
-                    </Typography>
-                  </Box>
-                  <Box>
-                    <Typography variant='caption' color='text.secondary'>
-                      Titular
-                    </Typography>
-                    <Typography variant='body2'>
-                      {travel.bus.owner.bankAccount.titularName}
-                    </Typography>
-                  </Box>
-                </Box>
-              </CardContent>
-            </Card>
-          </Box>
-        )}
-
-        {activeStep >= 0 && (
-          <>
-            {/* Stepper */}
-            <Stepper activeStep={activeStep} sx={{ mb: 4 }}>
-              {steps.map(label => (
-                <Step key={label}>
-                  <StepLabel>{label}</StepLabel>
-                </Step>
-              ))}
-            </Stepper>
-
-            {/* Error Alert */}
-            {error && (
-              <Alert severity='error' sx={{ mb: 3 }}>
-                {error}
-              </Alert>
-            )}
-
-            {/* Step 0: Processing */}
-            {activeStep === 0 && !error && (
-              <Box display='flex' flexDirection='column' alignItems='center' gap={2} py={4}>
-                <CircularProgress size={60} />
-                <Typography variant='h6'>Procesando transacción...</Typography>
-                <Typography variant='body2' color='text.secondary'>
-                  Iniciando el proceso de pago
-                </Typography>
-              </Box>
-            )}
-          </>
-        )}
-
-        {/* Step 1: Authorized */}
-        {activeStep === 1 && processResponse && (
-          <Box>
-            <Alert severity='info' icon={<i className='tabler-checks' />} sx={{ mb: 3 }}>
-              <Typography variant='subtitle2'>Transacción Autorizada</Typography>
-              <Typography variant='body2'>
-                ID: {processResponse.transactionId}
-              </Typography>
-            </Alert>
-
-            <Card variant='outlined'>
-              <CardContent>
-                <Typography variant='h6' gutterBottom>
-                  Detalles del Pago
-                </Typography>
-                <Divider sx={{ my: 2 }} />
-                <List>
-                  {processResponse.processRequest.spreadsheet.map((item, index) => (
-                    <ListItem key={index} sx={{ flexDirection: 'column', alignItems: 'flex-start', py: 2 }}>
-                      <Box width='100%'>
-                        <Typography variant='subtitle2' color='primary'>
-                          Destinatario #{index + 1}
-                        </Typography>
-                        <Box display='grid' gridTemplateColumns='1fr 1fr' gap={2} mt={1}>
-                          <Box>
-                            <Typography variant='caption' color='text.secondary'>
-                              Correo
-                            </Typography>
-                            <Typography variant='body2'>{item.mail}</Typography>
-                          </Box>
-                          <Box>
-                            <Typography variant='caption' color='text.secondary'>
-                              Monto
-                            </Typography>
-                            <Typography variant='body2' fontWeight={600}>
-                              {formatCurrency(item.amount)}
-                            </Typography>
-                          </Box>
-                          <Box>
-                            <Typography variant='caption' color='text.secondary'>
-                              Titular
-                            </Typography>
-                            <Typography variant='body2'>{item.titularName}</Typography>
-                          </Box>
-                          <Box>
-                            <Typography variant='caption' color='text.secondary'>
-                              Cuenta
-                            </Typography>
-                            <Typography variant='body2' fontFamily='monospace'>
-                              {item.accountNumber}
-                            </Typography>
-                          </Box>
-                        </Box>
-                      </Box>
-                      {index < processResponse.processRequest.spreadsheet.length - 1 && (
-                        <Divider sx={{ width: '100%', mt: 2 }} />
-                      )}
-                    </ListItem>
-                  ))}
-                </List>
-              </CardContent>
-            </Card>
-
-            <Box display='flex' alignItems='center' justifyContent='center' gap={2} mt={3}>
-              <CircularProgress size={24} />
-              <Typography variant='body2' color='text.secondary'>
-                Verificando transacción...
-              </Typography>
-            </Box>
-          </Box>
-        )}
-
-        {/* Step 2: Verifying */}
-        {activeStep === 2 && !verifyResponse && (
-          <Box display='flex' flexDirection='column' alignItems='center' gap={2} py={4}>
+        {/* Loading Mode */}
+        {mode === 'loading' && (
+          <Box display='flex' flexDirection='column' alignItems='center' gap={2} py={6}>
             <CircularProgress size={60} />
-            <Typography variant='h6'>Verificando transacción...</Typography>
+            <Typography variant='h6'>
+              {isVerifyMode ? 'Verificando transacción...' : 'Procesando transacción...'}
+            </Typography>
             <Typography variant='body2' color='text.secondary'>
-              Confirmando el pago con el banco
+              Por favor espera
             </Typography>
           </Box>
         )}
 
-        {/* Step 3: Completed */}
-        {activeStep === 3 && verifyResponse && (
-          <Box>
-            <Alert severity='success' icon={<i className='tabler-circle-check' />} sx={{ mb: 3 }}>
-              <Typography variant='subtitle2'>Transacción Completada Exitosamente</Typography>
+        {/* Error Mode */}
+        {mode === 'error' && error && (
+          <Box py={3}>
+            <Alert severity='error' icon={<i className='tabler-alert-circle' />}>
+              <Typography variant='subtitle2'>Error</Typography>
+              <Typography variant='body2'>{error}</Typography>
+            </Alert>
+          </Box>
+        )}
+
+        {/* Success Mode */}
+        {mode === 'success' && (
+          <Box py={3}>
+            <Alert severity='success' icon={<i className='tabler-circle-check' />}>
+              <Typography variant='subtitle2'>
+                {isVerifyMode ? 'Pago Verificado Exitosamente' : 'Pago Procesado Exitosamente'}
+              </Typography>
               <Typography variant='body2'>
-                ID: {verifyResponse.transactionId}
+                {isVerifyMode
+                  ? 'La transacción ha sido completada y el pago se realizó correctamente.'
+                  : 'La transacción ha sido autorizada exitosamente.'}
               </Typography>
             </Alert>
+          </Box>
+        )}
 
-            {verifyResponse.batchDetailResponse && (
-              <Card variant='outlined'>
-                <CardContent>
-                  <Typography variant='h6' gutterBottom>
-                    Resumen de la Operación
-                  </Typography>
-                  <Divider sx={{ my: 2 }} />
-                  <Box display='grid' gridTemplateColumns='1fr 1fr' gap={3}>
-                    <Box>
-                      <Typography variant='caption' color='text.secondary'>
-                        ID de Operación
-                      </Typography>
-                      <Typography variant='body2' fontFamily='monospace'>
-                        {verifyResponse.batchDetailResponse.operationId}
-                      </Typography>
-                    </Box>
-                    <Box>
-                      <Typography variant='caption' color='text.secondary'>
-                        Estado
-                      </Typography>
-                      <Typography variant='body2' color='success.main' fontWeight={600}>
-                        {verifyResponse.batchDetailResponse.status}
-                      </Typography>
-                    </Box>
-                    <Box>
-                      <Typography variant='caption' color='text.secondary'>
-                        Total de Operaciones
-                      </Typography>
-                      <Typography variant='body2'>
-                        {verifyResponse.batchDetailResponse.totalOperations}
-                      </Typography>
-                    </Box>
-                    <Box>
-                      <Typography variant='caption' color='text.secondary'>
-                        Operaciones Exitosas
-                      </Typography>
-                      <Typography variant='body2' color='success.main'>
-                        {verifyResponse.batchDetailResponse.successfulOperations}
-                      </Typography>
-                    </Box>
-                    <Box>
-                      <Typography variant='caption' color='text.secondary'>
-                        Operaciones Fallidas
-                      </Typography>
-                      <Typography variant='body2' color={verifyResponse.batchDetailResponse.failedOperations > 0 ? 'error.main' : 'text.secondary'}>
-                        {verifyResponse.batchDetailResponse.failedOperations}
-                      </Typography>
-                    </Box>
-                    <Box>
-                      <Typography variant='caption' color='text.secondary'>
-                        Fecha de Creación
-                      </Typography>
-                      <Typography variant='body2'>
-                        {new Date(verifyResponse.batchDetailResponse.createdAt).toLocaleString('es-PE')}
-                      </Typography>
-                    </Box>
-                    <Box>
-                      <Typography variant='caption' color='text.secondary'>
-                        Fecha de Completado
-                      </Typography>
-                      <Typography variant='body2'>
-                        {new Date(verifyResponse.batchDetailResponse.completedAt).toLocaleString('es-PE')}
-                      </Typography>
-                    </Box>
-                  </Box>
+        {/* In Progress Mode */}
+        {mode === 'inprogress' && (
+          <Box py={3}>
+            <Alert severity='warning' icon={<i className='tabler-clock' />}>
+              <Typography variant='subtitle2'>Pago En Proceso</Typography>
+              <Typography variant='body2'>
+                La transacción está siendo procesada por el banco. Por favor, vuelva a verificar más tarde.
+              </Typography>
+            </Alert>
+          </Box>
+        )}
 
-                  {verifyResponse.batchDetailResponse.userActions && verifyResponse.batchDetailResponse.userActions.length > 0 && (
-                    <>
-                      <Divider sx={{ my: 3 }} />
-                      <Typography variant='subtitle2' gutterBottom>
-                        Acciones del Usuario
-                      </Typography>
-                      <List dense>
-                        {verifyResponse.batchDetailResponse.userActions.map((action, index) => (
-                          <ListItem key={index}>
-                            <ListItemText
-                              primary={action.action}
-                              secondary={`Usuario: ${action.userId} - ${new Date(action.timestamp).toLocaleString('es-PE')}`}
-                            />
-                          </ListItem>
-                        ))}
-                      </List>
-                    </>
-                  )}
-                </CardContent>
-              </Card>
-            )}
+        {/* Failed Mode */}
+        {mode === 'failed' && (
+          <Box py={3}>
+            <Alert severity='error' icon={<i className='tabler-x' />}>
+              <Typography variant='subtitle2'>Pago Fallido</Typography>
+              <Typography variant='body2'>
+                El pago ha fallado por completo. Puede volver a intentar realizar el pago nuevamente.
+              </Typography>
+            </Alert>
           </Box>
         )}
       </DialogContent>
 
       <DialogActions>
-        {activeStep === -2 ? (
-          <>
-            <Button onClick={onClose} variant='outlined'>
-              Cancelar
-            </Button>
-            <Button onClick={handleStartVerification} variant='contained' color='primary'>
-              Verificar Transacción
-            </Button>
-          </>
-        ) : activeStep === -1 ? (
+        {mode === 'confirm-process' && (
           <>
             <Button onClick={onClose} variant='outlined'>
               Cancelar
@@ -534,26 +348,46 @@ const TransactionDialog = ({ open, onClose, travel }: TransactionDialogProps) =>
               Confirmar y Procesar
             </Button>
           </>
-        ) : (
+        )}
+
+        {mode === 'confirm-verify' && (
           <>
-            <Button
-              onClick={handleClose}
-              variant={activeStep === 3 ? 'contained' : 'outlined'}
-              disabled={activeStep >= 0 && activeStep < 3 && !error}
-            >
-              {activeStep === 3 ? 'Finalizar' : 'Cerrar'}
+            <Button onClick={onClose} variant='outlined'>
+              Cancelar
             </Button>
-            {error && activeStep === 2 && (
-              <Button onClick={handleRetryVerification} variant='contained' color='primary'>
-                Volver a Intentar Verificación
-              </Button>
-            )}
-            {error && activeStep !== 2 && (
-              <Button onClick={handleProcessTransaction} variant='contained' color='primary'>
-                Reintentar
-              </Button>
-            )}
+            <Button onClick={handleVerifyTransaction} variant='contained' color='primary'>
+              Verificar Transacción
+            </Button>
           </>
+        )}
+
+        {mode === 'error' && (
+          <>
+            <Button onClick={onClose} variant='outlined'>
+              Cerrar
+            </Button>
+            <Button onClick={handleRetry} variant='contained' color='primary'>
+              Reintentar
+            </Button>
+          </>
+        )}
+
+        {mode === 'success' && (
+          <Button onClick={onClose} variant='contained' color='primary'>
+            Aceptar
+          </Button>
+        )}
+
+        {mode === 'inprogress' && (
+          <Button onClick={onClose} variant='contained' color='primary'>
+            Entendido
+          </Button>
+        )}
+
+        {mode === 'failed' && (
+          <Button onClick={onClose} variant='contained' color='primary'>
+            Cerrar
+          </Button>
         )}
       </DialogActions>
     </Dialog>

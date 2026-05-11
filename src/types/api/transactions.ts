@@ -12,7 +12,7 @@ export interface ProcessRequest {
 export interface ProcessTransactionResponse {
   id: number
   transactionId: string
-  status: 'AUTHORIZED' | 'COMPLETED' | 'FAILED'
+  status: 'AUTHORIZED' | 'COMPLETED' | 'FAILED' | 'IN_PROGRESS'
   processRequest: ProcessRequest
   createdAt: string
   updatedAt: string
@@ -36,7 +36,7 @@ export interface BatchDetailResponse {
 export interface VerifyTransactionResponse {
   id: number
   transactionId: string
-  status: 'COMPLETED' | 'FAILED'
+  status: 'COMPLETED' | 'FAILED' | 'IN_PROGRESS'
   batchDetailResponse: BatchDetailResponse
   createdAt: string
   updatedAt: string

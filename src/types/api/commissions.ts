@@ -34,4 +34,5 @@ export interface CommissionsFilters {
 export interface UpdateCommissionPayload {
   paid: string
   voucherUrl?: string
+  paidAt?: string
 }

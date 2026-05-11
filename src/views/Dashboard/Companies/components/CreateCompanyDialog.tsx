@@ -65,7 +65,7 @@ const CreateCompanyDialog = ({ open, onClose, onSubmit, isLoading }: CreateCompa
         bankCode: '',
         account: '',
         titularName: '',
-        branchOfficeId: 201, // La Paz por defecto
+        branchOfficeId: 201,
         documentNumber: '',
         documentType: '',
         documentExtension: ''
@@ -262,7 +262,6 @@ const CreateCompanyDialog = ({ open, onClose, onSubmit, isLoading }: CreateCompa
               />
             </Grid>
 
-           
             <Grid size={{ xs: 12, sm: 6 }}>
               <Controller
                 name='commission'
@@ -318,14 +317,13 @@ const CreateCompanyDialog = ({ open, onClose, onSubmit, isLoading }: CreateCompa
                 )}
               />
             </Grid>
-          
+
             <Grid size={12}>
               <Typography variant='h6' sx={{ mt: 2, mb: 1 }}>
                 Datos Bancarios
               </Typography>
             </Grid>
 
-           
             <Grid size={{ xs: 12, sm: 6 }}>
               <Controller
                 name='bankAccount.bankCode'
@@ -508,7 +506,6 @@ const CreateCompanyDialog = ({ open, onClose, onSubmit, isLoading }: CreateCompa
               />
             </Grid>
 
-            
             <Grid size={12}>
               <Typography variant='h6' sx={{ mt: 2, mb: 1 }}>
                 Datos del Administrador

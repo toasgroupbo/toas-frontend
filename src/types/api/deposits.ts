@@ -42,7 +42,7 @@ export interface Driver {
 export interface TravelTransaction {
   id: number
   transactionId: string
-  status: 'AUTHORIZED' | 'COMPLETED' | 'FAILED'
+  status: 'AUTHORIZED' | 'COMPLETED' | 'FAILED' | 'IN_PROGRESS'
 }
 
 export interface Travel {

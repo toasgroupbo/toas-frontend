@@ -153,7 +153,7 @@ const OwnerDialog = ({ open, onClose, onSubmit, owner, isLoading, isEdit = false
             bankCode: '',
             account: '',
             titularName: '',
-            branchOfficeId: 201,
+            branchOfficeId: 0,
             documentNumber: '',
             documentType: '',
             documentExtension: ''
@@ -390,180 +390,180 @@ const OwnerDialog = ({ open, onClose, onSubmit, owner, isLoading, isEdit = false
               </Typography>
             </Grid>
 
-                <Grid size={{ xs: 12, sm: 6 }}>
-                  <Controller
-                    name='bankAccount.bankCode'
-                    control={control}
-                    render={({ field }) => (
-                      <CustomTextField
-                        select
-                        fullWidth
-                        label='Banco *'
-                        {...field}
-                        error={!!errors.bankAccount?.bankCode}
-                        helperText={errors.bankAccount?.bankCode?.message}
-                        InputProps={{
-                          startAdornment: (
-                            <InputAdornment position='start'>
-                              <i className='tabler-building-bank' />
-                            </InputAdornment>
-                          )
-                        }}
-                      >
-                        {BANCOS_OPTIONS.map(banco => (
-                          <MenuItem key={banco.value} value={banco.value}>
-                            {banco.label}
-                          </MenuItem>
-                        ))}
-                      </CustomTextField>
-                    )}
-                  />
-                </Grid>
-
-                <Grid size={{ xs: 12, sm: 6 }}>
-                  <Controller
-                    name='bankAccount.branchOfficeId'
-                    control={control}
-                    render={({ field }) => (
-                      <CustomTextField
-                        select
-                        fullWidth
-                        label='Sucursal *'
-                        {...field}
-                        onChange={e => field.onChange(Number(e.target.value))}
-                        error={!!errors.bankAccount?.branchOfficeId}
-                        helperText={errors.bankAccount?.branchOfficeId?.message}
-                        InputProps={{
-                          startAdornment: (
-                            <InputAdornment position='start'>
-                              <i className='tabler-building' />
-                            </InputAdornment>
-                          )
-                        }}
-                      >
-                        {BRANCH_OFFICE_OPTIONS.map(office => (
-                          <MenuItem key={office.value} value={office.value}>
-                            {office.label}
-                          </MenuItem>
-                        ))}
-                      </CustomTextField>
-                    )}
-                  />
-                </Grid>
-
-                <Grid size={{ xs: 12, sm: 6 }}>
+            <Grid size={{ xs: 12, sm: 6 }}>
+              <Controller
+                name='bankAccount.bankCode'
+                control={control}
+                render={({ field }) => (
                   <CustomTextField
+                    select
                     fullWidth
-                    label='Número de Cuenta *'
-                    placeholder='1234567890'
-                    {...register('bankAccount.account')}
-                    error={!!errors.bankAccount?.account}
-                    helperText={errors.bankAccount?.account?.message}
+                    label='Banco *'
+                    {...field}
+                    error={!!errors.bankAccount?.bankCode}
+                    helperText={errors.bankAccount?.bankCode?.message}
                     InputProps={{
                       startAdornment: (
                         <InputAdornment position='start'>
-                          <i className='tabler-credit-card' />
+                          <i className='tabler-building-bank' />
                         </InputAdornment>
                       )
                     }}
-                  />
-                </Grid>
+                  >
+                    {BANCOS_OPTIONS.map(banco => (
+                      <MenuItem key={banco.value} value={banco.value}>
+                        {banco.label}
+                      </MenuItem>
+                    ))}
+                  </CustomTextField>
+                )}
+              />
+            </Grid>
 
-                <Grid size={{ xs: 12, sm: 6 }}>
+            <Grid size={{ xs: 12, sm: 6 }}>
+              <Controller
+                name='bankAccount.branchOfficeId'
+                control={control}
+                render={({ field }) => (
                   <CustomTextField
+                    select
                     fullWidth
-                    label='Nombre del Titular *'
-                    placeholder='Juan Pérez'
-                    {...register('bankAccount.titularName')}
-                    error={!!errors.bankAccount?.titularName}
-                    helperText={errors.bankAccount?.titularName?.message}
+                    label='Sucursal *'
+                    {...field}
+                    onChange={e => field.onChange(Number(e.target.value))}
+                    error={!!errors.bankAccount?.branchOfficeId}
+                    helperText={errors.bankAccount?.branchOfficeId?.message}
                     InputProps={{
                       startAdornment: (
                         <InputAdornment position='start'>
-                          <i className='tabler-user' />
+                          <i className='tabler-building' />
                         </InputAdornment>
                       )
                     }}
-                  />
-                </Grid>
+                  >
+                    {BRANCH_OFFICE_OPTIONS.map(office => (
+                      <MenuItem key={office.value} value={office.value}>
+                        {office.label}
+                      </MenuItem>
+                    ))}
+                  </CustomTextField>
+                )}
+              />
+            </Grid>
 
-                <Grid size={{ xs: 12, sm: 6 }}>
-                  <Controller
-                    name='bankAccount.documentType'
-                    control={control}
-                    render={({ field }) => (
-                      <CustomTextField
-                        select
-                        fullWidth
-                        label='Tipo de Documento *'
-                        {...field}
-                        error={!!errors.bankAccount?.documentType}
-                        helperText={errors.bankAccount?.documentType?.message}
-                        InputProps={{
-                          startAdornment: (
-                            <InputAdornment position='start'>
-                              <i className='tabler-file-text' />
-                            </InputAdornment>
-                          )
-                        }}
-                      >
-                        {DOCUMENT_TYPE_OPTIONS.map(type => (
-                          <MenuItem key={type.value} value={type.value}>
-                            {type.label}
-                          </MenuItem>
-                        ))}
-                      </CustomTextField>
-                    )}
-                  />
-                </Grid>
+            <Grid size={{ xs: 12, sm: 6 }}>
+              <CustomTextField
+                fullWidth
+                label='Número de Cuenta *'
+                placeholder='1234567890'
+                {...register('bankAccount.account')}
+                error={!!errors.bankAccount?.account}
+                helperText={errors.bankAccount?.account?.message}
+                InputProps={{
+                  startAdornment: (
+                    <InputAdornment position='start'>
+                      <i className='tabler-credit-card' />
+                    </InputAdornment>
+                  )
+                }}
+              />
+            </Grid>
 
-                <Grid size={{ xs: 12, sm: 6 }}>
+            <Grid size={{ xs: 12, sm: 6 }}>
+              <CustomTextField
+                fullWidth
+                label='Nombre del Titular *'
+                placeholder='Juan Pérez'
+                {...register('bankAccount.titularName')}
+                error={!!errors.bankAccount?.titularName}
+                helperText={errors.bankAccount?.titularName?.message}
+                InputProps={{
+                  startAdornment: (
+                    <InputAdornment position='start'>
+                      <i className='tabler-user' />
+                    </InputAdornment>
+                  )
+                }}
+              />
+            </Grid>
+
+            <Grid size={{ xs: 12, sm: 6 }}>
+              <Controller
+                name='bankAccount.documentType'
+                control={control}
+                render={({ field }) => (
                   <CustomTextField
+                    select
                     fullWidth
-                    label='Número de Documento *'
-                    placeholder='1234567890'
-                    {...register('bankAccount.documentNumber')}
-                    error={!!errors.bankAccount?.documentNumber}
-                    helperText={errors.bankAccount?.documentNumber?.message}
+                    label='Tipo de Documento *'
+                    {...field}
+                    error={!!errors.bankAccount?.documentType}
+                    helperText={errors.bankAccount?.documentType?.message}
                     InputProps={{
                       startAdornment: (
                         <InputAdornment position='start'>
-                          <i className='tabler-id' />
+                          <i className='tabler-file-text' />
                         </InputAdornment>
                       )
                     }}
-                  />
-                </Grid>
+                  >
+                    {DOCUMENT_TYPE_OPTIONS.map(type => (
+                      <MenuItem key={type.value} value={type.value}>
+                        {type.label}
+                      </MenuItem>
+                    ))}
+                  </CustomTextField>
+                )}
+              />
+            </Grid>
 
-                <Grid size={{ xs: 12, sm: 6 }}>
-                  <Controller
-                    name='bankAccount.documentExtension'
-                    control={control}
-                    render={({ field }) => (
-                      <CustomTextField
-                        select
-                        fullWidth
-                        label='Extensión de Documento *'
-                        {...field}
-                        error={!!errors.bankAccount?.documentExtension}
-                        helperText={errors.bankAccount?.documentExtension?.message}
-                        InputProps={{
-                          startAdornment: (
-                            <InputAdornment position='start'>
-                              <i className='tabler-map-pin' />
-                            </InputAdornment>
-                          )
-                        }}
-                      >
-                        {DOCUMENT_EXTENSION_OPTIONS.map(ext => (
-                          <MenuItem key={ext.value} value={ext.value}>
-                            {ext.label}
-                          </MenuItem>
-                        ))}
-                      </CustomTextField>
-                    )}
-                  />
-                </Grid>
+            <Grid size={{ xs: 12, sm: 6 }}>
+              <CustomTextField
+                fullWidth
+                label='Número de Documento *'
+                placeholder='1234567890'
+                {...register('bankAccount.documentNumber')}
+                error={!!errors.bankAccount?.documentNumber}
+                helperText={errors.bankAccount?.documentNumber?.message}
+                InputProps={{
+                  startAdornment: (
+                    <InputAdornment position='start'>
+                      <i className='tabler-id' />
+                    </InputAdornment>
+                  )
+                }}
+              />
+            </Grid>
+
+            <Grid size={{ xs: 12, sm: 6 }}>
+              <Controller
+                name='bankAccount.documentExtension'
+                control={control}
+                render={({ field }) => (
+                  <CustomTextField
+                    select
+                    fullWidth
+                    label='Extensión de Documento *'
+                    {...field}
+                    error={!!errors.bankAccount?.documentExtension}
+                    helperText={errors.bankAccount?.documentExtension?.message}
+                    InputProps={{
+                      startAdornment: (
+                        <InputAdornment position='start'>
+                          <i className='tabler-map-pin' />
+                        </InputAdornment>
+                      )
+                    }}
+                  >
+                    {DOCUMENT_EXTENSION_OPTIONS.map(ext => (
+                      <MenuItem key={ext.value} value={ext.value}>
+                        {ext.label}
+                      </MenuItem>
+                    ))}
+                  </CustomTextField>
+                )}
+              />
+            </Grid>
           </Grid>
         </DialogContent>
 
