@@ -23,6 +23,7 @@ export interface CustomersResponse {
     hasNextPage: boolean
     hasPreviousPage: boolean
   }
+  totalBalance: number
 }
 
 export interface CustomersQueryParams {

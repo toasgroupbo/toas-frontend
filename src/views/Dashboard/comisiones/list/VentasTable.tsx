@@ -35,6 +35,7 @@ import tableStyles from '@core/styles/table.module.css'
 import UpdateCommissionDialog from '@/views/Dashboard/comisiones/components/UpdateCommissionDialog'
 import CommissionsChartModal from '@/views/Dashboard/comisiones/components/CommissionsChartModal'
 import ViewVoucherModal from '@/views/Dashboard/comisiones/components/ViewVoucherModal'
+import { useAuth } from '@/contexts/AuthContext'
 
 const fuzzyFilter: FilterFn<any> = (row, columnId, value, addMeta) => {
   const itemRank = rankItem(row.getValue(columnId), value)
@@ -61,6 +62,7 @@ const formatDate = (dateString: string) => {
 }
 
 const VentasTable = () => {
+  const { isCompanyAdmin } = useAuth()
   const [pageSize, setPageSize] = useState(10)
   const [currentPage, setCurrentPage] = useState(1)
   const [startDate, setStartDate] = useState<Date | null>(null)
@@ -118,8 +120,8 @@ const VentasTable = () => {
     setSelectedCommission(null)
   }
 
-  const columns = useMemo<ColumnDef<Commission, any>[]>(
-    () => [
+  const columns = useMemo<ColumnDef<Commission, any>[]>(() => {
+    const baseColumns: ColumnDef<Commission, any>[] = [
       columnHelper.display({
         id: 'nro',
         header: 'NRO',
@@ -206,57 +208,64 @@ const VentasTable = () => {
             </Box>
           )
         }
-      }),
-      columnHelper.display({
-        id: 'actions',
-        header: 'COMPROBANTE',
-        cell: ({ row }) => {
-          const hasVoucher = !!row.original.voucher
+      })
+    ]
 
-          return (
-            <Box display='flex' gap={1} justifyContent='center'>
-              {hasVoucher ? (
-                <>
-                  <Tooltip title='Ver'>
-                    <Button
-                      size='small'
-                      color='info'
-                      variant='text'
-                      onClick={() => handleViewVoucher(row.original)}
-                    >
-                      Ver
-                    </Button>
-                  </Tooltip>
-                  <Tooltip title='Editar'>
+    // Only add COMPROBANTE column if user is not COMPANY_ADMIN
+    if (!isCompanyAdmin) {
+      baseColumns.push(
+        columnHelper.display({
+          id: 'actions',
+          header: 'COMPROBANTE',
+          cell: ({ row }) => {
+            const hasVoucher = !!row.original.voucher
+
+            return (
+              <Box display='flex' gap={1} justifyContent='center'>
+                {hasVoucher ? (
+                  <>
+                    <Tooltip title='Ver'>
+                      <Button
+                        size='small'
+                        color='info'
+                        variant='text'
+                        onClick={() => handleViewVoucher(row.original)}
+                      >
+                        Ver
+                      </Button>
+                    </Tooltip>
+                    <Tooltip title='Editar'>
+                      <Button
+                        size='small'
+                        color='primary'
+                        variant='text'
+                        onClick={() => handleUpdateClick(row.original)}
+                      >
+                        Editar
+                      </Button>
+                    </Tooltip>
+                  </>
+                ) : (
+                  <Tooltip title='Insertar Comprobante'>
                     <Button
                       size='small'
                       color='primary'
                       variant='text'
                       onClick={() => handleUpdateClick(row.original)}
                     >
-                      Editar
+                      Insertar
                     </Button>
                   </Tooltip>
-                </>
-              ) : (
-                <Tooltip title='Insertar Comprobante'>
-                  <Button
-                    size='small'
-                    color='primary'
-                    variant='text'
-                    onClick={() => handleUpdateClick(row.original)}
-                  >
-                    Insertar
-                  </Button>
-                </Tooltip>
-              )}
-            </Box>
-          )
-        }
-      })
-    ],
-    [currentPage, pageSize]
-  )
+                )}
+              </Box>
+            )
+          }
+        })
+      )
+    }
+
+    return baseColumns
+  }, [currentPage, pageSize, isCompanyAdmin])
 
   const table = useReactTable<Commission>({
     data: commissions,
@@ -372,7 +381,7 @@ const VentasTable = () => {
           <table className={tableStyles.table}>
             <thead>
               <tr style={{ backgroundColor: 'var(--mui-palette-success-lightOpacity)' }}>
-                <th colSpan={10} style={{ textAlign: 'center', padding: '12px' }}>
+                <th colSpan={isCompanyAdmin ? 9 : 10} style={{ textAlign: 'center', padding: '12px' }}>
                   <Typography variant='subtitle1' fontWeight={600}>
                     COMISION EMPRESA BS. 15
                   </Typography>
@@ -407,7 +416,7 @@ const VentasTable = () => {
             {paginatedData.length === 0 ? (
               <tbody>
                 <tr>
-                  <td colSpan={10} className='text-center py-8'>
+                  <td colSpan={isCompanyAdmin ? 9 : 10} className='text-center py-8'>
                     <Typography>No hay datos de comisiones disponibles</Typography>
                   </td>
                 </tr>
@@ -466,24 +475,26 @@ const VentasTable = () => {
                         />
                       </Box>
                     </td>
-                    <td>
-                      <Box display='flex' gap={1} justifyContent='center'>
-                        {row.voucher ? (
-                          <>
-                            <Button size='small' color='info' variant='text' onClick={() => handleViewVoucher(row)}>
-                              Ver
-                            </Button>
+                    {!isCompanyAdmin && (
+                      <td>
+                        <Box display='flex' gap={1} justifyContent='center'>
+                          {row.voucher ? (
+                            <>
+                              <Button size='small' color='info' variant='text' onClick={() => handleViewVoucher(row)}>
+                                Ver
+                              </Button>
+                              <Button size='small' color='primary' variant='text' onClick={() => handleUpdateClick(row)}>
+                                Editar
+                              </Button>
+                            </>
+                          ) : (
                             <Button size='small' color='primary' variant='text' onClick={() => handleUpdateClick(row)}>
-                              Editar
+                              Insertar
                             </Button>
-                          </>
-                        ) : (
-                          <Button size='small' color='primary' variant='text' onClick={() => handleUpdateClick(row)}>
-                            Insertar
-                          </Button>
-                        )}
-                      </Box>
-                    </td>
+                          )}
+                        </Box>
+                      </td>
+                    )}
                   </tr>
                 ))}
               </tbody>

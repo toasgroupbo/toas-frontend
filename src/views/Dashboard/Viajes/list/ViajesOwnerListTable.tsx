@@ -119,6 +119,7 @@ const columnHelper = createColumnHelper<TravelWithActionsType>()
 const ViajesOwnerListTable = () => {
   const [searchQuery, setSearchQuery] = useState('')
   const [statusFilter, setStatusFilter] = useState<string>('all')
+  const [isPaidFilter, setIsPaidFilter] = useState<string>('all')
   const [datePreset, setDatePreset] = useState<DateRangePreset>('custom')
   const [customStartDate, setCustomStartDate] = useState<string>('')
   const [customEndDate, setCustomEndDate] = useState<string>('')
@@ -182,9 +183,10 @@ const ViajesOwnerListTable = () => {
       startDate: dateRange.startDate,
       endDate: dateRange.endDate,
       origin_placeId: originPlaceId ? Number(originPlaceId) : undefined,
-      destination_placeId: destinationPlaceId ? Number(destinationPlaceId) : undefined
+      destination_placeId: destinationPlaceId ? Number(destinationPlaceId) : undefined,
+      isPaid: isPaidFilter === 'all' ? undefined : isPaidFilter === 'paid'
     }
-  }, [statusFilter, datePreset, customStartDate, customEndDate, originPlaceId, destinationPlaceId])
+  }, [statusFilter, datePreset, customStartDate, customEndDate, originPlaceId, destinationPlaceId, isPaidFilter])
 
   const { data: travelsResponse, isLoading, error } = useTravelsForOwner(apiFilters)
 
@@ -432,6 +434,17 @@ const ViajesOwnerListTable = () => {
             </div>
           )
         }
+      }),
+      columnHelper.accessor('isPaid', {
+        header: 'Pagado',
+        cell: ({ row }) => (
+          <Chip
+            label={row.original.isPaid ? 'Sí' : 'No'}
+            color={row.original.isPaid ? 'success' : 'warning'}
+            size='small'
+            variant='tonal'
+          />
+        )
       })
     ],
     []
@@ -580,6 +593,18 @@ const ViajesOwnerListTable = () => {
             <MenuItem value='active'>Activo</MenuItem>
             <MenuItem value='closed'>Cerrado</MenuItem>
             <MenuItem value='cancelled'>Cancelado</MenuItem>
+          </CustomTextField>
+          <CustomTextField
+            select
+            label='Pagado'
+            value={isPaidFilter}
+            onChange={e => setIsPaidFilter(e.target.value)}
+            size='small'
+            sx={{ minWidth: 120 }}
+          >
+            <MenuItem value='all'>Todos</MenuItem>
+            <MenuItem value='paid'>Pagado</MenuItem>
+            <MenuItem value='pending'>Pendiente</MenuItem>
           </CustomTextField>
         </div>
 

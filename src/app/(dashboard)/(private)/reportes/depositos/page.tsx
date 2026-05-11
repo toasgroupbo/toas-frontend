@@ -1,24 +1,24 @@
 import Grid from '@mui/material/Grid2'
 import { Typography } from '@mui/material'
 
-import VentasTable from '@/views/Dashboard/comisiones/list/VentasTable'
+import DepositosTable from '@/views/Dashboard/depositos/list/DepositosTable'
 
-const PageVentas = () => {
+const PageDepositos = () => {
   return (
     <Grid container spacing={6}>
       <Grid size={{ xs: 12 }}>
         <Typography variant='h4' sx={{ paddingLeft: '20px' }}>
-          Reporte de Comisiones
+          Reporte de Depósitos
         </Typography>
         <Typography sx={{ paddingLeft: '20px' }}>
-          Visualiza y analiza el <code>reporte de comisiones</code> y ventas.
+          Lista de empresas para procesar <code>depósitos</code> de viajes.
         </Typography>
       </Grid>
       <Grid size={{ xs: 12 }}>
-        <VentasTable />
+        <DepositosTable />
       </Grid>
     </Grid>
   )
 }
 
-export default PageVentas
+export default PageDepositos

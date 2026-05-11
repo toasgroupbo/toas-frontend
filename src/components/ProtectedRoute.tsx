@@ -38,12 +38,22 @@ const ROUTE_RESOURCE_MAP: Record<string, { resource: string; permission: string 
   '/viajes/list': { resource: 'TRAVEL', permission: 'READ' }
 }
 
-const COMPANY_ROUTES = ['/buses', '/rutas', '/duenos', '/cajeros', '/tickets', '/arqueo', '/salidas', '/oficinas', '/viajes']
+const COMPANY_ROUTES = [
+  '/buses',
+  '/rutas',
+  '/duenos',
+  '/cajeros',
+  '/tickets',
+  '/arqueo',
+  '/salidas',
+  '/oficinas',
+  '/viajes'
+]
 
 const STATIC_ROLE_PERMISSIONS: Record<string, string[]> = {
   SUPER_ADMIN: ['*'],
   ADMIN_APLICACION: ['/home', '/companies', '/usuarios', '/roles', '/clientes', '/reportes'],
-  ADMIN_EMPRESA: ['/home', '/buses', '/rutas', '/duenos', '/cajeros', '/oficinas', '/viajes'],
+  ADMIN_EMPRESA: ['/home', '/buses', '/rutas', '/duenos', '/cajeros', '/oficinas', '/viajes', '/reportes'],
   COMPANY_ADMIN: ['/home', '/buses', '/rutas', '/duenos', '/cajeros', '/oficinas', '/viajes'],
   CASHIER: ['/home', '/arqueo', '/salidas', '/tickets', '/viajes'],
   CASHIER_TRIPS: ['/home', '/salidas', '/viajes'],

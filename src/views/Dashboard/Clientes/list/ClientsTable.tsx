@@ -428,7 +428,25 @@ const ClientsTable = () => {
             </CustomTextField>
           </div>
         </div>
-
+        <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 2, px: 2 }}>
+          <Card
+            variant='outlined'
+            sx={{
+              borderColor: 'primary.main',
+              bgcolor: 'transparent',
+              minWidth: '200px'
+            }}
+          >
+            <Box sx={{ p: 1.5, display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 2 }}>
+              <Typography variant='body2' color='text.secondary'>
+                Balance Total:
+              </Typography>
+              <Typography variant='h6' sx={{ fontWeight: 'bold', color: 'primary.main' }}>
+                Bs {customersResponse?.totalBalance?.toLocaleString() || 0}
+              </Typography>
+            </Box>
+          </Card>
+        </Box>
         <div className='overflow-x-auto'>
           <table className={tableStyles.table}>
             <thead>

@@ -97,6 +97,7 @@ export const filterMenuByRole = (
       if (userRole === 'ADMIN_EMPRESA' || userRole === 'COMPANY_ADMIN') {
         const empresaMenus = [
           'GESTIÓN DE EMPRESA',
+          'Reporte de Comisiones',
           'Buses',
           'Rutas',
           'Dueños',

@@ -11,6 +11,7 @@ export interface TravelFilters {
   origin_placeId?: number
   destination_placeId?: number
   companyId?: number
+  isPaid?: boolean
 }
 
 interface UseTravelsParams {
@@ -203,30 +204,36 @@ const fetchTravelsForAdmin = async (
 const fetchTravelsForOwner = async (
   filters?: TravelFilters
 ): Promise<{ data: Travel[]; amounts: { office: number; app: number } }> => {
-  const queryParams = new URLSearchParams()
+  const params: Record<string, any> = {}
 
   if (filters?.status) {
-    queryParams.append('status', filters.status)
+    params.status = filters.status
   }
 
   if (filters?.startDate) {
-    queryParams.append('startDate', filters.startDate)
+    params.startDate = filters.startDate
   }
 
   if (filters?.endDate) {
-    queryParams.append('endDate', filters.endDate)
+    params.endDate = filters.endDate
   }
 
   if (filters?.origin_placeId) {
-    queryParams.append('origin_placeId', filters.origin_placeId.toString())
+    params.origin_placeId = filters.origin_placeId
   }
 
   if (filters?.destination_placeId) {
-    queryParams.append('destination_placeId', filters.destination_placeId.toString())
+    params.destination_placeId = filters.destination_placeId
   }
 
-  const url = `/api/travels/for-cashier/owner/all${queryParams.toString() ? `?${queryParams.toString()}` : ''}`
-  const response = await api.get<{ data: Travel[]; meta: any; amounts: { office: number; app: number } }>(url)
+  if (filters?.isPaid !== undefined) {
+    params.isPaid = filters.isPaid
+  }
+
+  const response = await api.get<{ data: Travel[]; meta: any; amounts: { office: number; app: number } }>(
+    '/api/travels/for-cashier/owner/all',
+    { params }
+  )
 
   return { data: response.data.data, amounts: response.data.amounts }
 }
