@@ -17,7 +17,7 @@ import '@/app/globals.css'
 import '@assets/iconify-icons/generated-icons.css'
 
 export const metadata = {
-  title: 'Sistema de Autobuses',
+  title: 'BUS EXPRESS',
   description: 'Sistema de gestión para empresas de transporte de pasajeros'
 }
 
