@@ -361,7 +361,7 @@ const PlacesTable = () => {
             ) : (
               <tbody>
                 {table
-                  .getRowModel()
+                  .getPrePaginationRowModel()
                   .rows.slice((currentPage - 1) * pageSize, currentPage * pageSize)
                   .map(row => (
                     <tr key={row.id}>

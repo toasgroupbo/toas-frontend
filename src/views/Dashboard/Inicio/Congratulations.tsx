@@ -88,8 +88,8 @@ const WelcomeFleetCard = () => {
           <div className='relative bs-full is-full flex items-center justify-center'>
             <img
               alt='Bienvenido a la flota'
-              src='/images/illustrations/characters/toast.png'
-              className='max-bs-[180px] max-sm:max-bs-[120px] block-end-0 max-is-full'
+              src='/images/illustrations/characters/busexpress.png'
+              className='max-bs-[280px] -translate-x-10 max-sm:max-bs-[120px] block-end-0 max-is-full'
             />
           </div>
         </Grid>

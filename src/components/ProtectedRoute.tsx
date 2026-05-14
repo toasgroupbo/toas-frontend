@@ -53,7 +53,7 @@ const COMPANY_ROUTES = [
 const STATIC_ROLE_PERMISSIONS: Record<string, string[]> = {
   SUPER_ADMIN: ['*'],
   ADMIN_APLICACION: ['/home', '/companies', '/usuarios', '/roles', '/clientes', '/reportes'],
-  ADMIN_EMPRESA: ['/home', '/buses', '/rutas', '/duenos', '/cajeros', '/oficinas', '/viajes', '/reportes'],
+  ADMIN_EMPRESA: ['/home', '/buses', '/rutas', '/duenos', '/cajeros', '/oficinas', '/viajes', '/salidas', '/reportes'],
   COMPANY_ADMIN: ['/home', '/buses', '/rutas', '/duenos', '/cajeros', '/oficinas', '/viajes'],
   CASHIER: ['/home', '/arqueo', '/salidas', '/tickets', '/viajes'],
   CASHIER_TRIPS: ['/home', '/salidas', '/viajes'],

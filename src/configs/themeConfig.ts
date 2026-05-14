@@ -50,7 +50,7 @@ export type Config = {
 }
 
 const themeConfig: Config = {
-  templateName: 'Sistema de Autobuses', // Nombre de la plantilla
+  templateName: 'BUS EXPRESS', // Nombre de la plantilla
   homePageUrl: '/home',
   settingsCookieName: 'vuexy-mui-next-demo-1',
   mode: 'light', // 'system', 'light', 'dark'
