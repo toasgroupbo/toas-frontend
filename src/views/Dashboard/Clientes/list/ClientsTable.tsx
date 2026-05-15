@@ -81,6 +81,8 @@ const ClientsTable = () => {
   const [pageSize, setPageSize] = useState(10)
   const [searchQuery, setSearchQuery] = useState('')
   const [verificationFilter, setVerificationFilter] = useState<boolean | 'all'>('all')
+  const [startDate, setStartDate] = useState<string>('')
+  const [endDate, setEndDate] = useState<string>('')
   const [rechargeModalOpen, setRechargeModalOpen] = useState(false)
   const [qrModalOpen, setQrModalOpen] = useState(false)
   const [selectedCustomersForRecharge, setSelectedCustomersForRecharge] = useState<any[]>([])
@@ -91,9 +93,11 @@ const ClientsTable = () => {
       page: currentPage,
       limit: pageSize,
       search: searchQuery,
-      is_verified: verificationFilter
+      is_verified: verificationFilter,
+      startDate: startDate || undefined,
+      endDate: endDate || undefined
     }),
-    [currentPage, pageSize, searchQuery, verificationFilter]
+    [currentPage, pageSize, searchQuery, verificationFilter, startDate, endDate]
   )
 
   const {
@@ -398,6 +402,30 @@ const ClientsTable = () => {
               <MenuItem value='true'>Verificados</MenuItem>
               <MenuItem value='false'>No verificados</MenuItem>
             </CustomTextField>
+
+            <CustomTextField
+              type='date'
+              label='Fecha Inicio'
+              value={startDate}
+              onChange={e => {
+                setStartDate(e.target.value)
+                setCurrentPage(1)
+              }}
+              InputLabelProps={{ shrink: true }}
+              className='min-w-[150px]'
+            />
+
+            <CustomTextField
+              type='date'
+              label='Fecha Fin'
+              value={endDate}
+              onChange={e => {
+                setEndDate(e.target.value)
+                setCurrentPage(1)
+              }}
+              InputLabelProps={{ shrink: true }}
+              className='min-w-[150px]'
+            />
           </div>
 
           <div className='flex max-sm:flex-col items-start sm:items-center gap-4 max-sm:is-full'>

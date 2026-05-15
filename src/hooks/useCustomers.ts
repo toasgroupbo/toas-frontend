@@ -16,6 +16,9 @@ const fetchCustomers = async (params: CustomersQueryParams): Promise<CustomersRe
     queryParams.append('is_verified', params.is_verified.toString())
   }
 
+  if (params.startDate) queryParams.append('startDate', params.startDate)
+  if (params.endDate) queryParams.append('endDate', params.endDate)
+
   const response = await api.get<CustomersResponse>(`/api/customers?${queryParams.toString()}`)
 
   return response.data
@@ -53,7 +56,7 @@ export const useCustomers = (params: CustomersQueryParams, enabled: boolean = tr
   const queryClient = useQueryClient()
 
   const query = useQuery<CustomersResponse>({
-    queryKey: ['customers', params.page, params.limit, params.search, params.is_verified],
+    queryKey: ['customers', params.page, params.limit, params.search, params.is_verified, params.startDate, params.endDate],
     queryFn: () => fetchCustomers(params),
     enabled,
     placeholderData: previousData => previousData,

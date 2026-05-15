@@ -31,4 +31,6 @@ export interface CustomersQueryParams {
   limit?: number
   search?: string
   is_verified?: boolean | 'all'
+  startDate?: string
+  endDate?: string
 }

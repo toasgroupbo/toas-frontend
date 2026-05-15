@@ -63,7 +63,7 @@ const TravelsModal = ({ open, onClose, company }: TravelsModalProps) => {
   const [currentPage, setCurrentPage] = useState(1)
   const [startDate, setStartDate] = useState<string>('')
   const [endDate, setEndDate] = useState<string>('')
-  const [isPaidFilter, setIsPaidFilter] = useState<string>('all')
+  const [isPaidFilter, setIsPaidFilter] = useState<string>('pending')
   const [originPlaceId, setOriginPlaceId] = useState<string>('')
   const [destinationPlaceId, setDestinationPlaceId] = useState<string>('')
   const [selectedTravel, setSelectedTravel] = useState<Travel | null>(null)
