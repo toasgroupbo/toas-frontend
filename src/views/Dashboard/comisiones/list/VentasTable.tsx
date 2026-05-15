@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useMemo, useEffect } from 'react'
+import { useState, useMemo } from 'react'
 
 import Card from '@mui/material/Card'
 import Typography from '@mui/material/Typography'
@@ -13,18 +13,11 @@ import Pagination from '@mui/material/Pagination'
 import Tooltip from '@mui/material/Tooltip'
 import Avatar from '@mui/material/Avatar'
 import classnames from 'classnames'
-import {
-  createColumnHelper,
-  flexRender,
-  getCoreRowModel,
-  useReactTable,
-  getSortedRowModel
-} from '@tanstack/react-table'
-import type { ColumnDef, FilterFn } from '@tanstack/react-table'
-import { rankItem } from '@tanstack/match-sorter-utils'
+import { flexRender, getCoreRowModel, useReactTable, getSortedRowModel } from '@tanstack/react-table'
+import type { ColumnDef } from '@tanstack/react-table'
 
 import { useCommissions, useUpdateCommission } from '@/hooks/useCommissions'
-import type { Commission, UpdateCommissionPayload } from '@/types/api/commissions'
+import type { Commission } from '@/types/api/commissions'
 import CustomTextField from '@core/components/mui/TextField'
 import AppReactDatepicker from '@/libs/styles/AppReactDatepicker'
 import tableStyles from '@core/styles/table.module.css'
@@ -34,16 +27,6 @@ import ViewVoucherModal from '@/views/Dashboard/comisiones/components/ViewVouche
 import { useAuth } from '@/contexts/AuthContext'
 import { useSnackbar } from '@/contexts/SnackbarContext'
 import { useUploadImage } from '@/hooks/useUploadImage'
-
-const fuzzyFilter: FilterFn<any> = (row, columnId, value, addMeta) => {
-  const itemRank = rankItem(row.getValue(columnId), value)
-
-  addMeta({ itemRank })
-
-  return itemRank.passed
-}
-
-const columnHelper = createColumnHelper<Commission>()
 
 const formatCurrency = (value: string | number) => {
   const num = typeof value === 'string' ? parseFloat(value) : value
@@ -80,44 +63,35 @@ const VentasTable = () => {
   const updateMutation = useUpdateCommission()
   const uploadImageMutation = useUploadImage()
 
-  const [pageSize, setPageSize] = useState(10)
-  const [currentPage, setCurrentPage] = useState(1)
+  const [pageSize, setPageSize] = useState<number>(10)
+  const [currentPage, setCurrentPage] = useState<number>(1)
   const [startDate, setStartDate] = useState<Date | null>(null)
   const [endDate, setEndDate] = useState<Date | null>(null)
   const [isPaidFilter, setIsPaidFilter] = useState<string>('all')
-  const [searchTerm, setSearchTerm] = useState('')
-  const [debouncedSearch, setDebouncedSearch] = useState('')
+  const [searchTerm, setSearchTerm] = useState<string>('')
 
   const [selectedCommission, setSelectedCommission] = useState<Commission | null>(null)
-  const [dialogOpen, setDialogOpen] = useState(false)
-  const [chartModalOpen, setChartModalOpen] = useState(false)
-  const [voucherModalOpen, setVoucherModalOpen] = useState(false)
+  const [dialogOpen, setDialogOpen] = useState<boolean>(false)
+  const [chartModalOpen, setChartModalOpen] = useState<boolean>(false)
+  const [voucherModalOpen, setVoucherModalOpen] = useState<boolean>(false)
   const [selectedVoucher, setSelectedVoucher] = useState<{ url: string; companyName: string } | null>(null)
-
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setDebouncedSearch(searchTerm)
-    }, 500)
-
-    return () => clearTimeout(timer)
-  }, [searchTerm])
 
   const filters = useMemo(() => {
     return {
       isPaid: isPaidFilter === 'all' ? undefined : isPaidFilter === 'paid',
       startDate: startDate ? startDate.toISOString().split('T')[0] : undefined,
       endDate: endDate ? endDate.toISOString().split('T')[0] : undefined,
-      search: debouncedSearch || undefined
+      search: searchTerm || undefined
     }
-  }, [isPaidFilter, startDate, endDate, debouncedSearch])
+  }, [isPaidFilter, startDate, endDate, searchTerm])
 
-  const { data: commissions, isLoading, error } = useCommissions(filters)
+  const { data: commissions, isLoading, error, totals } = useCommissions(filters)
 
   const paginatedData = useMemo(() => {
-    return commissions.slice((currentPage - 1) * pageSize, currentPage * pageSize)
+    return commissions?.slice((currentPage - 1) * pageSize, currentPage * pageSize) || []
   }, [commissions, currentPage, pageSize])
 
-  const totalRecords = commissions.length
+  const totalRecords = commissions?.length || 0
   const totalPages = Math.ceil(totalRecords / pageSize)
 
   const handleUpdateClick = (commission: Commission) => {
@@ -145,14 +119,12 @@ const VentasTable = () => {
 
     try {
       const formattedAmount = parseFloat(paidAmount).toFixed(2)
-
       let voucherUrl = existingVoucher || ''
 
       if (voucherFile) {
         try {
           voucherUrl = await uploadImageMutation.mutateAsync(voucherFile)
         } catch (error) {
-          console.error('Error al subir comprobante:', error)
           showError('Error al subir el comprobante. Por favor, intente nuevamente.')
 
           return
@@ -174,7 +146,6 @@ const VentasTable = () => {
       setSelectedCommission(null)
       showSuccess('Comisión actualizada exitosamente')
     } catch (error: any) {
-      console.error('Error al actualizar comisión:', error)
       showError(error?.response?.data?.message || 'Error al actualizar la comisión. Por favor intenta nuevamente.')
     }
   }
@@ -203,28 +174,54 @@ const VentasTable = () => {
             {formatPeriodKey(row.original.period_key)}
           </Typography>
         )
-      },
-      {
-        id: 'logo',
-        header: 'LOGO',
-        cell: ({ row }) => {
-          const logoUrl = row.original.company.logo.startsWith('http')
-            ? row.original.company.logo
-            : `${process.env.NEXT_PUBLIC_API_URL}${row.original.company.logo}`
+      }
+    ]
 
-          return (
-            <Avatar src={logoUrl} alt={row.original.company.name} sx={{ width: 38, height: 38 }}>
-              {row.original.company.name.charAt(0)}
-            </Avatar>
+    if (!isCompanyAdmin) {
+      baseColumns.push(
+        {
+          id: 'logo',
+          header: 'LOGO',
+          cell: ({ row }) => {
+            const logoUrl = row.original.company.logo.startsWith('http')
+              ? row.original.company.logo
+              : `${process.env.NEXT_PUBLIC_API_URL}${row.original.company.logo}`
+
+            return (
+              <Avatar src={logoUrl} alt={row.original.company.name} sx={{ width: 38, height: 38 }}>
+                {row.original.company.name.charAt(0)}
+              </Avatar>
+            )
+          }
+        },
+        {
+          accessorKey: 'company.name',
+          header: 'EMPRESA',
+          cell: ({ row }) => (
+            <Typography fontWeight={500} color='text.primary'>
+              {row.original.company.name}
+            </Typography>
           )
         }
+      )
+    }
+
+    baseColumns.push(
+      {
+        accessorKey: 'commission_per_ticket_at_time',
+        header: 'COMISIÓN EMPRESA',
+        cell: ({ row }: any) => (
+          <Typography variant='body2' align='right'>
+            {formatCurrency(row.original.commission_per_ticket_at_time)}
+          </Typography>
+        )
       },
       {
-        accessorKey: 'company.name',
-        header: 'EMPRESA',
+        accessorKey: 'total_trips_count',
+        header: 'CANTIDAD DE VIAJES',
         cell: ({ row }) => (
-          <Typography fontWeight={500} color='text.primary'>
-            {row.original.company.name}
+          <Typography variant='body2' align='center'>
+            {row.original.total_trips_count || 0}
           </Typography>
         )
       },
@@ -239,7 +236,7 @@ const VentasTable = () => {
       },
       {
         accessorKey: 'commission_app_total',
-        header: 'COMISION APP',
+        header: 'COMISIÓN APP CALCULADA',
         cell: ({ row }) => (
           <Typography variant='body2' align='right'>
             {formatCurrency(row.original.commission_app_total)}
@@ -247,11 +244,11 @@ const VentasTable = () => {
         )
       },
       {
-        accessorKey: 'commission_company',
-        header: 'COMISION EMPRESA',
+        accessorKey: 'company.commission_company',
+        header: isCompanyAdmin ? 'TOTAL A COBRAR' : 'TOTAL A PAGAR',
         cell: ({ row }) => (
           <Typography variant='body2' fontWeight={600} color='primary' align='right'>
-            {formatCurrency(row.original.commission_company)}
+            {formatCurrency(row.original.company.commission_company)}
           </Typography>
         )
       },
@@ -283,7 +280,7 @@ const VentasTable = () => {
           </Typography>
         )
       }
-    ]
+    )
 
     if (!isCompanyAdmin) {
       baseColumns.push({
@@ -326,9 +323,6 @@ const VentasTable = () => {
   const table = useReactTable<Commission>({
     data: paginatedData,
     columns,
-    filterFns: {
-      fuzzy: fuzzyFilter
-    },
     getCoreRowModel: getCoreRowModel(),
     getSortedRowModel: getSortedRowModel()
   })
@@ -350,15 +344,14 @@ const VentasTable = () => {
       <Card>
         <div className='flex flex-wrap justify-between gap-4 p-6'>
           <div className='flex flex-wrap gap-4 items-center'>
-            <CustomTextField
-              value={searchTerm}
-              onChange={e => setSearchTerm(e.target.value)}
-              placeholder='Buscar empresa...'
-              className='min-w-[200px]'
-              InputProps={{
-                startAdornment: <i className='tabler-search' style={{ marginRight: 8 }} />
-              }}
-            />
+            {!isCompanyAdmin && (
+              <CustomTextField
+                value={searchTerm}
+                onChange={e => setSearchTerm(e.target.value)}
+                placeholder='Buscar empresa...'
+                className='min-w-[200px]'
+              />
+            )}
 
             <CustomTextField
               select
@@ -395,11 +388,23 @@ const VentasTable = () => {
           </div>
 
           <div className='flex items-center gap-4'>
+            <Box display='flex' flexDirection='column' gap={0.5}>
+              <Typography variant='caption' color='primary.main' fontWeight={600}>
+                Total, App: Bs. {parseFloat(totals.total_app).toFixed(2)}
+              </Typography>
+              <Typography variant='caption' color='warning.main' fontWeight={600}>
+                Total, Comisión Empresa: Bs. {parseFloat(totals.total_net_to_company).toFixed(2)}
+              </Typography>
+              <Typography variant='caption' color='success.main' fontWeight={600}>
+                Total, Saldo Comisión: Bs. {parseFloat(totals.total_balance).toFixed(2)}
+              </Typography>
+            </Box>
+
             <Button
               variant='contained'
               color='primary'
               startIcon={<i className='tabler-chart-bar' />}
-              disabled={commissions.length === 0}
+              disabled={totalRecords === 0}
               onClick={() => setChartModalOpen(true)}
             >
               Gráfico
@@ -452,7 +457,7 @@ const VentasTable = () => {
             {paginatedData.length === 0 ? (
               <tbody>
                 <tr>
-                  <td colSpan={isCompanyAdmin ? 9 : 10} className='text-center py-8'>
+                  <td colSpan={columns.length} className='text-center py-8'>
                     <Typography>No hay datos de comisiones disponibles</Typography>
                   </td>
                 </tr>
@@ -502,7 +507,7 @@ const VentasTable = () => {
         />
       )}
 
-      <CommissionsChartModal open={chartModalOpen} onClose={() => setChartModalOpen(false)} data={commissions} />
+      <CommissionsChartModal open={chartModalOpen} onClose={() => setChartModalOpen(false)} data={commissions || []} />
 
       {selectedVoucher && (
         <ViewVoucherModal

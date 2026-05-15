@@ -33,13 +33,14 @@ const formatCurrency = (value: number) => {
 const formatDate = (dateString: string | null) => {
   if (!dateString) return 'Nunca'
 
-  return new Date(dateString).toLocaleDateString('es-BO', {
+  return new Intl.DateTimeFormat('es-BO', {
+    timeZone: 'America/La_Paz',
     year: 'numeric',
     month: 'short',
     day: 'numeric',
     hour: '2-digit',
     minute: '2-digit'
-  })
+  }).format(new Date(dateString))
 }
 
 const DepositosTable = () => {
@@ -111,7 +112,7 @@ const DepositosTable = () => {
       },
       {
         accessorKey: 'lastPaidAt',
-        header: 'Último Pago',
+        header: 'Ultima fecha de salida pagada',
         cell: ({ row }: any) => (
           <Typography variant='body2' color='text.secondary'>
             {formatDate(row.original.lastPaidAt)}

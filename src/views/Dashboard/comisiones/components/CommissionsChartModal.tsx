@@ -21,31 +21,58 @@ interface CommissionsChartModalProps {
   open: boolean
   onClose: () => void
   data: Commission[]
+  isCompanyAdmin?: boolean
 }
 
-const CommissionsChartModal = ({ open, onClose, data }: CommissionsChartModalProps) => {
+const CommissionsChartModal = ({ open, onClose, data, isCompanyAdmin = false }: CommissionsChartModalProps) => {
   const theme = useTheme()
 
-  // Preparar datos para el gráfico
   const companies = data.map(item => item.company.name)
   const comisionApp = data.map(item => parseFloat(item.commission_app_total) || 0)
-  const cantidadVentas = data.map(item => item.tickets_app_count_total || 0)
-  const comisionEmpresa = data.map(item => parseFloat(item.commission_company) || 0)
+  const netToCompany = data.map(item => parseFloat(item.net_to_company) || 0)
 
-  const series = [
-    {
-      name: 'Comisión de App',
-      data: comisionApp
-    },
-    {
-      name: 'Cant. Ventas',
-      data: cantidadVentas
-    },
-    {
-      name: 'Comisión Empresa',
-      data: comisionEmpresa
-    }
-  ]
+  const saldoComision = data.map(item => {
+    const net = parseFloat(item.net_to_company) || 0
+    const paid = parseFloat(item.paid) || 0
+
+    return net - paid
+  })
+
+  const comisionEmpresa = data.map(item => parseFloat(item.company?.commission_company) || 0)
+
+  const series = isCompanyAdmin
+    ? [
+        {
+          name: 'Total a Cobrar',
+          data: netToCompany
+        },
+        {
+          name: 'Total Pagado',
+          data: data.map(item => parseFloat(item.paid) || 0)
+        },
+        {
+          name: 'Saldo Pendiente',
+          data: saldoComision
+        }
+      ]
+    : [
+        {
+          name: 'Comisión App',
+          data: comisionApp
+        },
+        {
+          name: 'Neto a Pagar',
+          data: netToCompany
+        },
+        {
+          name: 'Comisión Empresa',
+          data: comisionEmpresa
+        }
+      ]
+
+  const colors = isCompanyAdmin
+    ? ['var(--mui-palette-primary-main)', 'var(--mui-palette-success-main)', 'var(--mui-palette-warning-main)']
+    : ['var(--mui-palette-primary-main)', 'var(--mui-palette-success-main)', 'var(--mui-palette-warning-main)']
 
   const options: ApexOptions = {
     chart: {
@@ -83,11 +110,7 @@ const CommissionsChartModal = ({ open, onClose, data }: CommissionsChartModalPro
         offsetX: theme.direction === 'rtl' ? 7 : -4
       }
     },
-    colors: [
-      'var(--mui-palette-primary-main)',
-      'var(--mui-palette-success-main)',
-      'var(--mui-palette-warning-main)'
-    ],
+    colors,
     xaxis: {
       categories: companies,
       axisTicks: { show: false },
@@ -104,7 +127,7 @@ const CommissionsChartModal = ({ open, onClose, data }: CommissionsChartModalPro
     },
     yaxis: {
       title: {
-        text: 'Cantidad / Monto',
+        text: 'Monto (Bs.)',
         style: {
           color: 'var(--mui-palette-text-secondary)',
           fontFamily: theme.typography.fontFamily
@@ -129,22 +152,17 @@ const CommissionsChartModal = ({ open, onClose, data }: CommissionsChartModalPro
     },
     tooltip: {
       y: {
-        formatter: (val, { seriesIndex }) => {
-          if (seriesIndex === 0 || seriesIndex === 2) {
-            return `Bs. ${val.toFixed(2)}`
-          }
-
-          return `${val} ventas`
-        }
+        formatter: val => `Bs. ${val.toFixed(2)}`
       },
       theme: theme.palette.mode
     }
   }
 
-  // Calcular totales
   const totalComisionApp = comisionApp.reduce((a, b) => a + b, 0)
-  const totalVentas = cantidadVentas.reduce((a, b) => a + b, 0)
+  const totalNetToCompany = netToCompany.reduce((a, b) => a + b, 0)
+  const totalSaldoComision = saldoComision.reduce((a, b) => a + b, 0)
   const totalComisionEmpresa = comisionEmpresa.reduce((a, b) => a + b, 0)
+  const totalPagado = data.reduce((a, b) => a + (parseFloat(b.paid) || 0), 0)
 
   return (
     <Dialog open={open} onClose={onClose} maxWidth='md' fullWidth>
@@ -167,7 +185,6 @@ const CommissionsChartModal = ({ open, onClose, data }: CommissionsChartModalPro
           </Box>
         ) : (
           <>
-            {/* Resumen de totales */}
             <Box
               sx={{
                 display: 'flex',
@@ -175,36 +192,48 @@ const CommissionsChartModal = ({ open, onClose, data }: CommissionsChartModalPro
                 mb: 4,
                 p: 3,
                 borderRadius: 2,
-                bgcolor: 'action.hover'
+                bgcolor: 'action.hover',
+                flexWrap: 'wrap'
               }}
             >
-              <Box flex={1} textAlign='center'>
-                <Typography variant='h4' color='primary.main'>
-                  Bs. {totalComisionApp.toFixed(2)}
-                </Typography>
-                <Typography variant='body2' color='text.secondary'>
-                  Comisión App Total
-                </Typography>
-              </Box>
-              <Box flex={1} textAlign='center'>
+              {!isCompanyAdmin && (
+                <Box flex={1} textAlign='center' minWidth='120px'>
+                  <Typography variant='h4' color='primary.main'>
+                    Bs. {totalComisionApp.toFixed(2)}
+                  </Typography>
+                  <Typography variant='body2' color='text.secondary'>
+                    Comisión App Total
+                  </Typography>
+                </Box>
+              )}
+              <Box flex={1} textAlign='center' minWidth='120px'>
                 <Typography variant='h4' color='success.main'>
-                  {totalVentas}
+                  Bs. {isCompanyAdmin ? totalNetToCompany.toFixed(2) : totalComisionEmpresa.toFixed(2)}
                 </Typography>
                 <Typography variant='body2' color='text.secondary'>
-                  Total Ventas App
+                  {isCompanyAdmin ? 'Total a Cobrar' : 'Comisión Empresa Total'}
                 </Typography>
               </Box>
-              <Box flex={1} textAlign='center'>
+              {isCompanyAdmin && (
+                <Box flex={1} textAlign='center' minWidth='120px'>
+                  <Typography variant='h4' color='info.main'>
+                    Bs. {totalPagado.toFixed(2)}
+                  </Typography>
+                  <Typography variant='body2' color='text.secondary'>
+                    Total Pagado
+                  </Typography>
+                </Box>
+              )}
+              <Box flex={1} textAlign='center' minWidth='120px'>
                 <Typography variant='h4' color='warning.main'>
-                  Bs. {totalComisionEmpresa.toFixed(2)}
+                  Bs. {totalSaldoComision.toFixed(2)}
                 </Typography>
                 <Typography variant='body2' color='text.secondary'>
-                  Comisión Empresa Total
+                  Saldo Pendiente
                 </Typography>
               </Box>
             </Box>
 
-            {/* Gráfico */}
             <AppReactApexCharts type='bar' height={350} width='100%' series={series} options={options} />
           </>
         )}

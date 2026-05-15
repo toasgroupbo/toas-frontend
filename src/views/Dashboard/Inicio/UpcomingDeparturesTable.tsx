@@ -193,7 +193,7 @@ const UpcomingDeparturesTable = ({ data, isLoading }: UpcomingDeparturesTablePro
       align: 'center',
       headerAlign: 'center',
       valueGetter: (_, row) => {
-        const totalSeats = row.total_seats ?? row.bus?.capacity ?? null
+        const totalSeats = row.totalBusSeats ?? row.total_seats ?? row.bus?.capacity ?? null
 
         if (totalSeats === null) return 'N/D'
 

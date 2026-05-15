@@ -2,13 +2,30 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 
 import { api } from '@/libs/axios'
 import { useAuth } from '@/contexts/AuthContext'
-import type { Commission, CommissionsFilters, UpdateCommissionPayload } from '@/types/api/commissions'
+import type {
+  Commission,
+  CommissionsFilters,
+  UpdateCommissionPayload,
+  CommissionsResponse,
+  CommissionsTotals
+} from '@/types/api/commissions'
+
+interface FetchCommissionsResult {
+  data: Commission[]
+  totals: CommissionsTotals
+}
+
+const defaultTotals: CommissionsTotals = {
+  total_app: '0.00',
+  total_net_to_company: '0.00',
+  total_balance: '0.00'
+}
 
 const fetchCommissions = async (
   filters: CommissionsFilters,
   isCompanyMode: boolean,
   companyId?: number
-): Promise<Commission[]> => {
+): Promise<FetchCommissionsResult> => {
   const params: Record<string, string> = {}
 
   if (filters.isPaid !== undefined) {
@@ -33,17 +50,22 @@ const fetchCommissions = async (
     params.companyId = companyId.toString()
   }
 
-  const response = await api.get<Commission[] | { data: Commission[] }>(endpoint, { params })
+  const response = await api.get<Commission[] | CommissionsResponse>(endpoint, { params })
 
   if (Array.isArray(response.data)) {
-    return response.data
+    return { data: response.data, totals: defaultTotals }
   } else if (response.data && typeof response.data === 'object' && 'data' in response.data) {
-    return (response.data as { data: Commission[] }).data
+    const res = response.data as CommissionsResponse
+
+    return {
+      data: res.data,
+      totals: res.totals || defaultTotals
+    }
   }
 
   console.error('Unexpected response format from /api/commissions:', response.data)
 
-  return []
+  return { data: [], totals: defaultTotals }
 }
 
 const updateCommission = async (id: number, payload: UpdateCommissionPayload): Promise<Commission> => {
@@ -71,7 +93,7 @@ export const useCommissions = (filters: CommissionsFilters = {}) => {
 
   const query = useQuery({
     queryKey: ['commissions', isCompanyMode ? 'company' : 'admin', companyId, filters],
-    queryFn: async (): Promise<Commission[]> => {
+    queryFn: async (): Promise<FetchCommissionsResult> => {
       return fetchCommissions(filters, isCompanyMode, companyId ? Number(companyId) : undefined)
     },
     enabled: !isCompanyMode || !!companyId,
@@ -81,7 +103,8 @@ export const useCommissions = (filters: CommissionsFilters = {}) => {
 
   return {
     ...query,
-    data: query.data || []
+    data: query.data?.data || [],
+    totals: query.data?.totals || defaultTotals
   }
 }
 

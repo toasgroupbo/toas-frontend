@@ -48,14 +48,69 @@ const formatCurrency = (value: string | number) => {
   return `Bs. ${num.toFixed(2)}`
 }
 
-const formatDate = (dateString: string) => {
-  return new Date(dateString).toLocaleDateString('es-PE', {
+const formatDateToBolivia = (dateString: string) => {
+  const date = new Date(dateString)
+
+  return new Intl.DateTimeFormat('es-BO', {
+    timeZone: 'America/La_Paz',
     year: 'numeric',
     month: 'short',
     day: 'numeric',
     hour: '2-digit',
     minute: '2-digit'
-  })
+  }).format(date)
+}
+
+const getBankName = (bankCode: string) => {
+  const banks: { [key: string]: string } = {
+    '1005': 'Banco de Crédito',
+    '1016': 'Banco Económico',
+    '1034': 'Banco Fortaleza',
+    '1018': 'Banco Ganadero',
+    '1033': 'Banco FIE',
+    '1009': 'Banco BISA',
+    '1003': 'Banco Mercantil Santa Cruz',
+    '1007': 'Banco de la Nación Argentina',
+    '1001': 'Banco Nacional de Bolivia',
+    '1017': 'Banco Solidario',
+    '1014': 'Banco Unión',
+    MLD3022: 'Cooperativa Comarapa',
+    MLD3030: 'Cooperativa Catedral',
+    MLD3026: 'El Chorolque',
+    '3003': 'Cooperativa Factima',
+    MLD3012: 'Cooperativa Inca Huasi',
+    '3001': 'Cooperativa Jesús Nazareno',
+    MLD3048: 'Cooperativa Magisterio',
+    MLD3028: 'Cooperativa Madre y Maestra',
+    MLD3034: 'Cooperativa Abierta',
+    MLD3011: 'Cooperativa Pío X',
+    '3015': 'Cooperativa Quillacollo',
+    '3002': 'Cooperativa San Martín de Porres',
+    '3025': 'Cooperativa San Mateo',
+    MLD3021: 'Cooperativa Trinidad',
+    '27002': 'CIDRE',
+    '27003': 'Creser',
+    '27004': 'Diaconía',
+    '27009': 'IDEPRO',
+    '27012': 'Pro Mujer',
+    MLD1016: 'Banco Económico MLD',
+    MLD1034: 'Banco Fortaleza MLD',
+    MLD1018: 'Banco Ganadero MLD',
+    MLD1033: 'Banco FIE MLD',
+    MLD1001: 'Banco Nacional de Bolivia MLD',
+    MLD1017: 'Banco Solidario MLD',
+    MLD1014: 'Banco Unión MLD',
+    '53001': 'Tigo Money',
+    '74003': 'Banco Pyme de la Comunidad',
+    '74002': 'Banco Pyme Ecofuturo',
+    UNI3025: 'Cooperativa San Mateo UNI',
+    UNI27009: 'IDEPRO UNI',
+    UNI27012: 'Pro Mujer UNI',
+    MLD75001: 'La Primera EFV',
+    '75003': 'La Promotora EFV'
+  }
+
+  return banks[bankCode] || bankCode || 'N/A'
 }
 
 const TravelsModal = ({ open, onClose, company }: TravelsModalProps) => {
@@ -105,8 +160,13 @@ const TravelsModal = ({ open, onClose, company }: TravelsModalProps) => {
   const columns = useMemo<any[]>(
     () => [
       {
+        accessorKey: 'id',
+        header: 'ID',
+        cell: ({ row }: any) => <Typography variant='body2'>{row.original.id}</Typography>
+      },
+      {
         accessorKey: 'bus.plaque',
-        header: 'Bus',
+        header: 'Bus/Placa',
         cell: ({ row }: any) => (
           <Box>
             <Typography variant='body2' fontWeight={500}>
@@ -119,59 +179,36 @@ const TravelsModal = ({ open, onClose, company }: TravelsModalProps) => {
         )
       },
       {
-        accessorKey: 'tickets_count',
-        header: 'Tickets',
+        accessorKey: 'departure_time',
+        header: 'Fecha y Hora de Salida',
         cell: ({ row }: any) => (
-          <Box>
-            <Typography variant='body2'>Total: {row.original.tickets_count}</Typography>
-            <Typography variant='caption' color='text.secondary'>
-              App: {row.original.tickets_app_count} | Oficina: {row.original.tickets_office_count}
-            </Typography>
-          </Box>
+          <Typography variant='body2'>{formatDateToBolivia(row.original.departure_time)}</Typography>
         )
       },
-
       {
-        accessorKey: 'total_commission',
-        header: 'Comisión de la App',
+        accessorKey: 'total',
+        header: 'Venta Total',
         cell: ({ row }: any) => (
-          <Typography variant='body2' color='success.main'>
-            {formatCurrency(row.original.total_commission)}
+          <Typography variant='body2' fontWeight={500} color='primary.main'>
+            {formatCurrency(row.original.total)}
           </Typography>
         )
       },
       {
         accessorKey: 'qr_amount',
-        header: 'Monto QR',
+        header: 'Venta QR',
         cell: ({ row }: any) => <Typography variant='body2'>{formatCurrency(row.original.qr_amount)}</Typography>
       },
       {
-        accessorKey: 'net_to_company',
-        header: 'Total a Pagar',
-        cell: ({ row }: any) => (
-          <Typography variant='body2' fontWeight={600} color='primary.main'>
-            {formatCurrency(row.original.net_to_company)}
-          </Typography>
-        )
+        accessorKey: 'cash_amount',
+        header: 'Venta Efectivo',
+        cell: ({ row }: any) => <Typography variant='body2'>{formatCurrency(row.original.cash_amount)}</Typography>
       },
-
-      /*       {
-        accessorKey: 'travel_status',
-        header: 'Estado',
-        cell: ({ row }: any) => (
-          <Chip
-            label={row.original.travel_status}
-            color={
-              row.original.travel_status === 'closed'
-                ? 'success'
-                : row.original.travel_status === 'active'
-                  ? 'primary'
-                  : 'default'
-            }
-            size='small'
-          />
-        )
-      }, */
+      {
+        accessorKey: 'app_amount',
+        header: 'Venta App',
+        cell: ({ row }: any) => <Typography variant='body2'>{formatCurrency(row.original.app_amount)}</Typography>
+      },
       {
         accessorKey: 'isPaid',
         header: 'Pagado',
@@ -195,30 +232,48 @@ const TravelsModal = ({ open, onClose, company }: TravelsModalProps) => {
         }
       },
       {
+        accessorKey: 'net_to_company',
+        header: 'Monto a Pagar',
+        cell: ({ row }: any) => (
+          <Typography variant='body2' fontWeight={600} color='success.main'>
+            {formatCurrency(row.original.net_to_company)}
+          </Typography>
+        )
+      },
+      {
         accessorKey: 'bus.owner.name',
-        header: 'Propietario / Datos Bancarios',
+        header: 'Titular',
         cell: ({ row }: any) => {
           const owner = row.original.bus.owner
           const bankAccount = owner.bankAccount
 
+          return <Typography variant='body2'>{bankAccount?.titularName || owner.name || 'N/A'}</Typography>
+        }
+      },
+      {
+        accessorKey: 'bus.owner.bankAccount',
+        header: 'Banco/Nro Cuenta',
+        cell: ({ row }: any) => {
+          const bankAccount = row.original.bus.owner?.bankAccount
+
+          if (!bankAccount) {
+            return (
+              <Typography variant='body2' color='text.secondary'>
+                N/A
+              </Typography>
+            )
+          }
+
+          const bankName = getBankName(bankAccount.bankCode)
+
           return (
             <Box>
               <Typography variant='body2' fontWeight={500}>
-                {owner.name}
+                {bankName}
               </Typography>
-              {bankAccount && (
-                <>
-                  <Typography variant='caption' display='block' color='text.secondary'>
-                    CI: {owner.ci} | Tel: {owner.phone}
-                  </Typography>
-                  <Typography variant='caption' display='block' color='primary.main' sx={{ mt: 0.5 }}>
-                    Cuenta: {bankAccount.account}
-                  </Typography>
-                  <Typography variant='caption' display='block' color='text.secondary'>
-                    CI: {bankAccount.documentNumber}
-                  </Typography>
-                </>
-              )}
+              <Typography variant='caption' color='text.secondary' fontFamily='monospace'>
+                {bankAccount.account}
+              </Typography>
             </Box>
           )
         }
