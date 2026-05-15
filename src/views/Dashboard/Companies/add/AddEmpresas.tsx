@@ -152,7 +152,6 @@ const FormularioEmpresa: React.FC<Props> = ({ empresaId }) => {
         onSubmit={handleCreateCompany}
         isLoading={createMutation.isPending}
       />
-
       <UpdateCompanyDialog
         open={updateDialogOpen}
         onClose={handleCancel}
@@ -160,7 +159,6 @@ const FormularioEmpresa: React.FC<Props> = ({ empresaId }) => {
         company={selectedCompany}
         isLoading={updateMutation.isPending}
       />
-
       <DeleteCompanyDialog
         open={deleteDialogOpen}
         onClose={() => setDeleteDialogOpen(false)}

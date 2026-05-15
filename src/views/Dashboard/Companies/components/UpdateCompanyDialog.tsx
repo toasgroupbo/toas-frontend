@@ -63,7 +63,8 @@ const UpdateCompanyDialog = ({ open, onClose, onSubmit, isLoading, company }: Up
     defaultValues: {
       name: '',
       logo: '',
-      commission: 10,
+      commission_app: 10,
+      commission_company: 10,
       hours_before_closing: 3,
       bankAccount: {
         bankCode: '',
@@ -90,7 +91,8 @@ const UpdateCompanyDialog = ({ open, onClose, onSubmit, isLoading, company }: Up
       reset({
         name: company.name,
         logo: company.logo,
-        commission: company.commission,
+        commission_app: company.commission_app,
+        commission_company: company.commission_company,
         hours_before_closing: company.hours_before_closing,
         bankAccount: {
           bankCode: company.bankAccount.bankCode || '',
@@ -219,7 +221,8 @@ const UpdateCompanyDialog = ({ open, onClose, onSubmit, isLoading, company }: Up
       const companyData = {
         name: data.name,
         logo: logoUrl,
-        commission: data.commission,
+        commission_app: data.commission_app,
+        commission_company: data.commission_company,
         hours_before_closing: data.hours_before_closing
       }
 
@@ -397,24 +400,53 @@ const UpdateCompanyDialog = ({ open, onClose, onSubmit, isLoading, company }: Up
                 }}
               />
             </Grid>
-            {/* Comisión y Horas */}
+            {/* Comisiones y Horas */}
             <Grid size={{ xs: 12, sm: 6 }}>
               <Controller
-                name='commission'
+                name='commission_app'
                 control={control}
                 render={({ field }) => (
                   <CustomTextField
                     fullWidth
                     type='text'
-                    label='Comisión (%) *'
+                    label='Comisión App (%) *'
                     {...field}
                     onChange={e => {
                       const value = e.target.value.replace(/[^0-9.]/g, '')
 
                       field.onChange(value === '' ? '' : Number(value))
                     }}
-                    error={!!errors.commission}
-                    helperText={errors.commission?.message}
+                    error={!!errors.commission_app}
+                    helperText={errors.commission_app?.message}
+                    disabled={isProcessing}
+                    InputProps={{
+                      startAdornment: (
+                        <InputAdornment position='start'>
+                          <i className='tabler-percentage' />
+                        </InputAdornment>
+                      )
+                    }}
+                  />
+                )}
+              />
+            </Grid>
+            <Grid size={{ xs: 12, sm: 6 }}>
+              <Controller
+                name='commission_company'
+                control={control}
+                render={({ field }) => (
+                  <CustomTextField
+                    fullWidth
+                    type='text'
+                    label='Comisión Empresa (%) *'
+                    {...field}
+                    onChange={e => {
+                      const value = e.target.value.replace(/[^0-9.]/g, '')
+
+                      field.onChange(value === '' ? '' : Number(value))
+                    }}
+                    error={!!errors.commission_company}
+                    helperText={errors.commission_company?.message}
                     disabled={isProcessing}
                     InputProps={{
                       startAdornment: (

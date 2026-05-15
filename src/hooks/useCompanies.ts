@@ -1,5 +1,3 @@
-'use client'
-
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 
 import { api } from '@/libs/axios'
@@ -31,7 +29,8 @@ const updateCompany = async ({
   data: {
     name: string
     logo: string
-    commission: number
+    commission_app: number
+    commission_company: number
     hours_before_closing: number
   }
 }): Promise<Company> => {
@@ -104,7 +103,8 @@ export const useUpdateCompany = () => {
       companyData: {
         name: string
         logo: string
-        commission: number
+        commission_app: number
+        commission_company: number
         hours_before_closing: number
       }
       bankAccountData: {
@@ -145,8 +145,7 @@ export const useUpdateCompany = () => {
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['companies'] })
       queryClient.invalidateQueries({ queryKey: ['company', variables.companyId] })
-    },
-    onError: error => {}
+    }
   })
 }
 

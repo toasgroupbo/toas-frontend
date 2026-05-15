@@ -16,8 +16,15 @@ export const createCompanySchema = z
   .object({
     name: z.string().min(3, 'El nombre debe tener al menos 3 caracteres'),
     logo: z.string().min(1, 'Debe subir una imagen de logo'),
-    commission: z.number(),
-    hours_before_closing: z.number(),
+    commission_app: z
+      .number()
+      .min(0, 'La comisión de la app debe ser mayor o igual a 0')
+      .max(100, 'La comisión no puede exceder el 100%'),
+    commission_company: z
+      .number()
+      .min(0, 'La comisión de la empresa debe ser mayor o igual a 0')
+      .max(100, 'La comisión no puede exceder el 100%'),
+    hours_before_closing: z.number().min(0, 'Las horas deben ser mayor o igual a 0'),
     bankAccount: z.object({
       bankCode: z.enum(BANCOS_VALUES, {
         message: 'Seleccione un banco'
@@ -49,10 +56,17 @@ export const createCompanySchema = z
 
 export const updateCompanySchema = z
   .object({
-    name: z.string().min(3, 'El nombre debe tener al menos 3 caracteres').optional(),
-    logo: z.string().optional(),
-    commission: z.number().optional(),
-    hours_before_closing: z.number().optional(),
+    name: z.string().min(3, 'El nombre debe tener al menos 3 caracteres'),
+    logo: z.string().min(1, 'Debe subir una imagen de logo'),
+    commission_app: z
+      .number()
+      .min(0, 'La comisión de la app debe ser mayor o igual a 0')
+      .max(100, 'La comisión no puede exceder el 100%'),
+    commission_company: z
+      .number()
+      .min(0, 'La comisión de la empresa debe ser mayor o igual a 0')
+      .max(100, 'La comisión no puede exceder el 100%'),
+    hours_before_closing: z.number().min(0, 'Las horas deben ser mayor o igual a 0'),
     bankAccount: z.object({
       bankCode: z.enum(BANCOS_VALUES, {
         message: 'Seleccione un banco'
@@ -103,5 +117,6 @@ export const updateCompanySchema = z
       path: ['newPassword']
     }
   )
+
 export type CreateCompanyFormData = z.infer<typeof createCompanySchema>
 export type UpdateCompanyFormData = z.infer<typeof updateCompanySchema>

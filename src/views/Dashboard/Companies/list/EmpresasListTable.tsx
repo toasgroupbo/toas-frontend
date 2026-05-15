@@ -350,10 +350,19 @@ const EmpresaListTable = () => {
         ),
         size: 100
       }),
-      columnHelper.accessor('commission', {
-        header: 'Comisión',
-        cell: ({ row }) => <Chip label={`${row.original.commission}%`} color='success' variant='tonal' size='small' />,
-        size: 80
+      columnHelper.accessor('commission_app', {
+        header: 'Comisión App',
+        cell: ({ row }) => (
+          <Chip label={`${row.original.commission_app}%`} color='success' variant='tonal' size='small' />
+        ),
+        size: 100
+      }),
+      columnHelper.accessor('commission_company', {
+        header: 'Comisión Empresa',
+        cell: ({ row }) => (
+          <Chip label={`${row.original.commission_company}%`} color='info' variant='tonal' size='small' />
+        ),
+        size: 120
       }),
       columnHelper.accessor('users', {
         header: 'Administrador',

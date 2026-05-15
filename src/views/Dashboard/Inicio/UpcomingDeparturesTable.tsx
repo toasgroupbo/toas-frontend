@@ -12,6 +12,8 @@ import Box from '@mui/material/Box'
 import Tooltip from '@mui/material/Tooltip'
 import { DataGrid, type GridColDef, type GridRenderCellParams } from '@mui/x-data-grid'
 
+import { useAuth } from '@/contexts/AuthContext'
+
 type StatusFilter = 'all' | 'active' | 'closed' | 'cancelled'
 
 interface UpcomingDeparturesTableProps {
@@ -76,6 +78,10 @@ const getStatusConfig = (status: string) => {
 
 const UpcomingDeparturesTable = ({ data, isLoading }: UpcomingDeparturesTableProps) => {
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all')
+  const { isCompanyAdmin, isImpersonating } = useAuth()
+
+  // Determinar si mostrar dueño en lugar de empresa
+  const showOwnerInsteadOfCompany = isCompanyAdmin || isImpersonating
 
   const handleFilterChange = (_: React.MouseEvent<HTMLElement>, newFilter: StatusFilter | null) => {
     if (newFilter !== null) {
@@ -119,17 +125,38 @@ const UpcomingDeparturesTable = ({ data, isLoading }: UpcomingDeparturesTablePro
         </Typography>
       )
     },
-    {
-      field: 'empresa',
-      headerName: 'EMPRESA',
-      width: 150,
-      valueGetter: (_, row) => row.company?.name ?? '',
-      renderCell: (params: GridRenderCellParams) => (
-        <Typography variant='body2' className='font-medium'>
-          {params.value}
-        </Typography>
-      )
-    },
+    ...(showOwnerInsteadOfCompany
+      ? [
+          {
+            field: 'owner',
+            headerName: 'DUEÑO',
+            width: 200,
+            valueGetter: (_: any, row: any) => row.bus?.owner?.name ?? '',
+            renderCell: (params: GridRenderCellParams) => (
+              <Box sx={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', py: 1 }}>
+                <Typography variant='body2' className='font-medium' sx={{ lineHeight: 1.4 }}>
+                  {params.row.bus?.owner?.name ?? 'N/A'}
+                </Typography>
+                <Typography variant='caption' color='text.secondary' sx={{ lineHeight: 1.2 }}>
+                  CI: {params.row.bus?.owner?.ci ?? 'N/A'} | Tel: {params.row.bus?.owner?.phone ?? 'N/A'}
+                </Typography>
+              </Box>
+            )
+          }
+        ]
+      : [
+          {
+            field: 'empresa',
+            headerName: 'EMPRESA',
+            width: 150,
+            valueGetter: (_: any, row: any) => row.company?.name ?? '',
+            renderCell: (params: GridRenderCellParams) => (
+              <Typography variant='body2' className='font-medium'>
+                {params.value}
+              </Typography>
+            )
+          }
+        ]),
     {
       field: 'ruta',
       headerName: 'RUTA',
@@ -198,28 +225,14 @@ const UpcomingDeparturesTable = ({ data, isLoading }: UpcomingDeparturesTablePro
       )
     },
     {
-      field: 'vendidos_qr',
-      headerName: 'VENDIDOS QR',
-      width: 120,
+      field: 'vendidos_oficina',
+      headerName: 'VENDIDOS OFICINA',
+      width: 140,
       align: 'center',
       headerAlign: 'center',
+      valueGetter: (_, row) => row.tickets_office_count ?? 0,
       renderCell: (params: GridRenderCellParams) => (
-        <Tooltip title='Boletos vendidos por QR'>
-          <Typography variant='body2' color='secondary.main' className='font-medium'>
-            {params.value}
-          </Typography>
-        </Tooltip>
-      )
-    },
-    {
-      field: 'vendidos_efectivo',
-      headerName: 'VENDIDOS OFICINA EFECTIVO',
-      width: 180,
-      align: 'center',
-      headerAlign: 'center',
-      valueGetter: (_, row) => row.tickets_office_cash_count ?? 0,
-      renderCell: (params: GridRenderCellParams) => (
-        <Tooltip title='Boletos vendidos en efectivo'>
+        <Tooltip title='Boletos vendidos en oficina'>
           <Typography variant='body2' color='warning.main' className='font-medium'>
             {params.value}
           </Typography>
@@ -286,6 +299,7 @@ const UpcomingDeparturesTable = ({ data, isLoading }: UpcomingDeparturesTablePro
           autoHeight
           disableRowSelectionOnClick
           pageSizeOptions={[5, 10, 25]}
+          rowHeight={showOwnerInsteadOfCompany ? 60 : 52}
           initialState={{
             pagination: { paginationModel: { pageSize: 10 } }
           }}

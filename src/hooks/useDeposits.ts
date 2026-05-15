@@ -1,7 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 
 import { api } from '@/libs/axios'
-import type { Travel, TravelsFilters } from '@/types/api/deposits'
+import type { Travel, TravelsFilters, CompanyWithDebt, TravelsPaginatedResponse } from '@/types/api/deposits'
 import type { ProcessTransactionResponse, VerifyTransactionResponse } from '@/types/api/transactions'
 
 // API Functions
@@ -98,6 +98,77 @@ export const useVerifyTransaction = () => {
     onSuccess: () => {
       // Invalidate travels queries to refresh the list
       queryClient.invalidateQueries({ queryKey: ['travels-admin'] })
+      queryClient.invalidateQueries({ queryKey: ['transaction-companies'] })
+      queryClient.invalidateQueries({ queryKey: ['transaction-travels'] })
     }
   })
+}
+
+// New API Functions for transactions endpoints
+const fetchTransactionCompanies = async (): Promise<CompanyWithDebt[]> => {
+  const response = await api.get<CompanyWithDebt[]>('/api/transactions/companies')
+
+  return response.data
+}
+
+const fetchTransactionTravels = async (filters: TravelsFilters): Promise<TravelsPaginatedResponse> => {
+  const params: Record<string, any> = {}
+
+  if (filters.companyId) {
+    params.companyId = filters.companyId
+  }
+
+  if (filters.status) {
+    params.status = filters.status
+  }
+
+  if (filters.isPaid !== undefined) {
+    params.isPaid = filters.isPaid
+  }
+
+  if (filters.startDate) {
+    params.startDate = filters.startDate
+  }
+
+  if (filters.endDate) {
+    params.endDate = filters.endDate
+  }
+
+  if (filters.origin_placeId) {
+    params.origin_placeId = filters.origin_placeId
+  }
+
+  if (filters.destination_placeId) {
+    params.destination_placeId = filters.destination_placeId
+  }
+
+  const response = await api.get<TravelsPaginatedResponse>('/api/transactions/travels', { params })
+
+  return response.data
+}
+
+// Hook for fetching companies with debt info
+export const useTransactionCompanies = () => {
+  return useQuery({
+    queryKey: ['transaction-companies'],
+    queryFn: fetchTransactionCompanies,
+    staleTime: 30000
+  })
+}
+
+// Hook for fetching travels from transactions endpoint
+export const useTransactionTravels = (filters: TravelsFilters = {}) => {
+  const query = useQuery({
+    queryKey: ['transaction-travels', filters],
+    queryFn: () => fetchTransactionTravels(filters),
+    enabled: !!filters.companyId,
+    staleTime: 30000,
+    retry: 2
+  })
+
+  return {
+    ...query,
+    data: query.data?.data || [],
+    meta: query.data?.meta
+  }
 }

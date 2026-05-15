@@ -27,10 +27,9 @@ import {
   getSortedRowModel
 } from '@tanstack/react-table'
 
-import { useTravelsForAdmin } from '@/hooks/useDeposits'
+import { useTransactionTravels } from '@/hooks/useDeposits'
 import { usePlaces } from '@/hooks/useLugares'
-import type { Travel } from '@/types/api/deposits'
-import type { Company } from '@/types/api/company'
+import type { Travel, CompanyWithDebt } from '@/types/api/deposits'
 import CustomTextField from '@core/components/mui/TextField'
 import tableStyles from '@core/styles/table.module.css'
 import TransactionDialog from '@/views/Dashboard/depositos/components/TransactionDialog'
@@ -38,7 +37,7 @@ import TransactionDialog from '@/views/Dashboard/depositos/components/Transactio
 interface TravelsModalProps {
   open: boolean
   onClose: () => void
-  company: Company
+  company: CompanyWithDebt
 }
 
 const columnHelper = createColumnHelper<Travel>()
@@ -84,7 +83,7 @@ const TravelsModal = ({ open, onClose, company }: TravelsModalProps) => {
     }
   }, [company.id, isPaidFilter, startDate, endDate, originPlaceId, destinationPlaceId])
 
-  const { data: travels, isLoading, error } = useTravelsForAdmin(filters)
+  const { data: travels, isLoading, error } = useTransactionTravels(filters)
 
   const paginatedData = useMemo(() => {
     return travels.slice((currentPage - 1) * pageSize, currentPage * pageSize)

@@ -19,20 +19,36 @@ import {
   getSortedRowModel
 } from '@tanstack/react-table'
 
-import { useCompanies } from '@/hooks/useCompanies'
-import type { Company } from '@/types/api/company'
+import { useTransactionCompanies } from '@/hooks/useDeposits'
+import type { CompanyWithDebt } from '@/types/api/deposits'
 import tableStyles from '@core/styles/table.module.css'
 import TravelsModal from '@/views/Dashboard/depositos/components/TravelsModal'
 
-const columnHelper = createColumnHelper<Company>()
+const columnHelper = createColumnHelper<CompanyWithDebt>()
+
+const formatCurrency = (value: number) => {
+  return `Bs. ${value.toFixed(2)}`
+}
+
+const formatDate = (dateString: string | null) => {
+  if (!dateString) return 'Nunca'
+
+  return new Date(dateString).toLocaleDateString('es-BO', {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit'
+  })
+}
 
 const DepositosTable = () => {
   const [pageSize, setPageSize] = useState(10)
   const [currentPage, setCurrentPage] = useState(1)
-  const [selectedCompany, setSelectedCompany] = useState<Company | null>(null)
+  const [selectedCompany, setSelectedCompany] = useState<CompanyWithDebt | null>(null)
   const [modalOpen, setModalOpen] = useState(false)
 
-  const { data: companies, isLoading, error } = useCompanies()
+  const { data: companies, isLoading, error } = useTransactionCompanies()
 
   const paginatedData = useMemo(() => {
     return (companies || []).slice((currentPage - 1) * pageSize, currentPage * pageSize)
@@ -41,7 +57,7 @@ const DepositosTable = () => {
   const totalRecords = companies?.length || 0
   const totalPages = Math.ceil(totalRecords / pageSize)
 
-  const handleOpenModal = (company: Company) => {
+  const handleOpenModal = (company: CompanyWithDebt) => {
     setSelectedCompany(company)
     setModalOpen(true)
   }
@@ -81,29 +97,39 @@ const DepositosTable = () => {
         )
       },
       {
-        accessorKey: 'commission',
-        header: 'Comisión',
-        cell: ({ row }: any) => <Typography variant='body2'>{row.original.commission}%</Typography>
-      },
-      {
-        accessorKey: 'hours_before_closing',
-        header: 'Horas antes de cierre',
-        cell: ({ row }: any) => <Typography variant='body2'>{row.original.hours_before_closing}h</Typography>
-      },
-      {
-        accessorKey: 'bankAccount.titularName',
-        header: 'Titular',
+        accessorKey: 'currentDebt',
+        header: 'Deuda Actual',
         cell: ({ row }: any) => (
-          <Typography variant='body2'>{row.original.bankAccount?.titularName || 'N/A'}</Typography>
+          <Typography
+            variant='body2'
+            fontWeight={600}
+            color={row.original.currentDebt > 0 ? 'error.main' : 'success.main'}
+          >
+            {formatCurrency(row.original.currentDebt)}
+          </Typography>
         )
       },
       {
-        accessorKey: 'bankAccount.account',
-        header: 'Cuenta',
+        accessorKey: 'lastPaidAt',
+        header: 'Último Pago',
         cell: ({ row }: any) => (
-          <Typography variant='body2' fontFamily='monospace'>
-            {row.original.bankAccount?.account || 'N/A'}
+          <Typography variant='body2' color='text.secondary'>
+            {formatDate(row.original.lastPaidAt)}
           </Typography>
+        )
+      },
+      {
+        accessorKey: 'bankAccount.titularName',
+        header: 'Titular / Cuenta',
+        cell: ({ row }: any) => (
+          <Box>
+            <Typography variant='body2' fontWeight={500}>
+              {row.original.bankAccount?.titularName || 'N/A'}
+            </Typography>
+            <Typography variant='caption' color='text.secondary' fontFamily='monospace'>
+              {row.original.bankAccount?.account || 'N/A'}
+            </Typography>
+          </Box>
         )
       },
       {

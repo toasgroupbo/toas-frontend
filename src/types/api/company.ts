@@ -36,8 +36,6 @@ export enum BranchOfficeId {
 }
 
 export enum BankCode {
-
-  // Bancos
   BANCO_DE_CREDITO = '1005',
   BANCO_ECONOMICO_SA = '1016',
   BANCO_FORTALEZA = '1034',
@@ -49,8 +47,6 @@ export enum BankCode {
   BANCO_NACIONAL_DE_BOLIVIA_SA = '1001',
   BANCO_SOLIDARIO_SA = '1017',
   BANCO_UNION_SA = '1014',
-
-  // Cooperativas
   COOPERATIVA_DE_AHORRO_Y_CREDITO_ABIERTA_COMARAPA = 'MLD3022',
   COOPERATIVA_DE_AHORRO_Y_CREDITO_ABIERTA_CATEDRAL = 'MLD3030',
   EL_CHOROLQUE_RL = 'MLD3026',
@@ -65,15 +61,11 @@ export enum BankCode {
   COOPERATIVA_SAN_MARTIN_DE_PORRES = '3002',
   COOPERATIVA_SAN_MATEO = '3025',
   COOPERATIVA_DE_AHORRO_Y_CREDITO_TRINIDAD_LTDA = 'MLD3021',
-
-  // IFDs (Instituciones Financieras de Desarrollo)
   CIDRE_IFD = '27002',
   CRECER_IFD = '27003',
   DIACONIA_IFD = '27004',
   INSTITUCION_FINANCIERA_DE_DESARROLLO_IDEPRO = '27009',
   INSTITUCION_FINANCIERA_DE_DESARROLLO_PRO_MUJER = '27012',
-
-  // Bancos MLD
   BANCO_ECONOMICO_SA_MLD = 'MLD1016',
   BANCO_FORTALEZA_MLD = 'MLD1034',
   BANCO_GANADERO_SA_MLD = 'MLD1018',
@@ -81,20 +73,12 @@ export enum BankCode {
   BANCO_NACIONAL_DE_BOLIVIA_SA_MLD = 'MLD1001',
   BANCO_SOLIDARIO_SA_MLD = 'MLD1017',
   BANCO_UNION_SA_MLD = 'MLD1014',
-
-  // Tigo Money
   TIGO_MONEY = '53001',
-
-  // Bancos PYME
   BANCO_PYME_DE_LA_COMUNIDAD = '74003',
   BANCO_PYME_ECOFUTURO_SA = '74002',
-
-  // UNI
   COOPERATIVA_SAN_MATEO_UNI = 'UNI3025',
   INSTITUCION_FINANCIERA_DE_DESARROLLO_IDEPRO_UNI = 'UNI27009',
   INSTITUCION_FINANCIERA_DE_DESARROLLO_PRO_MUJER_UNI = 'UNI27012',
-
-  // EFV (Entidad Financiera de Vivienda)
   LA_PRIMERA_ENTIDAD_FINANCIERA_DE_VIVIENDA = 'MLD75001',
   LA_PROMOTORA_EFV = '75003'
 }
@@ -123,7 +107,8 @@ export interface Company {
   id: string
   name: string
   logo: string
-  commission: number
+  commission_app: number
+  commission_company: number
   hours_before_closing: number
   createdAt: string
   bankAccount: BankAccount
@@ -133,7 +118,8 @@ export interface Company {
 export interface CreateCompanyDto {
   name: string
   logo: string
-  commission: number
+  commission_app: number
+  commission_company: number
   hours_before_closing: number
   bankAccount: {
     bankCode: string
@@ -156,7 +142,8 @@ export interface CreateCompanyDto {
 export interface UpdateCompanyDto {
   name?: string
   logo?: string
-  commission?: number
+  commission_app?: number
+  commission_company?: number
   hours_before_closing?: number
   bankAccount?: {
     bankCode: string
@@ -177,7 +164,6 @@ export interface UpdateCompanyDto {
 }
 
 export const BANCOS_OPTIONS = [
-  // Bancos
   { value: BankCode.BANCO_DE_CREDITO, label: 'Banco de Crédito' },
   { value: BankCode.BANCO_ECONOMICO_SA, label: 'Banco Económico S.A.' },
   { value: BankCode.BANCO_FORTALEZA, label: 'Banco Fortaleza' },
@@ -189,8 +175,6 @@ export const BANCOS_OPTIONS = [
   { value: BankCode.BANCO_NACIONAL_DE_BOLIVIA_SA, label: 'Banco Nacional de Bolivia S.A.' },
   { value: BankCode.BANCO_SOLIDARIO_SA, label: 'Banco Solidario S.A.' },
   { value: BankCode.BANCO_UNION_SA, label: 'Banco Unión S.A.' },
-
-  // Cooperativas
   { value: BankCode.COOPERATIVA_DE_AHORRO_Y_CREDITO_ABIERTA_COMARAPA, label: 'Cooperativa Comarapa' },
   { value: BankCode.COOPERATIVA_DE_AHORRO_Y_CREDITO_ABIERTA_CATEDRAL, label: 'Cooperativa Catedral' },
   { value: BankCode.EL_CHOROLQUE_RL, label: 'Cooperativa El Chorolque RL' },
@@ -205,15 +189,11 @@ export const BANCOS_OPTIONS = [
   { value: BankCode.COOPERATIVA_SAN_MARTIN_DE_PORRES, label: 'Cooperativa San Martín de Porres' },
   { value: BankCode.COOPERATIVA_SAN_MATEO, label: 'Cooperativa San Mateo' },
   { value: BankCode.COOPERATIVA_DE_AHORRO_Y_CREDITO_TRINIDAD_LTDA, label: 'Cooperativa Trinidad Ltda.' },
-
-  // IFDs
   { value: BankCode.CIDRE_IFD, label: 'CIDRE IFD' },
   { value: BankCode.CRECER_IFD, label: 'CRECER IFD' },
   { value: BankCode.DIACONIA_IFD, label: 'DIACONIA IFD' },
   { value: BankCode.INSTITUCION_FINANCIERA_DE_DESARROLLO_IDEPRO, label: 'IDEPRO IFD' },
   { value: BankCode.INSTITUCION_FINANCIERA_DE_DESARROLLO_PRO_MUJER, label: 'Pro Mujer IFD' },
-
-  // Bancos MLD
   { value: BankCode.BANCO_ECONOMICO_SA_MLD, label: 'Banco Económico S.A. MLD' },
   { value: BankCode.BANCO_FORTALEZA_MLD, label: 'Banco Fortaleza MLD' },
   { value: BankCode.BANCO_GANADERO_SA_MLD, label: 'Banco Ganadero S.A. MLD' },
@@ -221,20 +201,12 @@ export const BANCOS_OPTIONS = [
   { value: BankCode.BANCO_NACIONAL_DE_BOLIVIA_SA_MLD, label: 'Banco Nacional de Bolivia S.A. MLD' },
   { value: BankCode.BANCO_SOLIDARIO_SA_MLD, label: 'Banco Solidario S.A. MLD' },
   { value: BankCode.BANCO_UNION_SA_MLD, label: 'Banco Unión S.A. MLD' },
-
-  // Tigo Money
   { value: BankCode.TIGO_MONEY, label: 'Tigo Money' },
-
-  // Bancos PYME
   { value: BankCode.BANCO_PYME_DE_LA_COMUNIDAD, label: 'Banco PYME de la Comunidad' },
   { value: BankCode.BANCO_PYME_ECOFUTURO_SA, label: 'Banco PYME Ecofuturo S.A.' },
-
-  // UNI
   { value: BankCode.COOPERATIVA_SAN_MATEO_UNI, label: 'Cooperativa San Mateo UNI' },
   { value: BankCode.INSTITUCION_FINANCIERA_DE_DESARROLLO_IDEPRO_UNI, label: 'IDEPRO IFD UNI' },
   { value: BankCode.INSTITUCION_FINANCIERA_DE_DESARROLLO_PRO_MUJER_UNI, label: 'Pro Mujer IFD UNI' },
-
-  // EFV
   { value: BankCode.LA_PRIMERA_ENTIDAD_FINANCIERA_DE_VIVIENDA, label: 'La Primera EFV' },
   { value: BankCode.LA_PROMOTORA_EFV, label: 'La Promotora EFV' }
 ] as const

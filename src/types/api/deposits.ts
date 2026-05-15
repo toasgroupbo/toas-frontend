@@ -82,3 +82,42 @@ export interface TravelsFilters {
   origin_placeId?: number
   destination_placeId?: number
 }
+
+// Company with transaction debt info
+export interface CompanyUser {
+  id: number
+  email: string
+  fullName: string
+  ci: string
+  phone: string
+  createdAt: string
+}
+
+export interface CompanyWithDebt {
+  id: number
+  name: string
+  logo: string
+  commission_app: number
+  commission_company: number
+  hours_before_closing: number
+  createdAt: string
+  enabled: boolean
+  bankAccount: BankAccount
+  users: CompanyUser[]
+  currentDebt: number
+  lastPaidAt: string | null
+}
+
+// Paginated travels response
+export interface TravelsPaginatedResponse {
+  data: Travel[]
+  meta: {
+    total: number
+    page: number
+    lastPage: number
+    limit: number
+    offset: number
+    hasNextPage: boolean
+    hasPreviousPage: boolean
+  }
+}
