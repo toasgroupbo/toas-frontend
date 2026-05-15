@@ -438,7 +438,7 @@ const UpdateCompanyDialog = ({ open, onClose, onSubmit, isLoading, company }: Up
                   <CustomTextField
                     fullWidth
                     type='text'
-                    label='Comisión Empresa (%) *'
+                    label='Comisión Empresa (Bs.) *'
                     {...field}
                     onChange={e => {
                       const value = e.target.value.replace(/[^0-9.]/g, '')
@@ -451,7 +451,7 @@ const UpdateCompanyDialog = ({ open, onClose, onSubmit, isLoading, company }: Up
                     InputProps={{
                       startAdornment: (
                         <InputAdornment position='start'>
-                          <i className='tabler-percentage' />
+                          <i className='tabler-currency-dollar' />
                         </InputAdornment>
                       )
                     }}

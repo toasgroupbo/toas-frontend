@@ -44,6 +44,37 @@ export interface Assistant {
 
 export type TravelType = 'normal' | 'habilitada'
 
+export interface TravelTransaction {
+  id: number
+  transactionId: string
+  status: string
+  processResponse?: {
+    Code: string
+    Message: string
+    TransactionId: string
+  }
+  authorizeResponse?: {
+    Code: string
+    Result: string
+    Message: string
+  }
+  batchDetailRequest?: any
+  batchDetailResponse?: any
+  bankErrors?: any
+  errorMessage?: string | null
+  travelsSnapshot?: {
+    line: number
+    amount: number
+    travelId: number
+  }[]
+  totalAmount: string
+  totalTravels: number
+  createdAt: string
+  processedAt: string | null
+  authorizedAt: string | null
+  completedAt: string | null
+}
+
 export interface Travel {
   id: number
   departure_time: string
@@ -79,6 +110,7 @@ export interface Travel {
   route: Route
   drivers?: Driver[] | null
   assistants?: Assistant[] | null
+  transaction?: TravelTransaction | null
 }
 
 export interface CreateTravelDto {

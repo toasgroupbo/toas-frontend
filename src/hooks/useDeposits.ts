@@ -84,8 +84,10 @@ export const useProcessTransaction = () => {
   return useMutation({
     mutationFn: (travelId: number) => processTransaction(travelId),
     onSuccess: () => {
-      // Invalidate travels queries to refresh the list
+      // Invalidate all relevant queries to refresh the lists
       queryClient.invalidateQueries({ queryKey: ['travels-admin'] })
+      queryClient.invalidateQueries({ queryKey: ['transaction-companies'] })
+      queryClient.invalidateQueries({ queryKey: ['transaction-travels'] })
     }
   })
 }

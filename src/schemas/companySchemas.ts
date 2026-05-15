@@ -20,10 +20,7 @@ export const createCompanySchema = z
       .number()
       .min(0, 'La comisión de la app debe ser mayor o igual a 0')
       .max(100, 'La comisión no puede exceder el 100%'),
-    commission_company: z
-      .number()
-      .min(0, 'La comisión de la empresa debe ser mayor o igual a 0')
-      .max(100, 'La comisión no puede exceder el 100%'),
+    commission_company: z.number().min(0, 'La comisión de la empresa debe ser mayor o igual a 0'),
     hours_before_closing: z.number().min(0, 'Las horas deben ser mayor o igual a 0'),
     bankAccount: z.object({
       bankCode: z.enum(BANCOS_VALUES, {
@@ -62,10 +59,7 @@ export const updateCompanySchema = z
       .number()
       .min(0, 'La comisión de la app debe ser mayor o igual a 0')
       .max(100, 'La comisión no puede exceder el 100%'),
-    commission_company: z
-      .number()
-      .min(0, 'La comisión de la empresa debe ser mayor o igual a 0')
-      .max(100, 'La comisión no puede exceder el 100%'),
+    commission_company: z.number().min(0, 'La comisión de la empresa debe ser mayor o igual a 0'),
     hours_before_closing: z.number().min(0, 'Las horas deben ser mayor o igual a 0'),
     bankAccount: z.object({
       bankCode: z.enum(BANCOS_VALUES, {

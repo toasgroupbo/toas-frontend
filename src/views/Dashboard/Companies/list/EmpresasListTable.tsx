@@ -360,7 +360,7 @@ const EmpresaListTable = () => {
       columnHelper.accessor('commission_company', {
         header: 'Comisión Empresa',
         cell: ({ row }) => (
-          <Chip label={`${row.original.commission_company}%`} color='info' variant='tonal' size='small' />
+          <Chip label={`Bs. ${row.original.commission_company}`} color='info' variant='tonal' size='small' />
         ),
         size: 120
       }),

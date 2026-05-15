@@ -183,22 +183,7 @@ const TransactionDialog = ({ open, onClose, travel }: TransactionDialogProps) =>
                       {travel.bus.owner.name}
                     </Typography>
                   </Box>
-                  <Box>
-                    <Typography variant='caption' color='text.secondary'>
-                      Monto App
-                    </Typography>
-                    <Typography variant='body2' color='primary.main' fontWeight={600}>
-                      {formatCurrency(travel.app_amount)}
-                    </Typography>
-                  </Box>
-                  <Box>
-                    <Typography variant='caption' color='text.secondary'>
-                      Comisión Total
-                    </Typography>
-                    <Typography variant='body2' color='success.main' fontWeight={600}>
-                      {formatCurrency(travel.total_commission)}
-                    </Typography>
-                  </Box>
+
                   <Box>
                     <Typography variant='caption' color='text.secondary'>
                       Cuenta Bancaria

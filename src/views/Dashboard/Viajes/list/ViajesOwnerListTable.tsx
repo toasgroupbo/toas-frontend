@@ -34,6 +34,7 @@ import tableStyles from '@core/styles/table.module.css'
 import { useTravelsForOwner, type TravelFilters } from '@/hooks/useTravels'
 import { useOwnerRoutes } from '@/hooks/useCashierTravels'
 import type { Travel } from '@/types/api/travels'
+import TransactionDetailsModal from '@/views/Dashboard/Viajes/components/TransactionDetailsModal'
 
 type DateRangePreset = 'today' | 'last_week' | 'this_month' | 'last_month' | 'custom'
 
@@ -125,6 +126,8 @@ const ViajesOwnerListTable = () => {
   const [customEndDate, setCustomEndDate] = useState<string>('')
   const [originPlaceId, setOriginPlaceId] = useState<string>('')
   const [destinationPlaceId, setDestinationPlaceId] = useState<string>('')
+  const [selectedTravel, setSelectedTravel] = useState<TravelWithActionsType | null>(null)
+  const [transactionModalOpen, setTransactionModalOpen] = useState(false)
 
   const { data: ownerRoutes } = useOwnerRoutes()
 
@@ -233,17 +236,16 @@ const ViajesOwnerListTable = () => {
     })
   }
 
+  const handleRowClick = (travel: TravelWithActionsType) => {
+    // Only allow click when transaction status is COMPLETED
+    if (travel.transaction?.status === 'COMPLETED') {
+      setSelectedTravel(travel)
+      setTransactionModalOpen(true)
+    }
+  }
+
   const columns = useMemo<ColumnDef<TravelWithActionsType, any>[]>(
     () => [
-      columnHelper.accessor('actions', {
-        header: 'Acciones',
-        cell: () => (
-          <div className='flex items-center gap-2'>
-            <i className='tabler-eye' style={{ fontSize: '18px', color: 'var(--mui-palette-info-main)' }} />
-          </div>
-        ),
-        enableSorting: false
-      }),
       columnHelper.accessor('bus', {
         header: 'Bus',
         cell: ({ row }) => (
@@ -739,14 +741,18 @@ const ViajesOwnerListTable = () => {
               <tbody>
                 {table.getRowModel().rows.map(row => {
                   const isDisabled = !row.original.enabled
+                  const isCompleted = row.original.transaction?.status === 'COMPLETED'
 
                   return (
                     <tr
                       key={row.id}
+                      onClick={() => handleRowClick(row.original)}
                       style={{
                         opacity: isDisabled ? 0.5 : 1,
-                        backgroundColor: isDisabled ? 'var(--mui-palette-action-disabledBackground)' : undefined
+                        backgroundColor: isDisabled ? 'var(--mui-palette-action-disabledBackground)' : undefined,
+                        cursor: isCompleted ? 'pointer' : 'default'
                       }}
+                      className={isCompleted ? 'hover:bg-[var(--mui-palette-action-hover)]' : ''}
                     >
                       {row.getVisibleCells().map(cell => (
                         <td key={cell.id}>{flexRender(cell.column.columnDef.cell, cell.getContext())}</td>
@@ -777,6 +783,15 @@ const ViajesOwnerListTable = () => {
           />
         </div>
       </Card>
+
+      <TransactionDetailsModal
+        open={transactionModalOpen}
+        onClose={() => {
+          setTransactionModalOpen(false)
+          setSelectedTravel(null)
+        }}
+        travel={selectedTravel as any}
+      />
     </Box>
   )
 }

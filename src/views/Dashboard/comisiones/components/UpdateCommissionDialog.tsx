@@ -49,7 +49,7 @@ const UpdateCommissionDialog = ({ open, commission, onClose, onSubmit, isLoading
       // Pre-fill with the current paid amount, or use commission_company if paid is 0
       const currentPaid = parseFloat(commission.paid)
 
-      setPaidAmount(currentPaid > 0 ? commission.paid : commission.commission_company)
+      setPaidAmount(currentPaid > 0 ? commission.paid : commission.net_to_company)
       setVoucherFile(null)
       setError('')
 

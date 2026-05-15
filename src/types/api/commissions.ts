@@ -12,7 +12,7 @@ export interface CommissionCompany {
 export interface Commission {
   id: number
   paid: string
-  voucher: null
+  voucher: string | null
   paidAt: string | null
   total_trips_count: number
   tickets_app_count_total: number

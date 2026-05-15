@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useRef, useCallback } from 'react'
 
 import Card from '@mui/material/Card'
 import Typography from '@mui/material/Typography'
@@ -62,6 +62,7 @@ const VentasTable = () => {
   const { showSuccess, showError } = useSnackbar()
   const updateMutation = useUpdateCommission()
   const uploadImageMutation = useUploadImage()
+  const debounceTimeoutRef = useRef<NodeJS.Timeout | null>(null)
 
   const [pageSize, setPageSize] = useState<number>(10)
   const [currentPage, setCurrentPage] = useState<number>(1)
@@ -69,6 +70,7 @@ const VentasTable = () => {
   const [endDate, setEndDate] = useState<Date | null>(null)
   const [isPaidFilter, setIsPaidFilter] = useState<string>('all')
   const [searchTerm, setSearchTerm] = useState<string>('')
+  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState<string>('')
 
   const [selectedCommission, setSelectedCommission] = useState<Commission | null>(null)
   const [dialogOpen, setDialogOpen] = useState<boolean>(false)
@@ -76,14 +78,34 @@ const VentasTable = () => {
   const [voucherModalOpen, setVoucherModalOpen] = useState<boolean>(false)
   const [selectedVoucher, setSelectedVoucher] = useState<{ url: string; companyName: string } | null>(null)
 
+  const handleSearchChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value
+
+    setSearchTerm(value)
+
+    if (debounceTimeoutRef.current) {
+      clearTimeout(debounceTimeoutRef.current)
+    }
+
+    if (value.length >= 3 || value.length === 0) {
+      debounceTimeoutRef.current = setTimeout(() => {
+        setDebouncedSearchTerm(value)
+      }, 500)
+    } else if (value.length < 3 && value.length > 0) {
+      if (debounceTimeoutRef.current) {
+        clearTimeout(debounceTimeoutRef.current)
+      }
+    }
+  }, [])
+
   const filters = useMemo(() => {
     return {
       isPaid: isPaidFilter === 'all' ? undefined : isPaidFilter === 'paid',
       startDate: startDate ? startDate.toISOString().split('T')[0] : undefined,
       endDate: endDate ? endDate.toISOString().split('T')[0] : undefined,
-      search: searchTerm || undefined
+      search: debouncedSearchTerm || undefined
     }
-  }, [isPaidFilter, startDate, endDate, searchTerm])
+  }, [isPaidFilter, startDate, endDate, debouncedSearchTerm])
 
   const { data: commissions, isLoading, error, totals } = useCommissions(filters)
 
@@ -347,8 +369,8 @@ const VentasTable = () => {
             {!isCompanyAdmin && (
               <CustomTextField
                 value={searchTerm}
-                onChange={e => setSearchTerm(e.target.value)}
-                placeholder='Buscar empresa...'
+                onChange={handleSearchChange}
+                placeholder='Buscar empresa '
                 className='min-w-[200px]'
               />
             )}
@@ -388,17 +410,19 @@ const VentasTable = () => {
           </div>
 
           <div className='flex items-center gap-4'>
-            <Box display='flex' flexDirection='column' gap={0.5}>
-              <Typography variant='caption' color='primary.main' fontWeight={600}>
-                Total, App: Bs. {parseFloat(totals.total_app).toFixed(2)}
-              </Typography>
-              <Typography variant='caption' color='warning.main' fontWeight={600}>
-                Total, Comisión Empresa: Bs. {parseFloat(totals.total_net_to_company).toFixed(2)}
-              </Typography>
-              <Typography variant='caption' color='success.main' fontWeight={600}>
-                Total, Saldo Comisión: Bs. {parseFloat(totals.total_balance).toFixed(2)}
-              </Typography>
-            </Box>
+            {!isCompanyAdmin && (
+              <Box display='flex' flexDirection='column' gap={0.5}>
+                <Typography variant='caption' color='primary.main' fontWeight={600}>
+                  Total, App: Bs. {parseFloat(totals.total_app).toFixed(2)}
+                </Typography>
+                <Typography variant='caption' color='warning.main' fontWeight={600}>
+                  Total, Comisión Empresa: Bs. {parseFloat(totals.total_net_to_company).toFixed(2)}
+                </Typography>
+                <Typography variant='caption' color='success.main' fontWeight={600}>
+                  Total, Saldo Comisión: Bs. {parseFloat(totals.total_balance).toFixed(2)}
+                </Typography>
+              </Box>
+            )}
 
             <Button
               variant='contained'
@@ -507,7 +531,12 @@ const VentasTable = () => {
         />
       )}
 
-      <CommissionsChartModal open={chartModalOpen} onClose={() => setChartModalOpen(false)} data={commissions || []} />
+      <CommissionsChartModal
+        open={chartModalOpen}
+        onClose={() => setChartModalOpen(false)}
+        data={commissions || []}
+        isCompanyAdmin={isCompanyAdmin}
+      />
 
       {selectedVoucher && (
         <ViewVoucherModal

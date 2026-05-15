@@ -61,8 +61,8 @@ const CommissionsChartModal = ({ open, onClose, data, isCompanyAdmin = false }: 
           data: comisionApp
         },
         {
-          name: 'Neto a Pagar',
-          data: netToCompany
+          name: 'Total Saldo Comisión',
+          data: saldoComision
         },
         {
           name: 'Comisión Empresa',
