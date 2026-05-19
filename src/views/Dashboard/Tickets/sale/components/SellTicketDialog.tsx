@@ -26,6 +26,7 @@ import type { Travel, TravelSeat } from '@/types/api/travels'
 import { useCashierTravels, useCashierTravelById } from '@/hooks/useCashierTravels'
 import BusSeatMap from './BusSeatMap'
 import CustomerSearchField from './CustomerSearchField'
+import { formatFullDateTime } from '../utils/dateFormatters'
 
 interface SellTicketDialogProps {
   open: boolean
@@ -245,27 +246,44 @@ const SellTicketDialog = ({ open, onClose, onSubmit, isLoading = false, preSelec
 
   return (
     <Dialog open={open} onClose={handleClose} maxWidth='lg' fullWidth fullScreen={isMobile}>
-      <DialogTitle
-        sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', py: { xs: 1.5, sm: 2 } }}
-      >
-        <Box display='flex' alignItems='center' gap={{ xs: 1, sm: 2 }} minWidth={0} flex={1}>
-          <i className='tabler-ticket' style={{ fontSize: isMobile ? '20px' : '24px', flexShrink: 0 }} />
-          <Typography variant={isMobile ? 'body1' : 'h6'} fontWeight={600} noWrap>
-            Vender Ticket
-          </Typography>
-          {selectedTravel && !isMobile && (
-            <Chip
-              label={`${selectedTravel.route.officeOrigin.place?.name || 'N/A'} → ${selectedTravel.route.officeDestination.place?.name || 'N/A'}`}
-              color='primary'
-              variant='tonal'
-              size='small'
-              sx={{ maxWidth: 300, '& .MuiChip-label': { overflow: 'hidden', textOverflow: 'ellipsis' } }}
-            />
+      <DialogTitle sx={{ py: { xs: 1.5, sm: 2 } }}>
+        <Box display='flex' flexDirection='column' gap={1}>
+          <Box display='flex' alignItems='center' justifyContent='space-between'>
+            <Box display='flex' alignItems='center' gap={{ xs: 1, sm: 2 }} minWidth={0} flex={1}>
+              <i className='tabler-ticket' style={{ fontSize: isMobile ? '20px' : '24px', flexShrink: 0 }} />
+              <Typography variant={isMobile ? 'body1' : 'h6'} fontWeight={600} noWrap>
+                Vender Ticket
+              </Typography>
+              {selectedTravel && !isMobile && (
+                <Box display='flex' flexDirection='column' gap={0.5}>
+                  <Chip
+                    label={`${selectedTravel.route.officeOrigin.place?.name || 'N/A'} → ${selectedTravel.route.officeDestination.place?.name || 'N/A'}`}
+                    color='primary'
+                    variant='tonal'
+                    size='small'
+                    sx={{ '& .MuiChip-label': { overflow: 'hidden', textOverflow: 'ellipsis' } }}
+                  />
+                  <Typography variant='caption' color='text.secondary' sx={{ pl: 0.5 }}>
+                    {formatFullDateTime(selectedTravel.departure_time)}
+                  </Typography>
+                </Box>
+              )}
+            </Box>
+            <IconButton onClick={handleClose} disabled={isLoading} size={isMobile ? 'small' : 'medium'}>
+              <i className='tabler-x' />
+            </IconButton>
+          </Box>
+          {selectedTravel && isMobile && (
+            <Box sx={{ pl: 4, borderLeft: '3px solid', borderColor: 'primary.main' }}>
+              <Typography variant='caption' color='primary.main' fontWeight={500} display='block'>
+                {selectedTravel.route.officeOrigin.place?.name || 'N/A'} → {selectedTravel.route.officeDestination.place?.name || 'N/A'}
+              </Typography>
+              <Typography variant='caption' color='text.secondary'>
+                {formatFullDateTime(selectedTravel.departure_time)}
+              </Typography>
+            </Box>
           )}
         </Box>
-        <IconButton onClick={handleClose} disabled={isLoading} size={isMobile ? 'small' : 'medium'}>
-          <i className='tabler-x' />
-        </IconButton>
       </DialogTitle>
 
       <form onSubmit={handleSubmit(handleFormSubmit)}>
@@ -326,7 +344,7 @@ const SellTicketDialog = ({ open, onClose, onSubmit, isLoading = false, preSelec
                                   </Typography>
                                 </Box>
                                 <Typography variant='caption' color='text.secondary'>
-                                  {travel.departure_time} - {travel.bus.name} ({travel.bus.plaque})
+                                  {formatFullDateTime(travel.departure_time)} - {travel.bus.name} ({travel.bus.plaque})
                                 </Typography>
                               </Box>
                             </MenuItem>

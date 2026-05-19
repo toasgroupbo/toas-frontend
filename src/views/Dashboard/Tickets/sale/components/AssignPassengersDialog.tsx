@@ -22,12 +22,15 @@ import { useTheme } from '@mui/material/styles'
 
 import CustomTextField from '@core/components/mui/TextField'
 import type { Ticket } from '@/types/api/tickets'
+import type { Travel } from '@/types/api/travels'
 import { useSearchPassengerByCI, type Passenger } from '@/hooks/usePassengers'
+import { formatFullDateTime } from '../utils/dateFormatters'
 
 interface AssignPassengersDialogProps {
   open: boolean
   onClose: () => void
   ticket: Ticket | null
+  travel: Travel | null
   onPayCash: (assignments: SeatAssignment[]) => Promise<void>
   onPayQR: (assignments: SeatAssignment[]) => Promise<void>
   isLoading?: boolean
@@ -43,6 +46,7 @@ const AssignPassengersDialog = ({
   open,
   onClose,
   ticket,
+  travel,
   onPayCash,
   onPayQR,
   isLoading
@@ -232,16 +236,40 @@ const AssignPassengersDialog = ({
     <>
       <Dialog open={open} onClose={onClose} maxWidth='md' fullWidth fullScreen={isMobile}>
         <DialogTitle>
-          <Box display='flex' alignItems='center' justifyContent='space-between'>
-            <Box display='flex' alignItems='center' gap={{ xs: 1, sm: 2 }}>
-              <i className='tabler-users' style={{ fontSize: isMobile ? '20px' : '24px' }} />
-              <Typography variant={isMobile ? 'h6' : 'h5'} fontWeight={600}>
-                Asignar Pasajeros
-              </Typography>
+          <Box display='flex' flexDirection='column' gap={1}>
+            <Box display='flex' alignItems='center' justifyContent='space-between'>
+              <Box display='flex' alignItems='center' gap={{ xs: 1, sm: 2 }}>
+                <i className='tabler-users' style={{ fontSize: isMobile ? '20px' : '24px' }} />
+                <Typography variant={isMobile ? 'h6' : 'h5'} fontWeight={600}>
+                  Asignar Pasajeros
+                </Typography>
+              </Box>
+              <Box display='flex' alignItems='center' gap={2}>
+                {!isMobile && travel && (
+                  <Box display='flex' flexDirection='column' alignItems='flex-end' gap={0.25}>
+                    <Typography variant='caption' color='primary.main' fontWeight={500}>
+                      {travel.route?.officeOrigin?.place?.name || 'N/A'} → {travel.route?.officeDestination?.place?.name || 'N/A'}
+                    </Typography>
+                    <Typography variant='caption' color='text.secondary'>
+                      {formatFullDateTime(travel.departure_time)}
+                    </Typography>
+                  </Box>
+                )}
+                <IconButton onClick={onClose} disabled={isLoading}>
+                  <i className='tabler-x' />
+                </IconButton>
+              </Box>
             </Box>
-            <IconButton onClick={onClose} disabled={isLoading}>
-              <i className='tabler-x' />
-            </IconButton>
+            {isMobile && travel && (
+              <Box sx={{ pl: 4, borderLeft: '3px solid', borderColor: 'primary.main' }}>
+                <Typography variant='caption' color='primary.main' fontWeight={500} display='block'>
+                  {travel.route?.officeOrigin?.place?.name || 'N/A'} → {travel.route?.officeDestination?.place?.name || 'N/A'}
+                </Typography>
+                <Typography variant='caption' color='text.secondary'>
+                  {formatFullDateTime(travel.departure_time)}
+                </Typography>
+              </Box>
+            )}
           </Box>
         </DialogTitle>
 

@@ -1229,6 +1229,7 @@ const TravelsForSale = () => {
         open={openAssignDialog}
         onClose={handleCancelAssignment}
         ticket={pendingTicket}
+        travel={selectedTravel || null}
         onPayCash={handlePayCash}
         onPayQR={handlePayQR}
         isLoading={isProcessingPayment}

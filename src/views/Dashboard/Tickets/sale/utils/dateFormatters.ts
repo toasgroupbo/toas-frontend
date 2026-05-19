@@ -32,6 +32,30 @@ export const formatTime = (dateString: string) => {
   })
 }
 
+export const formatFullDateTime = (dateString: string) => {
+  const date = new Date(dateString)
+
+  const datePart = date.toLocaleDateString('es-BO', {
+    weekday: 'long',
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+    timeZone: 'America/La_Paz'
+  })
+
+  const timePart = date.toLocaleTimeString('es-BO', {
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: true,
+    timeZone: 'America/La_Paz'
+  })
+
+  // Capitalizar primera letra
+  const capitalizedDate = datePart.charAt(0).toUpperCase() + datePart.slice(1)
+
+  return `${capitalizedDate} - ${timePart}`
+}
+
 export const getImageUrl = (imagePath: string | undefined) => {
   if (!imagePath) return null
   const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000'
