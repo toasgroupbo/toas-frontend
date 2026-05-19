@@ -14,6 +14,7 @@ import { useTheme } from '@mui/material/styles'
 
 import type { Ticket } from '@/types/api/tickets'
 import type { Travel } from '@/types/api/travels'
+import type { SeatAssignment } from './AssignPassengersDialog'
 
 interface ConfirmPaymentDialogProps {
   open: boolean
@@ -25,6 +26,7 @@ interface ConfirmPaymentDialogProps {
   ticket: Ticket | null
   travel: Travel | null
   paymentMethod: 'cash' | 'qr'
+  assignments?: SeatAssignment[]
 }
 
 const ConfirmPaymentDialog = ({
@@ -36,7 +38,8 @@ const ConfirmPaymentDialog = ({
   isCancelling,
   ticket,
   travel,
-  paymentMethod
+  paymentMethod,
+  assignments = []
 }: ConfirmPaymentDialogProps) => {
   const theme = useTheme()
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'))
@@ -100,25 +103,27 @@ const ConfirmPaymentDialog = ({
             Pasajeros asignados:
           </Typography>
           <Box sx={{ mb: 3 }}>
-            {ticket.travelSeats?.map((seat, index) => (
-              <Box
-                key={seat.id || index}
-                sx={{
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  py: 1,
-                  borderBottom: '1px solid',
-                  borderColor: 'divider'
-                }}
-              >
-                <Typography variant='body2'>
-                  Asiento {seat.seatNumber}
-                </Typography>
-                <Typography variant='body2' color='text.secondary'>
-                  {seat.passenger?.name || 'Sin asignar'}
-                </Typography>
-              </Box>
-            ))}
+            {ticket.travelSeats?.map((seat, index) => {
+              const assignment = assignments.find(a => a.seatId === seat.id)
+
+              return (
+                <Box
+                  key={seat.id || index}
+                  sx={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    py: 1,
+                    borderBottom: '1px solid',
+                    borderColor: 'divider'
+                  }}
+                >
+                  <Typography variant='body2'>Asiento {seat.seatNumber}</Typography>
+                  <Typography variant='body2' color='text.secondary'>
+                    {assignment ? `${assignment.passengerName} - CI: ${assignment.passengerCI}` : 'Sin asignar'}
+                  </Typography>
+                </Box>
+              )
+            })}
           </Box>
 
           {/* Total */}

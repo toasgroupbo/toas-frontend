@@ -96,6 +96,7 @@ export const useConfirmTicket = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['tickets'] })
       queryClient.invalidateQueries({ queryKey: ['tickets-by-travel'] })
+      queryClient.invalidateQueries({ queryKey: ['cashier-travels'] })
     }
   })
 }
@@ -108,6 +109,7 @@ export const useCancelTicket = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['tickets'] })
       queryClient.invalidateQueries({ queryKey: ['tickets-by-travel'] })
+      queryClient.invalidateQueries({ queryKey: ['cashier-travels'] })
     }
   })
 }

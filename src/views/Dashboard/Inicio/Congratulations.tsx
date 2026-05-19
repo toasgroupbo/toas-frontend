@@ -10,11 +10,14 @@ import Chip from '@mui/material/Chip'
 import Divider from '@mui/material/Divider'
 import Box from '@mui/material/Box'
 
-// Context
+// Context & Hooks
 import { useAuth } from '@/contexts/AuthContext'
+import { useDashboard } from '@/hooks/useDashboard'
 
 const WelcomeFleetCard = () => {
   const { user, isLoading, userRole, actingAsCompany, isCompanyAdmin } = useAuth()
+
+  const { data: dashboardData } = useDashboard()
 
   const getGreeting = () => {
     const hour = new Date().getHours()
@@ -39,11 +42,10 @@ const WelcomeFleetCard = () => {
 
   const greeting = getGreeting()
   const userName = user?.fullName || 'Invitado'
-  const companyName = actingAsCompany?.name || user?.company?.name
+  const companyName = actingAsCompany?.name || dashboardData?.company?.name || user?.company?.name
   const officeName = user?.office?.place?.name
 
-  // Obtener logo de la empresa (prioridad: actingAsCompany > user.company)
-  const companyLogo = actingAsCompany?.logo || user?.company?.logo
+  const companyLogo = actingAsCompany?.logo || dashboardData?.company?.logo || user?.company?.logo
   const hasCompanyLogo = !!(companyLogo && (actingAsCompany || isCompanyAdmin))
 
   const getLogoUrl = (logo: string) => {

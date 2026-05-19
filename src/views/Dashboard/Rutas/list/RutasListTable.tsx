@@ -305,6 +305,18 @@ const RoutesTable = () => {
           />
         )
       }),
+      columnHelper.accessor('travel_hours', {
+        header: 'Horas de Viaje',
+        cell: ({ row }) => (
+          <Chip
+            label={`${row.original.travel_hours} hrs`}
+            size='small'
+            color='warning'
+            variant='tonal'
+            icon={<i className='tabler-clock' style={{ fontSize: '14px' }} />}
+          />
+        )
+      }),
       columnHelper.accessor('pass_by', {
         header: 'Trayecto',
         cell: ({ row }) => (

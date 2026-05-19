@@ -1293,6 +1293,7 @@ const TravelsForSale = () => {
         ticket={pendingTicket}
         travel={selectedTravel || null}
         paymentMethod='cash'
+        assignments={pendingAssignments}
       />
     </Box>
   )

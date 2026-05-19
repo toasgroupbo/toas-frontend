@@ -130,16 +130,6 @@ const AssignPassengersDialog = ({
 
   const handleSelectPassenger = (passenger: Passenger) => {
     if (selectedSeat) {
-      const alreadyAssigned = Object.entries(assignments).find(
-        ([seatNum, p]) => p?.id === passenger.id && seatNum !== selectedSeat
-      )
-
-      if (alreadyAssigned) {
-        setSearchError(`Este pasajero ya está asignado al asiento ${alreadyAssigned[0]}`)
-
-        return
-      }
-
       setAssignments(prev => ({
         ...prev,
         [selectedSeat]: passenger
@@ -204,16 +194,6 @@ const AssignPassengersDialog = ({
     }
 
     if (selectedSeat) {
-      const alreadyAssigned = Object.entries(assignments).find(
-        ([seatNum, p]) => p?.ci === newPassenger.ci && seatNum !== selectedSeat
-      )
-
-      if (alreadyAssigned) {
-        setDuplicateCIError(`Este CI ya está asignado al asiento ${alreadyAssigned[0]}`)
-
-        return
-      }
-
       setAssignments(prev => ({
         ...prev,
         [selectedSeat]: newPassenger
