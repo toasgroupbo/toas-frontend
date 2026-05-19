@@ -106,7 +106,8 @@ const WelcomeFleetCard = () => {
                   alignItems: 'center',
                   justifyContent: 'center',
                   bgcolor: 'background.paper',
-                  boxShadow: 1
+                  boxShadow: 1,
+                  transform: { xs: 'translateX(-5px)', sm: 'translateX(-10px)' }
                 }}
               >
                 <img

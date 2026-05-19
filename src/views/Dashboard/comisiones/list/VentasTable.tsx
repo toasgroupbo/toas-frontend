@@ -266,11 +266,11 @@ const VentasTable = () => {
         )
       },
       {
-        accessorKey: 'company.commission_company',
+        accessorKey: 'net_to_company',
         header: isCompanyAdmin ? 'TOTAL A COBRAR' : 'TOTAL A PAGAR',
         cell: ({ row }) => (
           <Typography variant='body2' fontWeight={600} color='primary' align='right'>
-            {formatCurrency(row.original.company.commission_company)}
+            {formatCurrency(row.original.net_to_company)}
           </Typography>
         )
       },
@@ -419,7 +419,7 @@ const VentasTable = () => {
                   Total, Comisión Empresa: Bs. {parseFloat(totals.total_net_to_company).toFixed(2)}
                 </Typography>
                 <Typography variant='caption' color='success.main' fontWeight={600}>
-                  Total, Saldo Comisión: Bs. {parseFloat(totals.total_balance).toFixed(2)}
+                  Total, Deuda: Bs. {parseFloat(totals.total_balance).toFixed(2)}
                 </Typography>
               </Box>
             )}
