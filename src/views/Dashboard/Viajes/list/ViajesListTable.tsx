@@ -328,7 +328,7 @@ const ViajesListTable = () => {
           return (
             <div className='flex flex-col'>
               <Typography variant='body2' fontWeight='bold'>
-                {appSoldSeats} asientos
+                {appSoldSeats} de asientos
               </Typography>
               <Typography variant='body2' fontWeight='medium' color='success.main'>
                 {formatCurrency(appAmount)}

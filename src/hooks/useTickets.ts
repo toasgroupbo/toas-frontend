@@ -17,9 +17,23 @@ export interface CashierSummary {
   qrTotal: string
 }
 
+export interface CurrentCashierResponse {
+  cashier: {
+    id: number
+    email: string
+    fullName: string
+    ci: string
+    phone: string
+    createdAt: string
+  }
+  cashTotal: string
+  qrTotal: string
+}
+
 export interface TravelTicketsResponse {
   tickets: Ticket[]
   cashiers: CashierSummary[]
+  currentCashier?: CurrentCashierResponse
   totals: {
     totalCash: string
     totalQr: string

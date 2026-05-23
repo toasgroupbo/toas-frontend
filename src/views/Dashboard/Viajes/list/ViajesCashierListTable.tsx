@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 
 import { useRouter } from 'next/navigation'
 
@@ -112,6 +112,7 @@ const ViajesCashierListTable = () => {
 
   // Show tickets button only for CASHIER and CASHIER_SELLER
   const canViewTickets = userRole === 'CASHIER' || userRole === 'CASHIER_SELLER'
+  const isCashierSeller = userRole === 'CASHIER_SELLER'
 
   const { data: cashierRoutes } = useCashierRoutes()
 
@@ -229,9 +230,9 @@ const ViajesCashierListTable = () => {
     setDetailTravel(null)
   }
 
-  const handleViewTickets = (travelId: number) => {
+  const handleViewTickets = useCallback((travelId: number) => {
     router.push(`/tickets/list?travelId=${travelId}`)
-  }
+  }, [router])
 
   const handleConfirmCancel = async (password: string) => {
     if (!selectedTravel) return
@@ -327,7 +328,7 @@ const ViajesCashierListTable = () => {
                   </IconButton>
                 </Tooltip>
               )}
-              {isActive && (
+              {isActive && !isCashierSeller && (
                 <Tooltip title='Cancelar Viaje'>
                   <IconButton
                     size='small'
@@ -542,7 +543,7 @@ const ViajesCashierListTable = () => {
         }
       })
     ],
-    [canViewTickets]
+    [canViewTickets, isCashierSeller, handleViewTickets]
   )
 
   const table = useReactTable({
@@ -597,16 +598,18 @@ const ViajesCashierListTable = () => {
             <Typography variant='h4'>Mis Viajes</Typography>
           </div>
 
-          <div className='flex max-sm:flex-col items-start sm:items-center gap-4 max-sm:is-full'>
-            <Button
-              variant='contained'
-              color='primary'
-              onClick={handleOpenCreateDialog}
-              startIcon={<i className='tabler-plus' />}
-            >
-              Nuevo Viaje
-            </Button>
-          </div>
+          {!isCashierSeller && (
+            <div className='flex max-sm:flex-col items-start sm:items-center gap-4 max-sm:is-full'>
+              <Button
+                variant='contained'
+                color='primary'
+                onClick={handleOpenCreateDialog}
+                startIcon={<i className='tabler-plus' />}
+              >
+                Nuevo Viaje
+              </Button>
+            </div>
+          )}
         </div>
 
         <div className='flex flex-wrap gap-4 px-6 pb-4 items-center'>

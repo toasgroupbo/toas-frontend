@@ -62,7 +62,7 @@ const formatCurrency = (amount: number | string) => {
 }
 
 const TravelDetailDialog = ({ open, onClose, travel, companyName, isCashier = false }: TravelDetailDialogProps) => {
-  const { user, userRole } = useAuth()
+  const { userRole } = useAuth()
   const isCashierSeller = userRole === 'CASHIER_SELLER'
 
   const cashierTicketsQuery = useTicketsByTravel(isCashier ? travel?.id || null : null)
@@ -75,10 +75,20 @@ const TravelDetailDialog = ({ open, onClose, travel, companyName, isCashier = fa
   const ticketsData = isCashier ? cashierData : companyData
   const tickets = ticketsData?.tickets
   const allCashiers: CashierSummary[] = ticketsData?.cashiers || []
+  const currentCashier = ticketsData?.currentCashier
 
-  // For CASHIER_SELLER, only show their own sales
-  const cashiers: CashierSummary[] = isCashierSeller && user
-    ? allCashiers.filter(c => c.id.toString() === user.id)
+  // For CASHIER_SELLER, only show their own sales using currentCashier from API
+  const cashiers: CashierSummary[] = isCashierSeller && currentCashier
+    ? [{
+        id: currentCashier.cashier.id,
+        email: currentCashier.cashier.email,
+        fullName: currentCashier.cashier.fullName,
+        ci: currentCashier.cashier.ci,
+        phone: currentCashier.cashier.phone,
+        createdAt: currentCashier.cashier.createdAt,
+        cashTotal: currentCashier.cashTotal,
+        qrTotal: currentCashier.qrTotal
+      }]
     : allCashiers
 
   const totals = ticketsData?.totals || null
@@ -98,13 +108,13 @@ const TravelDetailDialog = ({ open, onClose, travel, companyName, isCashier = fa
 
   const appQrAmount = parseFloat(travel.app_amount || '0')
 
-  // For CASHIER_SELLER, calculate totals only from their own sales
+  // For CASHIER_SELLER, use currentCashier totals from API
   let totalCash: number
   let totalQr: number
 
-  if (isCashierSeller && cashiers.length > 0) {
-    totalCash = cashiers.reduce((sum, c) => sum + parseFloat(String(c.cashTotal || 0)), 0)
-    totalQr = cashiers.reduce((sum, c) => sum + parseFloat(String(c.qrTotal || 0)), 0)
+  if (isCashierSeller && currentCashier) {
+    totalCash = parseFloat(currentCashier.cashTotal || '0')
+    totalQr = parseFloat(currentCashier.qrTotal || '0')
   } else {
     totalCash = totals ? parseFloat(totals.totalCash) : parseFloat(travel.cash_amount || '0')
     totalQr = totals ? parseFloat(totals.totalQr) : parseFloat(travel.qr_amount || '0')

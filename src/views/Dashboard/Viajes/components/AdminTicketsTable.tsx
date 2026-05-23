@@ -66,7 +66,7 @@ const TicketsTable = ({ initialTravelId, showCancelButton = false }: TicketsTabl
   const [selectedTicket, setSelectedTicket] = useState<Ticket | null>(null)
   const [statusFilter, setStatusFilter] = useState<string>('all')
 
-  const { data: tickets, isLoading, error } = useTicketsByTravelAndCompany(selectedTravelId)
+  const { data: apiResponse, isLoading, error } = useTicketsByTravelAndCompany(selectedTravelId)
 
   const [data, setData] = useState<Ticket[]>([])
 
@@ -77,13 +77,17 @@ const TicketsTable = ({ initialTravelId, showCancelButton = false }: TicketsTabl
   }, [initialTravelId])
 
   useEffect(() => {
-    if (tickets) {
-      setData(tickets)
+    if (apiResponse && apiResponse.tickets && Array.isArray(apiResponse.tickets)) {
+      setData(apiResponse.tickets)
+    } else if (apiResponse && Array.isArray(apiResponse)) {
+      setData(apiResponse)
+    } else if (apiResponse && !Array.isArray(apiResponse)) {
+      setData([])
     }
-  }, [tickets])
+  }, [apiResponse])
 
   const filteredData = useMemo(() => {
-    if (!data) return []
+    if (!Array.isArray(data)) return []
     if (statusFilter === 'all') return data
 
     return data.filter(ticket => ticket.status === statusFilter)
@@ -362,7 +366,7 @@ const TicketsTable = ({ initialTravelId, showCancelButton = false }: TicketsTabl
             )}
           </Box>
 
-          {(selectedTravelId || initialTravelId) && tickets && tickets.length > 0 && (
+          {(selectedTravelId || initialTravelId) && Array.isArray(data) && data.length > 0 && (
             <Box
               sx={{
                 p: 2,

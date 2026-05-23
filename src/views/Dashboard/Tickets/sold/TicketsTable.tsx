@@ -70,7 +70,9 @@ const TicketsTable = ({ initialTravelId }: TicketsTableProps) => {
   const [statusFilter, setStatusFilter] = useState<string>('all')
 
   const { data: travels, isLoading: travelsLoading } = useCashierTravels()
-  const { data: tickets, isLoading, error } = useTicketsByTravel(selectedTravelId)
+  const { data: ticketsResponse, isLoading, error } = useTicketsByTravel(selectedTravelId)
+
+  const tickets = useMemo(() => ticketsResponse?.tickets || [], [ticketsResponse])
   const cancelTicketMutation = useCancelTicket()
 
   const [data, setData] = useState<Ticket[]>([])
