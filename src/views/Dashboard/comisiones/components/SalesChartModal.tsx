@@ -21,17 +21,19 @@ interface SalesChartModalProps {
   open: boolean
   onClose: () => void
   data: CompanySalesReport[]
+  totals?: {
+    total_commission_app: string
+    total_commission_company: string
+  }
 }
 
-const SalesChartModal = ({ open, onClose, data }: SalesChartModalProps) => {
+const SalesChartModal = ({ open, onClose, data, totals }: SalesChartModalProps) => {
   const theme = useTheme()
 
-  // Preparar datos para el gráfico
   const companies = data.map(item => item.companyName)
-  const ventasRealizadas = data.map(item => parseInt(item.ticketsCount) || 0)
-  const comisiones = data.map(item => parseFloat(item.totalCommission) || 0)
   const ventasApp = data.map(item => parseInt(item.ticketsAppCount) || 0)
   const ventasCajeros = data.map(item => parseInt(item.ticketsOfficeCount) || 0)
+  const comisiones = data.map(item => parseFloat(item.totalCommission) || 0)
 
   const series = [
     {
@@ -84,11 +86,7 @@ const SalesChartModal = ({ open, onClose, data }: SalesChartModalProps) => {
         offsetX: theme.direction === 'rtl' ? 7 : -4
       }
     },
-    colors: [
-      'var(--mui-palette-primary-main)',
-      'var(--mui-palette-success-main)',
-      'var(--mui-palette-warning-main)'
-    ],
+    colors: ['var(--mui-palette-primary-main)', 'var(--mui-palette-success-main)', 'var(--mui-palette-warning-main)'],
     xaxis: {
       categories: companies,
       axisTicks: { show: false },
@@ -142,11 +140,13 @@ const SalesChartModal = ({ open, onClose, data }: SalesChartModalProps) => {
     }
   }
 
-  // Calcular totales
-  const totalVentas = ventasRealizadas.reduce((a, b) => a + b, 0)
-  const totalComision = comisiones.reduce((a, b) => a + b, 0)
   const totalVentasApp = ventasApp.reduce((a, b) => a + b, 0)
   const totalVentasCajeros = ventasCajeros.reduce((a, b) => a + b, 0)
+  const totalVentas = totalVentasApp + totalVentasCajeros
+  const totalComision = comisiones.reduce((a, b) => a + b, 0)
+
+  const totalComisionApp = totals?.total_commission_app ? parseFloat(totals.total_commission_app) : 0
+  const totalPlataforma = totals?.total_commission_company ? parseFloat(totals.total_commission_company) : 0
 
   return (
     <Dialog open={open} onClose={onClose} maxWidth='md' fullWidth>
@@ -169,7 +169,6 @@ const SalesChartModal = ({ open, onClose, data }: SalesChartModalProps) => {
           </Box>
         ) : (
           <>
-            {/* Resumen de totales */}
             <Box
               sx={{
                 display: 'flex',
@@ -177,7 +176,8 @@ const SalesChartModal = ({ open, onClose, data }: SalesChartModalProps) => {
                 mb: 4,
                 p: 3,
                 borderRadius: 2,
-                bgcolor: 'action.hover'
+                bgcolor: 'action.hover',
+                flexWrap: 'wrap'
               }}
             >
               <Box flex={1} textAlign='center'>
@@ -214,7 +214,37 @@ const SalesChartModal = ({ open, onClose, data }: SalesChartModalProps) => {
               </Box>
             </Box>
 
-            {/* Gráfico */}
+            <Box
+              sx={{
+                display: 'flex',
+                gap: 3,
+                mb: 4,
+                p: 3,
+                borderRadius: 2,
+                bgcolor: 'background.paper',
+                border: '1px solid',
+                borderColor: 'divider',
+                flexWrap: 'wrap'
+              }}
+            >
+              <Box flex={1} textAlign='center'>
+                <Typography variant='h5' color='secondary.main'>
+                  Bs {totalComisionApp.toFixed(2)}
+                </Typography>
+                <Typography variant='body2' color='text.secondary' fontWeight='medium'>
+                  TOTAL COMISION APP
+                </Typography>
+              </Box>
+              <Box flex={1} textAlign='center'>
+                <Typography variant='h5' color='error.main'>
+                  Bs {totalPlataforma.toFixed(2)}
+                </Typography>
+                <Typography variant='body2' color='text.secondary' fontWeight='medium'>
+                  TOTAL PLATAFORMA
+                </Typography>
+              </Box>
+            </Box>
+
             <AppReactApexCharts type='bar' height={350} width='100%' series={series} options={options} />
           </>
         )}

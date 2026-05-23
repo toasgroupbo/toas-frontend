@@ -73,8 +73,8 @@ const VentasTable = () => {
   const totalRecords = commissions?.length || 0
   const totalPages = Math.ceil(totalRecords / pageSize)
 
-  const totalCommissionApp = parseFloat(totals.total_commission_app || '0')
-  const totalPlatform = parseFloat(totals.total_commission_company || '0')
+  const totalCommissionApp = parseFloat(totals?.total_commission_app || '0')
+  const totalPlatform = parseFloat(totals?.total_commission_company || '0')
   const totalSaldo = totalCommissionApp - totalPlatform
 
   const columns = useMemo<ColumnDef<Commission, any>[]>(() => {
@@ -294,15 +294,17 @@ const VentasTable = () => {
               </Typography>
             )}
 
-            <Button
-              variant='contained'
-              color='primary'
-              startIcon={<i className='tabler-chart-bar' />}
-              disabled={totalRecords === 0}
-              onClick={() => setChartModalOpen(true)}
-            >
-              Gráfico
-            </Button>
+            {!isCompanyMode && (
+              <Button
+                variant='contained'
+                color='primary'
+                startIcon={<i className='tabler-chart-bar' />}
+                disabled={totalRecords === 0}
+                onClick={() => setChartModalOpen(true)}
+              >
+                Gráfico
+              </Button>
+            )}
 
             <CustomTextField
               select
@@ -353,18 +355,15 @@ const VentasTable = () => {
                 </tr>
               ))}
             </thead>
-
-            {paginatedData.length === 0 ? (
-              <tbody>
+            <tbody>
+              {paginatedData.length === 0 ? (
                 <tr>
                   <td colSpan={columns.length} className='text-center py-8'>
                     <Typography>No hay datos de comisiones disponibles</Typography>
                   </td>
                 </tr>
-              </tbody>
-            ) : (
-              <tbody>
-                {table.getRowModel().rows.map(row => (
+              ) : (
+                table.getRowModel().rows.map(row => (
                   <tr key={row.id}>
                     {row.getVisibleCells().map(cell => {
                       const align = (cell.column.columnDef.meta as { align?: string })?.align || 'left'
@@ -376,9 +375,9 @@ const VentasTable = () => {
                       )
                     })}
                   </tr>
-                ))}
-              </tbody>
-            )}
+                ))
+              )}
+            </tbody>
           </table>
         </div>
 

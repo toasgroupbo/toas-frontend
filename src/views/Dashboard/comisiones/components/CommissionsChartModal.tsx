@@ -28,7 +28,6 @@ interface CommissionsChartModalProps {
 const CommissionsChartModal = ({ open, onClose, data, isCompanyAdmin = false }: CommissionsChartModalProps) => {
   const theme = useTheme()
 
-  // Group data by date for chart labels
   const labels = data.map(item => {
     const date = new Date(item.departure_time)
 
@@ -149,8 +148,6 @@ const CommissionsChartModal = ({ open, onClose, data, isCompanyAdmin = false }: 
 
   const totalCommissionApp = commissionApp.reduce((a, b) => a + b, 0)
   const totalCommissionPlatform = commissionPlatform.reduce((a, b) => a + b, 0)
-  const totalSaldo = totalCommissionApp - totalCommissionPlatform
-  const totalTicketsApp = data.reduce((sum, item) => sum + (item.tickets_app_count || 0), 0)
 
   return (
     <Dialog open={open} onClose={onClose} maxWidth='md' fullWidth>
@@ -173,13 +170,13 @@ const CommissionsChartModal = ({ open, onClose, data, isCompanyAdmin = false }: 
           </Box>
         ) : (
           <>
-            {/* Summary Cards */}
             <Box
               sx={{
-                display: 'grid',
-                gridTemplateColumns: isCompanyAdmin ? 'repeat(2, 1fr)' : 'repeat(4, 1fr)',
-                gap: 2,
-                mb: 4
+                display: 'flex',
+                justifyContent: 'center',
+                gap: 3,
+                mb: 4,
+                flexWrap: 'wrap'
               }}
             >
               {!isCompanyAdmin && (
@@ -189,14 +186,15 @@ const CommissionsChartModal = ({ open, onClose, data, isCompanyAdmin = false }: 
                     textAlign: 'center',
                     bgcolor: 'primary.lighter',
                     border: '1px solid',
-                    borderColor: 'primary.main'
+                    borderColor: 'primary.main',
+                    minWidth: '200px'
                   }}
                 >
                   <Typography variant='h4' color='primary.main' fontWeight={700}>
                     Bs. {totalCommissionApp.toFixed(2)}
                   </Typography>
                   <Typography variant='body2' color='primary.dark' fontWeight={500}>
-                    Total Comisión App
+                    TOTAL COMISION APP
                   </Typography>
                 </Card>
               )}
@@ -207,55 +205,19 @@ const CommissionsChartModal = ({ open, onClose, data, isCompanyAdmin = false }: 
                   textAlign: 'center',
                   bgcolor: 'warning.lighter',
                   border: '1px solid',
-                  borderColor: 'warning.main'
+                  borderColor: 'warning.main',
+                  minWidth: '200px'
                 }}
               >
                 <Typography variant='h4' color='warning.main' fontWeight={700}>
                   Bs. {totalCommissionPlatform.toFixed(2)}
                 </Typography>
                 <Typography variant='body2' color='warning.dark' fontWeight={500}>
-                  Total Plataforma
-                </Typography>
-              </Card>
-
-              {!isCompanyAdmin && (
-                <Card
-                  sx={{
-                    p: 2.5,
-                    textAlign: 'center',
-                    bgcolor: 'success.lighter',
-                    border: '1px solid',
-                    borderColor: 'success.main'
-                  }}
-                >
-                  <Typography variant='h4' color='success.main' fontWeight={700}>
-                    Bs. {totalSaldo.toFixed(2)}
-                  </Typography>
-                  <Typography variant='body2' color='success.dark' fontWeight={500}>
-                    Saldo Neto
-                  </Typography>
-                </Card>
-              )}
-
-              <Card
-                sx={{
-                  p: 2.5,
-                  textAlign: 'center',
-                  bgcolor: 'info.lighter',
-                  border: '1px solid',
-                  borderColor: 'info.main'
-                }}
-              >
-                <Typography variant='h4' color='info.main' fontWeight={700}>
-                  {totalTicketsApp}
-                </Typography>
-                <Typography variant='body2' color='info.dark' fontWeight={500}>
-                  Ventas App
+                  TOTAL PLATAFORMA
                 </Typography>
               </Card>
             </Box>
 
-            {/* Bar Chart */}
             <AppReactApexCharts type='bar' height={350} width='100%' series={series} options={options} />
           </>
         )}
