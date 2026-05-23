@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useCallback } from 'react'
 
 import {
   Dialog,
@@ -33,6 +33,7 @@ import type { Travel, CompanyWithDebt } from '@/types/api/deposits'
 import CustomTextField from '@core/components/mui/TextField'
 import tableStyles from '@core/styles/table.module.css'
 import TransactionDialog from '@/views/Dashboard/depositos/components/TransactionDialog'
+import PaymentDetailsDialog from '@/views/Dashboard/depositos/components/PaymentDetailsDialog'
 
 interface TravelsModalProps {
   open: boolean
@@ -123,6 +124,8 @@ const TravelsModal = ({ open, onClose, company }: TravelsModalProps) => {
   const [destinationPlaceId, setDestinationPlaceId] = useState<string>('')
   const [selectedTravel, setSelectedTravel] = useState<Travel | null>(null)
   const [transactionDialogOpen, setTransactionDialogOpen] = useState(false)
+  const [paymentDetailsDialogOpen, setPaymentDetailsDialogOpen] = useState(false)
+  const [paymentDetailsTravel, setPaymentDetailsTravel] = useState<Travel | null>(null)
 
   const { data: places } = usePlaces()
 
@@ -156,6 +159,16 @@ const TravelsModal = ({ open, onClose, company }: TravelsModalProps) => {
     setTransactionDialogOpen(false)
     setSelectedTravel(null)
   }
+
+  const handleOpenPaymentDetailsDialog = useCallback((travel: Travel) => {
+    setPaymentDetailsTravel(travel)
+    setPaymentDetailsDialogOpen(true)
+  }, [])
+
+  const handleClosePaymentDetailsDialog = useCallback(() => {
+    setPaymentDetailsDialogOpen(false)
+    setPaymentDetailsTravel(null)
+  }, [])
 
   const columns = useMemo<any[]>(
     () => [
@@ -224,8 +237,12 @@ const TravelsModal = ({ open, onClose, company }: TravelsModalProps) => {
             return <Chip label='Sí' color='success' size='small' />
           }
 
-          if (isPaid && (transactionStatus === 'AUTHORIZED' || transactionStatus === 'IN_PROGRESS')) {
-            return <Chip label='Pendiente' color='warning' size='small' />
+          if (isPaid && transactionStatus === 'AUTHORIZED') {
+            return <Chip label='Autorizado' color='warning' size='small' />
+          }
+
+          if (isPaid && transactionStatus === 'IN_PROGRESS') {
+            return <Chip label='En Proceso' color='info' size='small' />
           }
 
           return <Chip label='Pendiente' color='warning' size='small' />
@@ -312,7 +329,17 @@ const TravelsModal = ({ open, onClose, company }: TravelsModalProps) => {
           }
 
           if (isPaid && transactionStatus === 'COMPLETED') {
-            return null
+            return (
+              <Button
+                variant='outlined'
+                size='small'
+                color='success'
+                startIcon={<i className='tabler-eye' />}
+                onClick={() => handleOpenPaymentDetailsDialog(row.original)}
+              >
+                Ver
+              </Button>
+            )
           }
 
           return null
@@ -320,7 +347,7 @@ const TravelsModal = ({ open, onClose, company }: TravelsModalProps) => {
         enableSorting: false
       }
     ],
-    []
+    [handleOpenPaymentDetailsDialog]
   )
 
   const table = useReactTable({
@@ -516,6 +543,14 @@ const TravelsModal = ({ open, onClose, company }: TravelsModalProps) => {
           open={transactionDialogOpen}
           onClose={handleCloseTransactionDialog}
           travel={selectedTravel}
+        />
+      )}
+
+      {paymentDetailsTravel && (
+        <PaymentDetailsDialog
+          open={paymentDetailsDialogOpen}
+          onClose={handleClosePaymentDetailsDialog}
+          travel={paymentDetailsTravel}
         />
       )}
     </>

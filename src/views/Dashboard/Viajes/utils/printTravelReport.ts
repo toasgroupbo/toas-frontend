@@ -1,5 +1,6 @@
 import type { Travel } from '@/types/api/travels'
 import type { Ticket } from '@/types/api/tickets'
+import type { CashierSummary } from '@/hooks/useTickets'
 
 const formatDate = (dateString: string): string => {
   const date = new Date(dateString)
@@ -33,9 +34,14 @@ interface TravelReportData {
   travel: Travel
   tickets?: Ticket[]
   companyName?: string
+  cashiers?: CashierSummary[]
+  totals?: {
+    totalCash: string
+    totalQr: string
+  }
 }
 
-export const generateTravelReportHTML = ({ travel, tickets = [], companyName }: TravelReportData): string => {
+export const generateTravelReportHTML = ({ travel, tickets = [], companyName, cashiers = [], totals }: TravelReportData): string => {
   if (!companyName && (travel as any).company?.name) {
     companyName = (travel as any).company.name
   }
@@ -65,11 +71,10 @@ export const generateTravelReportHTML = ({ travel, tickets = [], companyName }: 
   const soldSeats = (travel as any).totalSoldSeats || 0
   const availableSeats = (travel as any).seatsAvailable || totalSeats - soldSeats
 
-  const cashAmount = parseFloat(travel.cash_amount || '0')
-  const qrAmount = parseFloat(travel.qr_amount || '0')
-  const appAmount = parseFloat(travel.app_amount || '0')
-  const officeAmount = cashAmount + qrAmount
-  const totalAmount = officeAmount + appAmount
+  const appQrAmount = parseFloat(travel.app_amount || '0')
+  const totalCash = totals ? parseFloat(totals.totalCash) : parseFloat(travel.cash_amount || '0')
+  const totalQr = totals ? parseFloat(totals.totalQr) : parseFloat(travel.qr_amount || '0')
+  const totalGeneral = totalCash + totalQr + appQrAmount
 
   const drivers: StaffMember[] = travel.drivers || []
   const assistants: StaffMember[] = travel.assistants || []
@@ -490,25 +495,42 @@ export const generateTravelReportHTML = ({ travel, tickets = [], companyName }: 
 
       <div class="totals-box">
         <div class="section-title" style="margin: 0 0 4px 0;">RESUMEN DE VENTAS</div>
-        <div class="totals-row">
-          <span class="totals-label">Efectivo:</span>
-          <span class="totals-value">Bs. ${cashAmount.toFixed(2)}</span>
+
+        <div style="margin-bottom: 6px;">
+          <div class="totals-label" style="font-size: 10px;">App</div>
+          <div class="totals-row">
+            <span class="totals-label">QR:</span>
+            <span class="totals-value">Bs. ${appQrAmount.toFixed(2)}</span>
+          </div>
         </div>
-        <div class="totals-row">
-          <span class="totals-label">QR:</span>
-          <span class="totals-value">Bs. ${qrAmount.toFixed(2)}</span>
-        </div>
-        <div class="totals-row" style="border-top: 1px dashed #999; padding-top: 2px; margin-top: 2px;">
-          <span class="totals-label">Total Oficina:</span>
-          <span class="totals-value">Bs. ${officeAmount.toFixed(2)}</span>
-        </div>
-        <div class="totals-row">
-          <span class="totals-label">Total App:</span>
-          <span class="totals-value">Bs. ${appAmount.toFixed(2)}</span>
-        </div>
-        <div class="totals-row main">
-          <span class="totals-label">TOTAL GENERAL:</span>
-          <span class="totals-value highlight">Bs. ${totalAmount.toFixed(2)}</span>
+
+        ${cashiers.map(cashier => `
+          <div style="margin-bottom: 6px;">
+            <div class="totals-label" style="font-size: 10px;">${cashier.fullName}</div>
+            <div class="totals-row">
+              <span class="totals-label">Efectivo:</span>
+              <span class="totals-value">Bs. ${parseFloat(cashier.cashTotal).toFixed(2)}</span>
+            </div>
+            <div class="totals-row">
+              <span class="totals-label">QR:</span>
+              <span class="totals-value">Bs. ${parseFloat(cashier.qrTotal).toFixed(2)}</span>
+            </div>
+          </div>
+        `).join('')}
+
+        <div style="border-top: 1px solid #000; padding-top: 4px; margin-top: 6px;">
+          <div class="totals-row">
+            <span class="totals-label">TOTAL EFECTIVO</span>
+            <span class="totals-value">Bs. ${totalCash.toFixed(2)}</span>
+          </div>
+          <div class="totals-row">
+            <span class="totals-label">TOTAL QR</span>
+            <span class="totals-value">Bs. ${totalQr.toFixed(2)}</span>
+          </div>
+          <div class="totals-row main" style="border-top: none; margin-top: 2px;">
+            <span class="totals-label">TOTAL GENERAL:</span>
+            <span class="totals-value highlight">Bs. ${totalGeneral.toFixed(2)}</span>
+          </div>
         </div>
       </div>
 

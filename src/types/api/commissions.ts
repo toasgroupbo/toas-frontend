@@ -9,37 +9,51 @@ export interface CommissionCompany {
   enabled: boolean
 }
 
+export interface CommissionTravel {
+  id: number
+  departure_time: string
+  arrival_time: string
+  price_deck_1: string
+  price_deck_2: string
+  travel_status: string
+  type: string
+  lane: number
+  closedAt: string | null
+  isPaid: boolean
+  paidAt: string | null
+  total: string
+  total_commission: string
+  net_to_company: string
+  cash_amount: string
+  qr_amount: string
+  app_amount: string
+  tickets_app_count: number
+  tickets_office_count: number
+  tickets_count: number
+  drivers: Array<{ ci: string; name: string; phone: string }>
+  assistants: Array<{ ci: string; name: string; phone: string }>
+  enabled: boolean
+  company: CommissionCompany
+}
+
 export interface Commission {
   id: number
-  paid: string
-  voucher: string | null
-  paidAt: string | null
-  total_trips_count: number
-  tickets_app_count_total: number
+  commission_company: string
+  tickets_app_count: number
   commission_app_total: string
-  net_to_company: string
-  commission_per_ticket_at_time: string
-  date_to_pay: string
-  period_start: string
-  period_end: string
-  period_key: string
-  company: {
-    id: number
-    name: string
-    logo: string
-    commission_app: number
-    commission_company: string
-    hours_before_closing: number
-    createdAt: string
-    enabled: boolean
-  }
+  commission_company_total: string
+  departure_time: string
+  createdAt: string
+  travel: CommissionTravel
 }
 
 export interface CommissionsFilters {
-  isPaid?: boolean
   startDate?: string
   endDate?: string
   search?: string
+  companyId?: number
+  page?: number
+  limit?: number
 }
 
 export interface UpdateCommissionPayload {
@@ -49,21 +63,22 @@ export interface UpdateCommissionPayload {
 }
 
 export interface CommissionsTotals {
-  total_app: string
-  total_net_to_company: string
-  total_balance: string
+  total_commission_app?: string
+  total_commission_company: string
+}
+
+export interface CommissionsMeta {
+  total: number
+  page: number
+  lastPage: number
+  limit: number
+  offset: number
+  hasNextPage: boolean
+  hasPreviousPage: boolean
 }
 
 export interface CommissionsResponse {
   data: Commission[]
-  meta: {
-    total: number
-    page: number
-    lastPage: number
-    limit: number
-    offset: number
-    hasNextPage: boolean
-    hasPreviousPage: boolean
-  }
+  meta: CommissionsMeta
   totals: CommissionsTotals
 }

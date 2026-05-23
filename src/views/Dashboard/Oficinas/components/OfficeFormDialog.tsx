@@ -78,7 +78,15 @@ const OfficeFormDialog = ({
   }, [office, isEditMode, reset, open])
 
   const handleFormSubmit = async (data: FormData) => {
-    await onSubmit(data)
+    if (isEditMode) {
+      await onSubmit({
+        url_gps: data.url_gps,
+        name: data.name,
+        address: data.address
+      })
+    } else {
+      await onSubmit(data)
+    }
   }
 
   const handleClose = () => {
@@ -181,33 +189,35 @@ const OfficeFormDialog = ({
               />
             </Grid>
 
-            <Grid item xs={12}>
-              <Controller
-                name='placeId'
-                control={control}
-                rules={{ required: 'La ubicación es requerida' }}
-                render={({ field }) => (
-                  <CustomTextField
-                    {...field}
-                    select
-                    fullWidth
-                    label='Ciudad / Ubicación'
-                    error={!!errors.placeId}
-                    helperText={errors.placeId?.message}
-                    disabled={isLoading || placesLoading}
-                    InputProps={{
-                      startAdornment: <i className='tabler-map-pin-filled' style={{ marginRight: '8px' }} />
-                    }}
-                  >
-                    {places?.map(place => (
-                      <MenuItem key={place.id} value={place.id}>
-                        {place.name}
-                      </MenuItem>
-                    ))}
-                  </CustomTextField>
-                )}
-              />
-            </Grid>
+            {!isEditMode && (
+              <Grid item xs={12}>
+                <Controller
+                  name='placeId'
+                  control={control}
+                  rules={{ required: 'La ubicación es requerida' }}
+                  render={({ field }) => (
+                    <CustomTextField
+                      {...field}
+                      select
+                      fullWidth
+                      label='Ciudad / Ubicación'
+                      error={!!errors.placeId}
+                      helperText={errors.placeId?.message}
+                      disabled={isLoading || placesLoading}
+                      InputProps={{
+                        startAdornment: <i className='tabler-map-pin-filled' style={{ marginRight: '8px' }} />
+                      }}
+                    >
+                      {places?.map(place => (
+                        <MenuItem key={place.id} value={place.id}>
+                          {place.name}
+                        </MenuItem>
+                      ))}
+                    </CustomTextField>
+                  )}
+                />
+              </Grid>
+            )}
           </Grid>
         </DialogContent>
 

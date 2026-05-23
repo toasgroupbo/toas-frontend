@@ -12,7 +12,7 @@ const ViajesPageContent = () => {
     return <ViajesOwnerListTable />
   }
 
-  if (userRole === 'CASHIER' || userRole === 'CASHIER_TRIPS') {
+  if (userRole === 'CASHIER' || userRole === 'CASHIER_TRIPS' || userRole === 'CASHIER_SELLER') {
     return <ViajesCashierListTable />
   }
 

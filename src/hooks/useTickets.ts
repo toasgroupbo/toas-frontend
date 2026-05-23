@@ -6,6 +6,26 @@ import { api } from '@/libs/axios'
 import type { Ticket, CreateTicketDto, TicketsResponse } from '@/types/api/tickets'
 import { useAuth } from '@/contexts/AuthContext'
 
+export interface CashierSummary {
+  id: number
+  email: string
+  fullName: string
+  ci: string
+  phone: string
+  createdAt: string
+  cashTotal: string
+  qrTotal: string
+}
+
+export interface TravelTicketsResponse {
+  tickets: Ticket[]
+  cashiers: CashierSummary[]
+  totals: {
+    totalCash: string
+    totalQr: string
+  }
+}
+
 const fetchTickets = async (): Promise<Ticket[]> => {
   const response = await api.get<Ticket[]>('/api/tickets')
 
@@ -32,13 +52,13 @@ const cancelTicket = async (id: number): Promise<void> => {
   await api.post(`/api/tickets/for-cashier/cancel/${id}`)
 }
 
-const fetchTicketsByTravel = async (travelId: number): Promise<Ticket[]> => {
-  const response = await api.get<Ticket[]>(`/api/tickets/for-cashier/${travelId}`)
+const fetchTicketsByTravel = async (travelId: number): Promise<TravelTicketsResponse> => {
+  const response = await api.get<TravelTicketsResponse>(`/api/tickets/for-cashier/${travelId}`)
 
   return response.data
 }
 
-const fetchTicketsByTravelAndCompany = async (travelId: number): Promise<Ticket[]> => {
+const fetchTicketsByTravelAndCompany = async (travelId: number): Promise<TravelTicketsResponse> => {
   const actingAsCompany = localStorage.getItem('acting_as_company')
   let url = `/api/tickets/${travelId}`
 
@@ -52,7 +72,7 @@ const fetchTicketsByTravelAndCompany = async (travelId: number): Promise<Ticket[
     }
   }
 
-  const response = await api.get<Ticket[]>(url)
+  const response = await api.get<TravelTicketsResponse>(url)
 
   return response.data
 }
@@ -115,7 +135,7 @@ export const useCancelTicket = () => {
 }
 
 export const useTicketsByTravel = (travelId: number | null) => {
-  return useQuery({
+  return useQuery<TravelTicketsResponse>({
     queryKey: ['tickets-by-travel', travelId],
     queryFn: () => fetchTicketsByTravel(travelId!),
     enabled: !!travelId
@@ -126,7 +146,7 @@ export const useTicketsByTravelAndCompany = (travelId: number | null) => {
   const { hasCompany, isImpersonating } = useAuth()
   const shouldFetch = (hasCompany || isImpersonating) && !!travelId
 
-  return useQuery({
+  return useQuery<TravelTicketsResponse>({
     queryKey: ['tickets-by-travel-company', travelId],
     queryFn: () => fetchTicketsByTravelAndCompany(travelId!),
     enabled: shouldFetch

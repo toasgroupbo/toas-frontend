@@ -13,8 +13,6 @@ import CircularProgress from '@mui/material/CircularProgress'
 import Alert from '@mui/material/Alert'
 import IconButton from '@mui/material/IconButton'
 import Tooltip from '@mui/material/Tooltip'
-import ToggleButton from '@mui/material/ToggleButton'
-import ToggleButtonGroup from '@mui/material/ToggleButtonGroup'
 import type { TextFieldProps } from '@mui/material/TextField'
 import classnames from 'classnames'
 import { rankItem } from '@tanstack/match-sorter-utils'
@@ -43,45 +41,7 @@ import {
 } from '@/hooks/useTravels'
 import type { Travel } from '@/types/api/travels'
 
-type DateRangePreset = 'today' | 'last_week' | 'this_month' | 'last_month' | 'custom'
-
-const getDateRange = (preset: DateRangePreset): { startDate?: string; endDate?: string } => {
-  const today = new Date()
-  const formatDate = (date: Date) => date.toISOString().split('T')[0]
-
-  switch (preset) {
-    case 'today':
-      return { startDate: formatDate(today) }
-
-    case 'last_week': {
-      const lastWeek = new Date(today)
-
-      lastWeek.setDate(today.getDate() - 7)
-
-      return { startDate: formatDate(lastWeek), endDate: formatDate(today) }
-    }
-
-    case 'this_month': {
-      const firstDayOfMonth = new Date(today.getFullYear(), today.getMonth(), 1)
-      const lastDayOfMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0)
-
-      return { startDate: formatDate(firstDayOfMonth), endDate: formatDate(lastDayOfMonth) }
-    }
-
-    case 'last_month': {
-      const firstDayOfLastMonth = new Date(today.getFullYear(), today.getMonth() - 1, 1)
-      const lastDayOfLastMonth = new Date(today.getFullYear(), today.getMonth(), 0)
-
-      return { startDate: formatDate(firstDayOfLastMonth), endDate: formatDate(lastDayOfLastMonth) }
-    }
-
-    case 'custom':
-      return {}
-
-    default:
-      return { startDate: formatDate(today) }
-  }
-}
+const getTodayDate = () => new Date().toISOString().split('T')[0]
 
 import CreateTravelDialog from '@/views/Dashboard/Viajes/components/CreateTravelDialog'
 import CancelTravelDialog from '@/views/Dashboard/Viajes/components/CancelTravelDialog'
@@ -134,9 +94,8 @@ const ViajesCashierListTable = () => {
   const [rowSelection, setRowSelection] = useState({})
   const [searchQuery, setSearchQuery] = useState('')
   const [statusFilter, setStatusFilter] = useState<string>('all')
-  const [datePreset, setDatePreset] = useState<DateRangePreset>('custom')
-  const [customStartDate, setCustomStartDate] = useState<string>('')
-  const [customEndDate, setCustomEndDate] = useState<string>('')
+  const [startDate, setStartDate] = useState<string>(getTodayDate())
+  const [endDate, setEndDate] = useState<string>('')
   const [destinationPlaceId, setDestinationPlaceId] = useState<string>('')
   const [createDialogOpen, setCreateDialogOpen] = useState(false)
   const [cancelDialogOpen, setCancelDialogOpen] = useState(false)
@@ -176,24 +135,18 @@ const ViajesCashierListTable = () => {
   }, [cashierRoutes])
 
   const apiFilters = useMemo((): TravelFilters => {
-    const dateRange =
-      datePreset === 'custom'
-        ? { startDate: customStartDate || undefined, endDate: customEndDate || undefined }
-        : getDateRange(datePreset)
-
     return {
       status: statusFilter !== 'all' ? (statusFilter as 'active' | 'closed') : undefined,
-      startDate: dateRange.startDate,
-      endDate: dateRange.endDate,
+      startDate: startDate || undefined,
+      endDate: endDate || undefined,
       origin_placeId: originPlaceId,
       destination_placeId: destinationPlaceId ? Number(destinationPlaceId) : undefined
     }
-  }, [statusFilter, datePreset, customStartDate, customEndDate, originPlaceId, destinationPlaceId])
+  }, [statusFilter, startDate, endDate, originPlaceId, destinationPlaceId])
 
   const { data: travelsResponse, isLoading, error } = useTravelsForCashier(apiFilters)
 
   const travels = travelsResponse?.data || []
-  const amounts = travelsResponse?.amounts || { office: 0, app: 0 }
 
   const createMutation = useCreateTravelForCashier()
   const cancelMutation = useCancelTravelForCashier()
@@ -204,9 +157,25 @@ const ViajesCashierListTable = () => {
     return travels
   }, [travels])
 
-  const totalOfficeAmount = amounts.office || 0
-  const totalAppAmount = amounts.app || 0
-  const totalAmount = totalOfficeAmount + totalAppAmount
+  // Calculate totals from travels data
+  const { totalApp, totalQr, totalCash, totalGeneral } = useMemo(() => {
+    let app = 0
+    let qr = 0
+    let cash = 0
+
+    travels.forEach(travel => {
+      app += parseFloat(travel.app_amount || '0')
+      qr += parseFloat(travel.qr_amount || '0')
+      cash += parseFloat(travel.cash_amount || '0')
+    })
+
+    return {
+      totalApp: app,
+      totalQr: qr,
+      totalCash: cash,
+      totalGeneral: app + qr + cash
+    }
+  }, [travels])
 
   const handleOpenCreateDialog = () => {
     setCreateDialogOpen(true)
@@ -422,39 +391,39 @@ const ViajesCashierListTable = () => {
           )
         }
       }),
-      columnHelper.accessor('seatsApp', {
-        header: 'Vendidos App',
+      columnHelper.accessor('app_amount', {
+        header: 'Monto App',
         cell: ({ row }) => {
-          const seatsApp = row.original.seatsApp || 0
           const appAmount = parseFloat(row.original.app_amount || '0')
 
           return (
-            <div className='flex flex-col'>
-              <Typography variant='body2' fontWeight='medium'>
-                {seatsApp} asientos
-              </Typography>
-              <Typography variant='caption' color='success.main'>
-                {formatCurrency(appAmount)}
-              </Typography>
-            </div>
+            <Typography variant='body2' fontWeight='medium' color='success.main'>
+              {formatCurrency(appAmount)}
+            </Typography>
           )
         }
       }),
-      columnHelper.accessor('seatsOffice', {
-        header: 'Vendidos Oficina',
+      columnHelper.accessor('qr_amount', {
+        header: 'Monto QR',
         cell: ({ row }) => {
-          const seatsOffice = row.original.seatsOffice || 0
-          const officeAmount = parseFloat(row.original.cash_amount || '0') + parseFloat(row.original.qr_amount || '0')
+          const qrAmount = parseFloat(row.original.qr_amount || '0')
 
           return (
-            <div className='flex flex-col'>
-              <Typography variant='body2' fontWeight='medium'>
-                {seatsOffice} asientos
-              </Typography>
-              <Typography variant='caption' color='info.main'>
-                {formatCurrency(officeAmount)}
-              </Typography>
-            </div>
+            <Typography variant='body2' fontWeight='medium' color='info.main'>
+              {formatCurrency(qrAmount)}
+            </Typography>
+          )
+        }
+      }),
+      columnHelper.accessor('cash_amount', {
+        header: 'Monto Efectivo',
+        cell: ({ row }) => {
+          const cashAmount = parseFloat(row.original.cash_amount || '0')
+
+          return (
+            <Typography variant='body2' fontWeight='medium' color='warning.main'>
+              {formatCurrency(cashAmount)}
+            </Typography>
           )
         }
       }),
@@ -624,22 +593,6 @@ const ViajesCashierListTable = () => {
           </div>
         </div>
 
-        <div className='flex justify-center px-6 pb-4'>
-          <ToggleButtonGroup
-            value={datePreset}
-            exclusive
-            onChange={(_, value) => value && setDatePreset(value)}
-            size='small'
-            sx={{ flexWrap: 'wrap', justifyContent: 'center' }}
-          >
-            <ToggleButton value='today'>Hoy</ToggleButton>
-            <ToggleButton value='last_week'>Última Semana</ToggleButton>
-            <ToggleButton value='this_month'>Este Mes</ToggleButton>
-            <ToggleButton value='last_month'>Mes Anterior</ToggleButton>
-            <ToggleButton value='custom'>Otro</ToggleButton>
-          </ToggleButtonGroup>
-        </div>
-
         <div className='flex flex-wrap gap-4 px-6 pb-4 items-center'>
           <Box
             sx={{
@@ -683,33 +636,30 @@ const ViajesCashierListTable = () => {
             ))}
           </CustomTextField>
 
-          {datePreset === 'custom' && (
-            <>
-              <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
-                <CustomTextField
-                  type='date'
-                  label='Fecha Inicio'
-                  value={customStartDate}
-                  onChange={e => setCustomStartDate(e.target.value)}
-                  InputLabelProps={{ shrink: true }}
-                  size='small'
-                  sx={{ width: '150px' }}
-                />
-                <Typography variant='body2' color='text.secondary'>
-                  a
-                </Typography>
-                <CustomTextField
-                  type='date'
-                  label='Fecha Fin'
-                  value={customEndDate}
-                  onChange={e => setCustomEndDate(e.target.value)}
-                  InputLabelProps={{ shrink: true }}
-                  size='small'
-                  sx={{ width: '150px' }}
-                />
-              </Box>
-            </>
-          )}
+          <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
+            <CustomTextField
+              type='date'
+              label='Fecha Inicio'
+              value={startDate}
+              onChange={e => setStartDate(e.target.value)}
+              InputLabelProps={{ shrink: true }}
+              size='small'
+              sx={{ width: '150px' }}
+            />
+            <Typography variant='body2' color='text.secondary'>
+              a
+            </Typography>
+            <CustomTextField
+              type='date'
+              label='Fecha Fin'
+              value={endDate}
+              onChange={e => setEndDate(e.target.value)}
+              InputLabelProps={{ shrink: true }}
+              size='small'
+              sx={{ width: '150px' }}
+            />
+          </Box>
+
           <CustomTextField
             select
             label='Estado'
@@ -724,65 +674,42 @@ const ViajesCashierListTable = () => {
           </CustomTextField>
         </div>
 
-        <div className='flex flex-wrap justify-between items-center gap-4 px-6 pb-4'>
+        <div className='flex flex-wrap justify-end items-center gap-4 px-6 pb-4'>
           <Box
             sx={{
-              bgcolor: 'info.lighter',
-              px: 3,
-              py: 1.5,
-              borderRadius: 2,
               border: '1px solid',
-              borderColor: 'info.main',
-              minWidth: '180px',
-              textAlign: 'center'
+              borderColor: 'divider',
+              borderRadius: 1,
+              px: 2,
+              py: 1
             }}
           >
-            <Typography variant='caption' color='info.main' fontWeight='medium'>
-              Total Ventas Oficina
-            </Typography>
-            <Typography variant='h6' color='info.dark' fontWeight='bold'>
-              {formatCurrency(totalOfficeAmount)}
-            </Typography>
-          </Box>
-
-          <Box
-            sx={{
-              bgcolor: 'success.lighter',
-              px: 3,
-              py: 1.5,
-              borderRadius: 2,
-              border: '1px solid',
-              borderColor: 'success.main',
-              minWidth: '180px',
-              textAlign: 'center'
-            }}
-          >
-            <Typography variant='caption' color='success.main' fontWeight='medium'>
-              Total Ventas App
-            </Typography>
-            <Typography variant='h6' color='success.dark' fontWeight='bold'>
-              {formatCurrency(totalAppAmount)}
-            </Typography>
-          </Box>
-
-          <Box
-            sx={{
-              bgcolor: 'primary.lighter',
-              px: 3,
-              py: 1.5,
-              borderRadius: 2,
-              border: '1px solid',
-              borderColor: 'primary.main',
-              minWidth: '180px',
-              textAlign: 'center'
-            }}
-          >
-            <Typography variant='caption' color='primary.main' fontWeight='medium'>
-              Total General
-            </Typography>
-            <Typography variant='h6' color='primary.dark' fontWeight='bold'>
-              {formatCurrency(totalAmount)}
-            </Typography>
+            <Box display='flex' flexDirection='column' gap={0.5}>
+              <Box display='flex' justifyContent='space-between' gap={3}>
+                <Typography variant='body2' fontWeight={600}>TOTAL APP</Typography>
+                <Typography variant='body2' fontWeight={600} color='success.main'>
+                  {formatCurrency(totalApp)}
+                </Typography>
+              </Box>
+              <Box display='flex' justifyContent='space-between' gap={3}>
+                <Typography variant='body2' fontWeight={600}>TOTAL QR</Typography>
+                <Typography variant='body2' fontWeight={600} color='info.main'>
+                  {formatCurrency(totalQr)}
+                </Typography>
+              </Box>
+              <Box display='flex' justifyContent='space-between' gap={3}>
+                <Typography variant='body2' fontWeight={600}>TOTAL EFECTIVO</Typography>
+                <Typography variant='body2' fontWeight={600} color='warning.main'>
+                  {formatCurrency(totalCash)}
+                </Typography>
+              </Box>
+              <Box display='flex' justifyContent='space-between' gap={3} sx={{ borderTop: '1px solid', borderColor: 'divider', pt: 0.5, mt: 0.5 }}>
+                <Typography variant='body2' fontWeight={700}>TOTAL GENERAL</Typography>
+                <Typography variant='body2' fontWeight={700} color='primary.main'>
+                  {formatCurrency(totalGeneral)}
+                </Typography>
+              </Box>
+            </Box>
           </Box>
         </div>
         <div className='flex flex-wrap justify-between gap-4 px-6 pb-6'>

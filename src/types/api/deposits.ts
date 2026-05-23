@@ -39,10 +39,90 @@ export interface Driver {
   phone: string
 }
 
+export interface TransactionPaymentDetail {
+  Line: number
+  Mail: string
+  Amount: number
+  BankId: string
+  Commission: number
+  AccountType: string
+  Description: string
+  FirstDetail: string
+  PaymentType: string
+  TitularName: string
+  DocumentType: string
+  GlossPayment: string
+  SecondDetail: string
+  AccountNumber: string
+  FirstLastName: string
+  BranchOfficeId: number | null
+  DocumentNumber: string
+  SecondLastName: string
+  BankDescription: string | null
+  DocumentExtension: string
+  CommissionCurrency: string
+  InstruccionsPayment: string
+  BranchOfficeDescription: string | null
+  OperationNumberDebitHost: string
+  OperationStatusDescription: string
+}
+
+export interface TransactionBatchDetailResponse {
+  Amount: number
+  Currency: string
+  FundSource: string
+  DateProcess: string
+  Description: string
+  Spreadsheet: {
+    FormAchPayments: any[]
+    FormOddPayments: any[]
+    FormYapePayments: any[]
+    FormProvidersPayments: TransactionPaymentDetail[]
+  }
+  SourceAccount: string
+  TypeOperation: string
+  UserInvolveds: Array<{
+    UserName: string
+    DateAction: string
+    UserDescription: string
+  }>
+  ProcessBatchId: number
+  FundDestination: string
+  StatusOperation: string
+  OperationNumberDebitHost: string
+}
+
 export interface TravelTransaction {
   id: number
   transactionId: string
   status: 'AUTHORIZED' | 'COMPLETED' | 'FAILED' | 'IN_PROGRESS'
+  processResponse?: {
+    Code: string
+    Message: string
+    TransactionId: string
+  }
+  authorizeResponse?: {
+    Code: string
+    Result: string
+    Message: string
+  }
+  batchDetailRequest?: {
+    transactionsId: number[]
+  }
+  batchDetailResponse?: TransactionBatchDetailResponse
+  bankErrors?: any
+  errorMessage?: string | null
+  travelsSnapshot?: Array<{
+    line: number
+    amount: number
+    travelId: number
+  }>
+  totalAmount?: string
+  totalTravels?: number
+  createdAt?: string
+  processedAt?: string
+  authorizedAt?: string
+  completedAt?: string
 }
 
 export interface Travel {

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useMemo, useRef, useCallback } from 'react'
+import { useState, useMemo } from 'react'
 
 import Card from '@mui/material/Card'
 import Typography from '@mui/material/Typography'
@@ -10,23 +10,20 @@ import CircularProgress from '@mui/material/CircularProgress'
 import Alert from '@mui/material/Alert'
 import MenuItem from '@mui/material/MenuItem'
 import Pagination from '@mui/material/Pagination'
-import Tooltip from '@mui/material/Tooltip'
 import Avatar from '@mui/material/Avatar'
 import classnames from 'classnames'
 import { flexRender, getCoreRowModel, useReactTable, getSortedRowModel } from '@tanstack/react-table'
 import type { ColumnDef } from '@tanstack/react-table'
 
-import { useCommissions, useUpdateCommission } from '@/hooks/useCommissions'
+import { useCommissions, useGenerateCommissions } from '@/hooks/useCommissions'
 import type { Commission } from '@/types/api/commissions'
 import CustomTextField from '@core/components/mui/TextField'
-import AppReactDatepicker from '@/libs/styles/AppReactDatepicker'
 import tableStyles from '@core/styles/table.module.css'
-import UpdateCommissionDialog from '@/views/Dashboard/comisiones/components/UpdateCommissionDialog'
 import CommissionsChartModal from '@/views/Dashboard/comisiones/components/CommissionsChartModal'
-import ViewVoucherModal from '@/views/Dashboard/comisiones/components/ViewVoucherModal'
+import DebouncedInput from '@/views/Dashboard/Tickets/sold/components/DebouncedInput'
 import { useAuth } from '@/contexts/AuthContext'
-import { useSnackbar } from '@/contexts/SnackbarContext'
-import { useUploadImage } from '@/hooks/useUploadImage'
+
+const getTodayDate = () => new Date().toISOString().split('T')[0]
 
 const formatCurrency = (value: string | number) => {
   const num = typeof value === 'string' ? parseFloat(value) : value
@@ -34,78 +31,38 @@ const formatCurrency = (value: string | number) => {
   return `Bs. ${num.toFixed(2)}`
 }
 
-const formatDateTime = (dateString: string) => {
+const formatDate = (dateString: string) => {
   const date = new Date(dateString)
 
-  return date.toLocaleString('es-BO', {
-    timeZone: 'America/La_Paz',
-    year: 'numeric',
-    month: 'short',
-    day: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit'
-  })
-}
-
-const formatPeriodKey = (periodKey: string) => {
-  const [year, month] = periodKey.split('-')
-  const date = new Date(parseInt(year), parseInt(month) - 1, 1)
-
   return date.toLocaleDateString('es-BO', {
-    year: 'numeric',
-    month: 'long'
+    timeZone: 'America/La_Paz',
+    weekday: 'long',
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric'
   })
 }
 
 const VentasTable = () => {
-  const { isCompanyAdmin } = useAuth()
-  const { showSuccess, showError } = useSnackbar()
-  const updateMutation = useUpdateCommission()
-  const uploadImageMutation = useUploadImage()
-  const debounceTimeoutRef = useRef<NodeJS.Timeout | null>(null)
+  const { isCompanyAdmin, isImpersonating } = useAuth()
+  const isCompanyMode = isImpersonating || isCompanyAdmin
 
   const [pageSize, setPageSize] = useState<number>(10)
   const [currentPage, setCurrentPage] = useState<number>(1)
-  const [startDate, setStartDate] = useState<Date | null>(null)
-  const [endDate, setEndDate] = useState<Date | null>(null)
-  const [isPaidFilter, setIsPaidFilter] = useState<string>('all')
-  const [searchTerm, setSearchTerm] = useState<string>('')
-  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState<string>('')
-
-  const [selectedCommission, setSelectedCommission] = useState<Commission | null>(null)
-  const [dialogOpen, setDialogOpen] = useState<boolean>(false)
+  const [startDate, setStartDate] = useState<string>(getTodayDate())
+  const [endDate, setEndDate] = useState<string>('')
+  const [searchQuery, setSearchQuery] = useState<string>('')
   const [chartModalOpen, setChartModalOpen] = useState<boolean>(false)
-  const [voucherModalOpen, setVoucherModalOpen] = useState<boolean>(false)
-  const [selectedVoucher, setSelectedVoucher] = useState<{ url: string; companyName: string } | null>(null)
 
-  const handleSearchChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value
-
-    setSearchTerm(value)
-
-    if (debounceTimeoutRef.current) {
-      clearTimeout(debounceTimeoutRef.current)
-    }
-
-    if (value.length >= 3 || value.length === 0) {
-      debounceTimeoutRef.current = setTimeout(() => {
-        setDebouncedSearchTerm(value)
-      }, 500)
-    } else if (value.length < 3 && value.length > 0) {
-      if (debounceTimeoutRef.current) {
-        clearTimeout(debounceTimeoutRef.current)
-      }
-    }
-  }, [])
+  const generateMutation = useGenerateCommissions()
 
   const filters = useMemo(() => {
     return {
-      isPaid: isPaidFilter === 'all' ? undefined : isPaidFilter === 'paid',
-      startDate: startDate ? startDate.toISOString().split('T')[0] : undefined,
-      endDate: endDate ? endDate.toISOString().split('T')[0] : undefined,
-      search: debouncedSearchTerm || undefined
+      startDate: startDate || undefined,
+      endDate: endDate || undefined,
+      search: searchQuery || undefined
     }
-  }, [isPaidFilter, startDate, endDate, debouncedSearchTerm])
+  }, [startDate, endDate, searchQuery])
 
   const { data: commissions, isLoading, error, totals } = useCommissions(filters)
 
@@ -116,66 +73,9 @@ const VentasTable = () => {
   const totalRecords = commissions?.length || 0
   const totalPages = Math.ceil(totalRecords / pageSize)
 
-  const handleUpdateClick = (commission: Commission) => {
-    setSelectedCommission(commission)
-    setDialogOpen(true)
-  }
-
-  const handleViewVoucher = (commission: Commission) => {
-    if (commission.voucher) {
-      setSelectedVoucher({
-        url: commission.voucher,
-        companyName: commission.company.name
-      })
-      setVoucherModalOpen(true)
-    }
-  }
-
-  const handleUpdateCommission = async (
-    paidAmount: string,
-    voucherFile: File | null,
-    paidAt: string,
-    existingVoucher: string | null
-  ) => {
-    if (!selectedCommission) return
-
-    try {
-      const formattedAmount = parseFloat(paidAmount).toFixed(2)
-      let voucherUrl = existingVoucher || ''
-
-      if (voucherFile) {
-        try {
-          voucherUrl = await uploadImageMutation.mutateAsync(voucherFile)
-        } catch (error) {
-          showError('Error al subir el comprobante. Por favor, intente nuevamente.')
-
-          return
-        }
-      }
-
-      const paidAtISO = paidAt ? new Date(paidAt).toISOString() : new Date().toISOString()
-
-      await updateMutation.mutateAsync({
-        id: selectedCommission.id,
-        payload: {
-          paid: formattedAmount,
-          voucherUrl: voucherUrl,
-          paidAt: paidAtISO
-        }
-      })
-
-      setDialogOpen(false)
-      setSelectedCommission(null)
-      showSuccess('Comisión actualizada exitosamente')
-    } catch (error: any) {
-      showError(error?.response?.data?.message || 'Error al actualizar la comisión. Por favor intenta nuevamente.')
-    }
-  }
-
-  const handleCloseDialog = () => {
-    setDialogOpen(false)
-    setSelectedCommission(null)
-  }
+  const totalCommissionApp = parseFloat(totals.total_commission_app || '0')
+  const totalPlatform = parseFloat(totals.total_commission_company || '0')
+  const totalSaldo = totalCommissionApp - totalPlatform
 
   const columns = useMemo<ColumnDef<Commission, any>[]>(() => {
     const baseColumns: ColumnDef<Commission, any>[] = [
@@ -186,161 +86,103 @@ const VentasTable = () => {
           <Typography variant='body2' fontWeight={500}>
             {(currentPage - 1) * pageSize + row.index + 1}
           </Typography>
-        )
+        ),
+        meta: { align: 'center' }
       },
       {
-        accessorKey: 'period_key',
-        header: 'CUOTA CORRESPONDIENTE',
+        accessorKey: 'departure_time',
+        header: 'FECHA SALIDA',
         cell: ({ row }) => (
-          <Typography variant='body2' fontWeight={500}>
-            {formatPeriodKey(row.original.period_key)}
+          <Typography variant='body2' sx={{ textTransform: 'capitalize' }}>
+            {formatDate(row.original.departure_time)}
           </Typography>
-        )
+        ),
+        meta: { align: 'left' }
       }
     ]
 
-    if (!isCompanyAdmin) {
+    if (!isCompanyMode) {
       baseColumns.push(
         {
           id: 'logo',
           header: 'LOGO',
           cell: ({ row }) => {
-            const logoUrl = row.original.company.logo.startsWith('http')
-              ? row.original.company.logo
-              : `${process.env.NEXT_PUBLIC_API_URL}${row.original.company.logo}`
+            const logoUrl = row.original.travel.company.logo.startsWith('http')
+              ? row.original.travel.company.logo
+              : `${process.env.NEXT_PUBLIC_API_URL}${row.original.travel.company.logo}`
 
             return (
-              <Avatar src={logoUrl} alt={row.original.company.name} sx={{ width: 38, height: 38 }}>
-                {row.original.company.name.charAt(0)}
+              <Avatar src={logoUrl} alt={row.original.travel.company.name} sx={{ width: 38, height: 38 }}>
+                {row.original.travel.company.name.charAt(0)}
               </Avatar>
             )
-          }
+          },
+          meta: { align: 'center' }
         },
         {
-          accessorKey: 'company.name',
+          id: 'empresa',
           header: 'EMPRESA',
           cell: ({ row }) => (
             <Typography fontWeight={500} color='text.primary'>
-              {row.original.company.name}
+              {row.original.travel.company.name}
             </Typography>
-          )
+          ),
+          meta: { align: 'left' }
         }
       )
     }
 
-    baseColumns.push(
-      {
-        accessorKey: 'commission_per_ticket_at_time',
-        header: 'COMISIÓN EMPRESA',
-        cell: ({ row }: any) => (
-          <Typography variant='body2' align='right'>
-            {formatCurrency(row.original.commission_per_ticket_at_time)}
-          </Typography>
-        )
-      },
-      {
-        accessorKey: 'total_trips_count',
-        header: 'CANTIDAD DE VIAJES',
-        cell: ({ row }) => (
-          <Typography variant='body2' align='center'>
-            {row.original.total_trips_count || 0}
-          </Typography>
-        )
-      },
-      {
-        accessorKey: 'tickets_app_count_total',
-        header: 'CANT. VENTAS APP',
-        cell: ({ row }) => (
-          <Typography variant='body2' align='center'>
-            {row.original.tickets_app_count_total}
-          </Typography>
-        )
-      },
-      {
-        accessorKey: 'commission_app_total',
-        header: 'COMISIÓN APP CALCULADA',
-        cell: ({ row }) => (
-          <Typography variant='body2' align='right'>
-            {formatCurrency(row.original.commission_app_total)}
-          </Typography>
-        )
-      },
-      {
-        accessorKey: 'net_to_company',
-        header: isCompanyAdmin ? 'TOTAL A COBRAR' : 'TOTAL A PAGAR',
-        cell: ({ row }) => (
-          <Typography variant='body2' fontWeight={600} color='primary' align='right'>
-            {formatCurrency(row.original.net_to_company)}
-          </Typography>
-        )
-      },
-      {
-        accessorKey: 'paidAt',
-        header: 'FECHA PAGO',
-        cell: ({ row }) => {
-          if (!row.original.paidAt) {
-            return (
-              <Typography variant='body2' align='center' color='text.secondary'>
-                -
-              </Typography>
-            )
-          }
+    baseColumns.push({
+      id: 'cant_viajes',
+      header: 'CANT. DE VIAJES',
+      cell: () => (
+        <Typography variant='body2'>1</Typography>
+      ),
+      meta: { align: 'center' }
+    })
 
-          return (
-            <Typography variant='body2' align='center'>
-              {formatDateTime(row.original.paidAt)}
-            </Typography>
-          )
-        }
-      },
-      {
-        accessorKey: 'paid',
-        header: 'PAGADO',
-        cell: ({ row }) => (
-          <Typography variant='body2' align='right' fontWeight={600}>
-            {formatCurrency(row.original.paid)}
-          </Typography>
-        )
-      }
-    )
-
-    if (!isCompanyAdmin) {
+    if (!isCompanyMode) {
       baseColumns.push({
-        id: 'actions',
-        header: 'COMPROBANTE',
-        cell: ({ row }) => {
-          const hasVoucher = !!row.original.voucher
-
-          return (
-            <Box display='flex' gap={1} justifyContent='center'>
-              {hasVoucher ? (
-                <>
-                  <Tooltip title='Ver'>
-                    <Button size='small' color='info' variant='text' onClick={() => handleViewVoucher(row.original)}>
-                      Ver
-                    </Button>
-                  </Tooltip>
-                  <Tooltip title='Editar'>
-                    <Button size='small' color='primary' variant='text' onClick={() => handleUpdateClick(row.original)}>
-                      Editar
-                    </Button>
-                  </Tooltip>
-                </>
-              ) : (
-                <Tooltip title='Insertar Comprobante'>
-                  <Button size='small' color='primary' variant='text' onClick={() => handleUpdateClick(row.original)}>
-                    Insertar
-                  </Button>
-                </Tooltip>
-              )}
-            </Box>
-          )
-        }
+        accessorKey: 'commission_app_total',
+        header: 'TOTAL COMISION APP',
+        cell: ({ row }) => (
+          <Typography variant='body2'>{formatCurrency(row.original.commission_app_total)}</Typography>
+        ),
+        meta: { align: 'right' }
       })
     }
 
+    baseColumns.push(
+      {
+        accessorKey: 'commission_company_total',
+        header: 'COMISION PLATAFORMA',
+        cell: ({ row }) => (
+          <Typography variant='body2'>{formatCurrency(row.original.commission_company_total)}</Typography>
+        ),
+        meta: { align: 'right' }
+      },
+      {
+        accessorKey: 'tickets_app_count',
+        header: 'CANT. VENTAS APP',
+        cell: ({ row }) => (
+          <Typography variant='body2'>{row.original.tickets_app_count}</Typography>
+        ),
+        meta: { align: 'center' }
+      },
+      {
+        id: 'total_plataforma',
+        header: 'TOTAL PLATAFORMA',
+        cell: ({ row }) => (
+          <Typography variant='body2' fontWeight={600} color='primary'>
+            {formatCurrency(row.original.commission_company_total)}
+          </Typography>
+        ),
+        meta: { align: 'right' }
+      }
+    )
+
     return baseColumns
-  }, [currentPage, pageSize, isCompanyAdmin])
+  }, [currentPage, pageSize, isCompanyMode])
 
   const table = useReactTable<Commission>({
     data: paginatedData,
@@ -365,63 +207,97 @@ const VentasTable = () => {
     <>
       <Card>
         <div className='flex flex-wrap justify-between gap-4 p-6'>
+          <div className='flex flex-col gap-2'>
+            <Typography variant='h5'>Reporte de Comisiones</Typography>
+            <Typography variant='body2' color='text.secondary'>
+              Visualiza y analiza el{' '}
+              <Typography component='span' color='primary' variant='body2'>
+                reporte de comisiones
+              </Typography>{' '}
+              y ventas.
+            </Typography>
+          </div>
+        </div>
+
+        <div className='flex flex-wrap gap-4 px-6 pb-4 items-center justify-between'>
           <div className='flex flex-wrap gap-4 items-center'>
-            {!isCompanyAdmin && (
-              <CustomTextField
-                value={searchTerm}
-                onChange={handleSearchChange}
-                placeholder='Buscar empresa '
-                className='min-w-[200px]'
+            {!isCompanyMode && (
+              <DebouncedInput
+                placeholder='Buscar empresa...'
+                value={searchQuery}
+                onChange={value => setSearchQuery(String(value))}
+                debounce={500}
+                size='small'
+                sx={{ minWidth: 200 }}
               />
             )}
 
             <CustomTextField
-              select
-              value={isPaidFilter}
-              onChange={e => setIsPaidFilter(e.target.value)}
-              label='Pagado'
-              className='min-w-[150px]'
-            >
-              <MenuItem value='all'>Todos</MenuItem>
-              <MenuItem value='paid'>Pagado</MenuItem>
-              <MenuItem value='pending'>Pendiente</MenuItem>
-            </CustomTextField>
-
-            <AppReactDatepicker
-              selected={startDate}
-              onChange={(date: Date | null) => setStartDate(date)}
-              placeholderText='Mes Inicio'
-              customInput={<CustomTextField label='Mes Inicio' fullWidth className='min-w-[180px]' />}
-              dateFormat='MM/yyyy'
-              showMonthYearPicker
-              isClearable
+              type='date'
+              label='Fecha inicio'
+              value={startDate}
+              onChange={e => setStartDate(e.target.value)}
+              InputLabelProps={{ shrink: true }}
+              sx={{ width: '150px' }}
             />
 
-            <AppReactDatepicker
-              selected={endDate}
-              onChange={(date: Date | null) => setEndDate(date)}
-              placeholderText='Mes Fin'
-              customInput={<CustomTextField label='Mes Fin' fullWidth className='min-w-[180px]' />}
-              dateFormat='MM/yyyy'
-              showMonthYearPicker
-              minDate={startDate || undefined}
-              isClearable
+            <CustomTextField
+              type='date'
+              label='Fecha Final'
+              value={endDate}
+              onChange={e => setEndDate(e.target.value)}
+              InputLabelProps={{ shrink: true }}
+              sx={{ width: '150px' }}
             />
+
+            {!isCompanyMode && (
+              <Button
+                variant='contained'
+                color='success'
+                startIcon={
+                  generateMutation.isPending ? (
+                    <CircularProgress size={16} color='inherit' />
+                  ) : (
+                    <i className='tabler-refresh' />
+                  )
+                }
+                onClick={() => generateMutation.mutate()}
+                disabled={generateMutation.isPending}
+              >
+                Generar
+              </Button>
+            )}
           </div>
 
           <div className='flex items-center gap-4'>
-            {!isCompanyAdmin && (
-              <Box display='flex' flexDirection='column' gap={0.5}>
-                <Typography variant='caption' color='primary.main' fontWeight={600}>
-                  Total, App: Bs. {parseFloat(totals.total_app).toFixed(2)}
+            {!isCompanyMode ? (
+              <Box display='flex' flexDirection='column' gap={0.5} alignItems='flex-end'>
+                <Typography variant='body2' fontWeight={600}>
+                  TOTAL COMISION APP{' '}
+                  <Typography component='span' color='primary.main' fontWeight={600}>
+                    {formatCurrency(totalCommissionApp)}
+                  </Typography>
                 </Typography>
-                <Typography variant='caption' color='warning.main' fontWeight={600}>
-                  Total, Comisión Empresa: Bs. {parseFloat(totals.total_net_to_company).toFixed(2)}
+                <Typography variant='body2' fontWeight={600}>
+                  TOTAL PLATAFORMA{' '}
+                  <Typography component='span' color='warning.main' fontWeight={600}>
+                    {formatCurrency(totalPlatform)}
+                  </Typography>
                 </Typography>
-                <Typography variant='caption' color='success.main' fontWeight={600}>
-                  Total, Deuda: Bs. {parseFloat(totals.total_balance).toFixed(2)}
+                <Typography variant='body2' fontWeight={600}>
+                  TOTAL SALDO{' '}
+                  <Typography component='span' color='success.main' fontWeight={600}>
+                    {formatCurrency(totalSaldo)}
+                  </Typography>
                 </Typography>
               </Box>
+            ) : (
+              <Typography variant='body2' fontWeight={600}>
+                TOTAL PLATAFORMA{' '}
+                <Typography component='span' color='primary.main' fontWeight={600}>
+                  {formatCurrency(totalPlatform)}
+                </Typography>
+              </Typography>
             )}
 
             <Button
@@ -455,25 +331,31 @@ const VentasTable = () => {
             <thead>
               {table.getHeaderGroups().map(headerGroup => (
                 <tr key={headerGroup.id}>
-                  {headerGroup.headers.map(header => (
-                    <th key={header.id}>
-                      {header.isPlaceholder ? null : (
-                        <div
-                          className={classnames({
-                            'flex items-center': header.column.getIsSorted(),
-                            'cursor-pointer select-none': header.column.getCanSort()
-                          })}
-                          onClick={header.column.getToggleSortingHandler()}
-                        >
-                          {flexRender(header.column.columnDef.header, header.getContext())}
-                          {{
-                            asc: <i className='tabler-chevron-up text-xl' />,
-                            desc: <i className='tabler-chevron-down text-xl' />
-                          }[header.column.getIsSorted() as 'asc' | 'desc'] ?? null}
-                        </div>
-                      )}
-                    </th>
-                  ))}
+                  {headerGroup.headers.map(header => {
+                    const align = (header.column.columnDef.meta as { align?: string })?.align || 'left'
+
+                    return (
+                      <th key={header.id} style={{ textAlign: align as 'left' | 'center' | 'right' }}>
+                        {header.isPlaceholder ? null : (
+                          <div
+                            className={classnames({
+                              'flex items-center': header.column.getIsSorted(),
+                              'cursor-pointer select-none': header.column.getCanSort(),
+                              'justify-center': align === 'center',
+                              'justify-end': align === 'right'
+                            })}
+                            onClick={header.column.getToggleSortingHandler()}
+                          >
+                            {flexRender(header.column.columnDef.header, header.getContext())}
+                            {{
+                              asc: <i className='tabler-chevron-up text-xl' />,
+                              desc: <i className='tabler-chevron-down text-xl' />
+                            }[header.column.getIsSorted() as 'asc' | 'desc'] ?? null}
+                          </div>
+                        )}
+                      </th>
+                    )
+                  })}
                 </tr>
               ))}
             </thead>
@@ -490,9 +372,15 @@ const VentasTable = () => {
               <tbody>
                 {table.getRowModel().rows.map(row => (
                   <tr key={row.id}>
-                    {row.getVisibleCells().map(cell => (
-                      <td key={cell.id}>{flexRender(cell.column.columnDef.cell, cell.getContext())}</td>
-                    ))}
+                    {row.getVisibleCells().map(cell => {
+                      const align = (cell.column.columnDef.meta as { align?: string })?.align || 'left'
+
+                      return (
+                        <td key={cell.id} style={{ textAlign: align as 'left' | 'center' | 'right' }}>
+                          {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                        </td>
+                      )
+                    })}
                   </tr>
                 ))}
               </tbody>
@@ -521,34 +409,12 @@ const VentasTable = () => {
         </div>
       </Card>
 
-      {selectedCommission && (
-        <UpdateCommissionDialog
-          open={dialogOpen}
-          commission={selectedCommission}
-          onClose={handleCloseDialog}
-          onSubmit={handleUpdateCommission}
-          isLoading={updateMutation.isPending || uploadImageMutation.isPending}
-        />
-      )}
-
       <CommissionsChartModal
         open={chartModalOpen}
         onClose={() => setChartModalOpen(false)}
         data={commissions || []}
-        isCompanyAdmin={isCompanyAdmin}
+        isCompanyAdmin={isCompanyMode}
       />
-
-      {selectedVoucher && (
-        <ViewVoucherModal
-          open={voucherModalOpen}
-          onClose={() => {
-            setVoucherModalOpen(false)
-            setSelectedVoucher(null)
-          }}
-          voucherUrl={selectedVoucher.url}
-          companyName={selectedVoucher.companyName}
-        />
-      )}
     </>
   )
 }

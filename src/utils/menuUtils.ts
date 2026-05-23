@@ -83,7 +83,7 @@ export const filterMenuByRole = (
       }
 
       if (userRole === 'CASHIER_SELLER') {
-        const cashierSellerMenus = ['OPERACIONES', 'Venta de Tickets', 'Arqueo de Caja']
+        const cashierSellerMenus = ['OPERACIONES', 'Venta de Tickets', 'Arqueo de Caja', 'Viajes']
 
         return cashierSellerMenus.includes(item.label)
       }

@@ -28,6 +28,58 @@ interface TransactionDialogProps {
 
 type DialogMode = 'confirm-process' | 'confirm-verify' | 'loading' | 'error' | 'success' | 'inprogress' | 'failed'
 
+const getBankName = (bankCode: string) => {
+  const banks: { [key: string]: string } = {
+    '1005': 'Banco de Crédito',
+    '1016': 'Banco Económico',
+    '1034': 'Banco Fortaleza',
+    '1018': 'Banco Ganadero',
+    '1033': 'Banco FIE',
+    '1009': 'Banco BISA',
+    '1003': 'Banco Mercantil Santa Cruz',
+    '1007': 'Banco de la Nación Argentina',
+    '1001': 'Banco Nacional de Bolivia',
+    '1017': 'Banco Solidario',
+    '1014': 'Banco Unión',
+    MLD3022: 'Cooperativa Comarapa',
+    MLD3030: 'Cooperativa Catedral',
+    MLD3026: 'El Chorolque',
+    '3003': 'Cooperativa Factima',
+    MLD3012: 'Cooperativa Inca Huasi',
+    '3001': 'Cooperativa Jesús Nazareno',
+    MLD3048: 'Cooperativa Magisterio',
+    MLD3028: 'Cooperativa Madre y Maestra',
+    MLD3034: 'Cooperativa Abierta',
+    MLD3011: 'Cooperativa Pío X',
+    '3015': 'Cooperativa Quillacollo',
+    '3002': 'Cooperativa San Martín de Porres',
+    '3025': 'Cooperativa San Mateo',
+    MLD3021: 'Cooperativa Trinidad',
+    '27002': 'CIDRE',
+    '27003': 'Creser',
+    '27004': 'Diaconía',
+    '27009': 'IDEPRO',
+    '27012': 'Pro Mujer',
+    MLD1016: 'Banco Económico MLD',
+    MLD1034: 'Banco Fortaleza MLD',
+    MLD1018: 'Banco Ganadero MLD',
+    MLD1033: 'Banco FIE MLD',
+    MLD1001: 'Banco Nacional de Bolivia MLD',
+    MLD1017: 'Banco Solidario MLD',
+    MLD1014: 'Banco Unión MLD',
+    '53001': 'Tigo Money',
+    '74003': 'Banco Pyme de la Comunidad',
+    '74002': 'Banco Pyme Ecofuturo',
+    UNI3025: 'Cooperativa San Mateo UNI',
+    UNI27009: 'IDEPRO UNI',
+    UNI27012: 'Pro Mujer UNI',
+    MLD75001: 'La Primera EFV',
+    '75003': 'La Promotora EFV'
+  }
+
+  return banks[bankCode] || bankCode || 'N/A'
+}
+
 const TransactionDialog = ({ open, onClose, travel }: TransactionDialogProps) => {
   const [mode, setMode] = useState<DialogMode>('confirm-process')
   const [error, setError] = useState<string | null>(null)
@@ -186,7 +238,15 @@ const TransactionDialog = ({ open, onClose, travel }: TransactionDialogProps) =>
 
                   <Box>
                     <Typography variant='caption' color='text.secondary'>
-                      Cuenta Bancaria
+                      Banco
+                    </Typography>
+                    <Typography variant='body2' fontWeight={600}>
+                      {getBankName(travel.bus.owner.bankAccount.bankCode)}
+                    </Typography>
+                  </Box>
+                  <Box>
+                    <Typography variant='caption' color='text.secondary'>
+                      Nro. Cuenta
                     </Typography>
                     <Typography variant='body2' fontFamily='monospace'>
                       {travel.bus.owner.bankAccount.account}
@@ -234,7 +294,7 @@ const TransactionDialog = ({ open, onClose, travel }: TransactionDialogProps) =>
                       Estado
                     </Typography>
                     <Typography variant='body2' color='warning.main' fontWeight={600}>
-                      {travel.transaction?.status}
+                      {travel.transaction?.status === 'AUTHORIZED' ? 'Autorizado' : travel.transaction?.status}
                     </Typography>
                   </Box>
                   <Box>
@@ -251,6 +311,30 @@ const TransactionDialog = ({ open, onClose, travel }: TransactionDialogProps) =>
                     </Typography>
                     <Typography variant='body2' fontWeight={600}>
                       {travel.bus.owner.name}
+                    </Typography>
+                  </Box>
+                  <Box>
+                    <Typography variant='caption' color='text.secondary'>
+                      Banco
+                    </Typography>
+                    <Typography variant='body2' fontWeight={600}>
+                      {getBankName(travel.bus.owner.bankAccount.bankCode)}
+                    </Typography>
+                  </Box>
+                  <Box>
+                    <Typography variant='caption' color='text.secondary'>
+                      Nro. Cuenta
+                    </Typography>
+                    <Typography variant='body2' fontFamily='monospace'>
+                      {travel.bus.owner.bankAccount.account}
+                    </Typography>
+                  </Box>
+                  <Box gridColumn='1 / -1'>
+                    <Typography variant='caption' color='text.secondary'>
+                      Titular
+                    </Typography>
+                    <Typography variant='body2' fontWeight={600}>
+                      {travel.bus.owner.bankAccount.titularName}
                     </Typography>
                   </Box>
                 </Box>

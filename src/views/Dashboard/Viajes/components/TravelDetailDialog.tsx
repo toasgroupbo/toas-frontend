@@ -21,7 +21,7 @@ import Card from '@mui/material/Card'
 import CardContent from '@mui/material/CardContent'
 
 import type { Travel } from '@/types/api/travels'
-import { useTicketsByTravelAndCompany, useTicketsByTravel } from '@/hooks/useTickets'
+import { useTicketsByTravelAndCompany, useTicketsByTravel, type CashierSummary } from '@/hooks/useTickets'
 import { printTravelReport } from '../utils/printTravelReport'
 
 interface TravelDetailDialogProps {
@@ -61,10 +61,17 @@ const formatCurrency = (amount: number | string) => {
 }
 
 const TravelDetailDialog = ({ open, onClose, travel, companyName, isCashier = false }: TravelDetailDialogProps) => {
-  const cashierTicketsQuery = useTicketsByTravel(isCashier ? (travel?.id || null) : null)
-  const companyTicketsQuery = useTicketsByTravelAndCompany(!isCashier ? (travel?.id || null) : null)
+  const cashierTicketsQuery = useTicketsByTravel(isCashier ? travel?.id || null : null)
+  const companyTicketsQuery = useTicketsByTravelAndCompany(!isCashier ? travel?.id || null : null)
 
-  const { data: tickets, isLoading: ticketsLoading } = isCashier ? cashierTicketsQuery : companyTicketsQuery
+  const { data: cashierData, isLoading: cashierLoading } = cashierTicketsQuery
+  const { data: companyData, isLoading: companyLoading } = companyTicketsQuery
+
+  const ticketsLoading = isCashier ? cashierLoading : companyLoading
+  const ticketsData = isCashier ? cashierData : companyData
+  const tickets = ticketsData?.tickets
+  const cashiers: CashierSummary[] = ticketsData?.cashiers || []
+  const totals = ticketsData?.totals || null
 
   if (!travel) return null
 
@@ -79,11 +86,10 @@ const TravelDetailDialog = ({ open, onClose, travel, companyName, isCashier = fa
   const soldSeats = (travel as any).totalSoldSeats || 0
   const availableSeats = (travel as any).seatsAvailable || totalSeats - soldSeats
 
-  const cashAmount = parseFloat(travel.cash_amount || '0')
-  const qrAmount = parseFloat(travel.qr_amount || '0')
-  const appAmount = parseFloat(travel.app_amount || '0')
-  const officeAmount = cashAmount + qrAmount
-  const totalAmount = officeAmount + appAmount
+  const appQrAmount = parseFloat(travel.app_amount || '0')
+  const totalCash = totals ? parseFloat(totals.totalCash) : parseFloat(travel.cash_amount || '0')
+  const totalQr = totals ? parseFloat(totals.totalQr) : parseFloat(travel.qr_amount || '0')
+  const totalGeneral = totalCash + totalQr + appQrAmount
 
   const drivers = travel.drivers || []
   const assistants = travel.assistants || []
@@ -114,7 +120,9 @@ const TravelDetailDialog = ({ open, onClose, travel, companyName, isCashier = fa
     printTravelReport({
       travel,
       tickets: tickets || [],
-      companyName
+      companyName,
+      cashiers,
+      totals: totals || undefined
     })
   }
 
@@ -378,59 +386,78 @@ const TravelDetailDialog = ({ open, onClose, travel, companyName, isCashier = fa
               <i className='tabler-receipt' style={{ fontSize: '20px' }} />
               Resumen de Ventas
             </Typography>
-            <Card variant='outlined' sx={{ bgcolor: 'success.lighter' }}>
+            <Card variant='outlined'>
               <CardContent>
+                <Grid container spacing={1}>
+                  <Grid item xs={4}>
+                    <Typography variant='caption' color='text.secondary' fontWeight={600}>
+                      CAJERO
+                    </Typography>
+                  </Grid>
+                  <Grid item xs={4}>
+                    <Typography variant='caption' color='text.secondary' fontWeight={600}>
+                      EFECTIVO
+                    </Typography>
+                  </Grid>
+                  <Grid item xs={4}>
+                    <Typography variant='caption' color='text.secondary' fontWeight={600}>
+                      QR
+                    </Typography>
+                  </Grid>
+
+                  <Grid item xs={4}>
+                    <Typography variant='body2'>App</Typography>
+                  </Grid>
+                  <Grid item xs={4}>
+                    <Typography variant='body2'>-</Typography>
+                  </Grid>
+                  <Grid item xs={4}>
+                    <Typography variant='body2'>{formatCurrency(appQrAmount)}</Typography>
+                  </Grid>
+
+                  {cashiers.map(cashier => (
+                    <Grid container spacing={1} key={cashier.id}>
+                      <Grid item xs={4}>
+                        <Typography variant='body2'>{cashier.fullName}</Typography>
+                      </Grid>
+                      <Grid item xs={4}>
+                        <Typography variant='body2'>{formatCurrency(cashier.cashTotal)}</Typography>
+                      </Grid>
+                      <Grid item xs={4}>
+                        <Typography variant='body2'>{formatCurrency(cashier.qrTotal)}</Typography>
+                      </Grid>
+                    </Grid>
+                  ))}
+                </Grid>
+
+                <Divider sx={{ my: 2 }} />
+
                 <Grid container spacing={2}>
-                  <Grid item xs={6} md={3}>
-                    <Box textAlign='center'>
-                      <Typography variant='caption' color='text.secondary'>
-                        Efectivo
-                      </Typography>
-                      <Typography variant='h6' fontWeight={600}>
-                        {formatCurrency(cashAmount)}
-                      </Typography>
-                    </Box>
+                  <Grid item xs={4} textAlign='center'>
+                    <Typography variant='caption' color='primary.main' fontWeight={600}>
+                      TOTAL GENERAL
+                    </Typography>
+                    <Typography variant='h6' fontWeight='bold' color='primary.main'>
+                      {formatCurrency(totalGeneral)}
+                    </Typography>
                   </Grid>
-                  <Grid item xs={6} md={3}>
-                    <Box textAlign='center'>
-                      <Typography variant='caption' color='text.secondary'>
-                        QR
-                      </Typography>
-                      <Typography variant='h6' fontWeight={600}>
-                        {formatCurrency(qrAmount)}
-                      </Typography>
-                    </Box>
+                  <Grid item xs={4} textAlign='center'>
+                    <Typography variant='caption' color='text.secondary' fontWeight={600}>
+                      TOTAL EFECTIVO
+                    </Typography>
+                    <Typography variant='h6' fontWeight={600}>
+                      {formatCurrency(totalCash)}
+                    </Typography>
                   </Grid>
-                  <Grid item xs={6} md={3}>
-                    <Box textAlign='center'>
-                      <Typography variant='caption' color='info.main'>
-                        Total Oficina
-                      </Typography>
-                      <Typography variant='h6' fontWeight={600} color='info.main'>
-                        {formatCurrency(officeAmount)}
-                      </Typography>
-                    </Box>
-                  </Grid>
-                  <Grid item xs={6} md={3}>
-                    <Box textAlign='center'>
-                      <Typography variant='caption' color='success.main'>
-                        Total App
-                      </Typography>
-                      <Typography variant='h6' fontWeight={600} color='success.main'>
-                        {formatCurrency(appAmount)}
-                      </Typography>
-                    </Box>
+                  <Grid item xs={4} textAlign='center'>
+                    <Typography variant='caption' color='text.secondary' fontWeight={600}>
+                      TOTAL QR
+                    </Typography>
+                    <Typography variant='h6' fontWeight={600}>
+                      {formatCurrency(totalQr)}
+                    </Typography>
                   </Grid>
                 </Grid>
-                <Divider sx={{ my: 2 }} />
-                <Box textAlign='center'>
-                  <Typography variant='caption' color='primary.main' fontWeight={600}>
-                    TOTAL GENERAL
-                  </Typography>
-                  <Typography variant='h4' fontWeight='bold' color='primary.main'>
-                    {formatCurrency(totalAmount)}
-                  </Typography>
-                </Box>
               </CardContent>
             </Card>
           </Grid>

@@ -57,7 +57,7 @@ const STATIC_ROLE_PERMISSIONS: Record<string, string[]> = {
   COMPANY_ADMIN: ['/home', '/buses', '/rutas', '/duenos', '/cajeros', '/oficinas', '/viajes'],
   CASHIER: ['/home', '/arqueo', '/salidas', '/tickets', '/viajes'],
   CASHIER_TRIPS: ['/home', '/salidas', '/viajes'],
-  CASHIER_SELLER: ['/home', '/arqueo', '/salidas', '/tickets'],
+  CASHIER_SELLER: ['/home', '/arqueo', '/salidas', '/tickets', '/viajes'],
   CASHIER_OWNER: ['/home', '/viajes']
 }
 
