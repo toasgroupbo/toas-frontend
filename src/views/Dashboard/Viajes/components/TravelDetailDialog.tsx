@@ -23,6 +23,7 @@ import CardContent from '@mui/material/CardContent'
 import type { Travel } from '@/types/api/travels'
 import { useTicketsByTravelAndCompany, useTicketsByTravel, type CashierSummary } from '@/hooks/useTickets'
 import { printTravelReport } from '../utils/printTravelReport'
+import { useAuth } from '@/contexts/AuthContext'
 
 interface TravelDetailDialogProps {
   open: boolean
@@ -61,6 +62,9 @@ const formatCurrency = (amount: number | string) => {
 }
 
 const TravelDetailDialog = ({ open, onClose, travel, companyName, isCashier = false }: TravelDetailDialogProps) => {
+  const { user, userRole } = useAuth()
+  const isCashierSeller = userRole === 'CASHIER_SELLER'
+
   const cashierTicketsQuery = useTicketsByTravel(isCashier ? travel?.id || null : null)
   const companyTicketsQuery = useTicketsByTravelAndCompany(!isCashier ? travel?.id || null : null)
 
@@ -70,7 +74,13 @@ const TravelDetailDialog = ({ open, onClose, travel, companyName, isCashier = fa
   const ticketsLoading = isCashier ? cashierLoading : companyLoading
   const ticketsData = isCashier ? cashierData : companyData
   const tickets = ticketsData?.tickets
-  const cashiers: CashierSummary[] = ticketsData?.cashiers || []
+  const allCashiers: CashierSummary[] = ticketsData?.cashiers || []
+
+  // For CASHIER_SELLER, only show their own sales
+  const cashiers: CashierSummary[] = isCashierSeller && user
+    ? allCashiers.filter(c => c.id.toString() === user.id)
+    : allCashiers
+
   const totals = ticketsData?.totals || null
 
   if (!travel) return null
@@ -87,9 +97,20 @@ const TravelDetailDialog = ({ open, onClose, travel, companyName, isCashier = fa
   const availableSeats = (travel as any).seatsAvailable || totalSeats - soldSeats
 
   const appQrAmount = parseFloat(travel.app_amount || '0')
-  const totalCash = totals ? parseFloat(totals.totalCash) : parseFloat(travel.cash_amount || '0')
-  const totalQr = totals ? parseFloat(totals.totalQr) : parseFloat(travel.qr_amount || '0')
-  const totalGeneral = totalCash + totalQr + appQrAmount
+
+  // For CASHIER_SELLER, calculate totals only from their own sales
+  let totalCash: number
+  let totalQr: number
+
+  if (isCashierSeller && cashiers.length > 0) {
+    totalCash = cashiers.reduce((sum, c) => sum + parseFloat(String(c.cashTotal || 0)), 0)
+    totalQr = cashiers.reduce((sum, c) => sum + parseFloat(String(c.qrTotal || 0)), 0)
+  } else {
+    totalCash = totals ? parseFloat(totals.totalCash) : parseFloat(travel.cash_amount || '0')
+    totalQr = totals ? parseFloat(totals.totalQr) : parseFloat(travel.qr_amount || '0')
+  }
+
+  const totalGeneral = isCashierSeller ? totalCash + totalQr : totalCash + totalQr + appQrAmount
 
   const drivers = travel.drivers || []
   const assistants = travel.assistants || []
@@ -534,15 +555,17 @@ const TravelDetailDialog = ({ open, onClose, travel, companyName, isCashier = fa
         <Button onClick={onClose} variant='outlined' color='inherit'>
           Cerrar
         </Button>
-        <Button
-          onClick={handlePrint}
-          variant='contained'
-          color='primary'
-          startIcon={<i className='tabler-printer' />}
-          disabled={ticketsLoading}
-        >
-          Imprimir Reporte
-        </Button>
+        {!isCashierSeller && (
+          <Button
+            onClick={handlePrint}
+            variant='contained'
+            color='primary'
+            startIcon={<i className='tabler-printer' />}
+            disabled={ticketsLoading}
+          >
+            Imprimir Reporte
+          </Button>
+        )}
       </DialogActions>
     </Dialog>
   )

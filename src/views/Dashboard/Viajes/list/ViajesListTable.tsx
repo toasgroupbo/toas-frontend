@@ -106,25 +106,12 @@ const ViajesListTable = () => {
 
   const travels = travelsResponse?.data || []
 
-  // Calculate totals from travels data
-  const { totalApp, totalQr, totalCash, totalGeneral } = useMemo(() => {
-    let app = 0
-    let qr = 0
-    let cash = 0
-
-    travels.forEach(travel => {
-      app += parseFloat((travel as any).app_amount || '0')
-      qr += parseFloat((travel as any).qr_amount || '0')
-      cash += parseFloat((travel as any).cash_amount || '0')
-    })
-
-    return {
-      totalApp: app,
-      totalQr: qr,
-      totalCash: cash,
-      totalGeneral: app + qr + cash
-    }
-  }, [travels])
+  // Get totals from API response amounts
+  const amounts = travelsResponse?.amounts || { cash: 0, qr: 0, app: 0 }
+  const totalCash = amounts.cash
+  const totalQr = amounts.qr
+  const totalApp = amounts.app
+  const totalGeneral = totalCash + totalQr + totalApp
 
   const uniqueOrigins = useMemo(() => {
     if (!travels) return []
@@ -336,11 +323,17 @@ const ViajesListTable = () => {
         header: 'Monto App',
         cell: ({ row }) => {
           const appAmount = parseFloat((row.original as any).app_amount || '0')
+          const appSoldSeats = (row.original as any).seatsApp || 0
 
           return (
-            <Typography variant='body2' fontWeight='medium' color='success.main'>
-              {formatCurrency(appAmount)}
-            </Typography>
+            <div className='flex flex-col'>
+              <Typography variant='body2' fontWeight='bold'>
+                {appSoldSeats} asientos
+              </Typography>
+              <Typography variant='body2' fontWeight='medium' color='success.main'>
+                {formatCurrency(appAmount)}
+              </Typography>
+            </div>
           )
         }
       }),
@@ -348,23 +341,36 @@ const ViajesListTable = () => {
         header: 'Monto QR',
         cell: ({ row }) => {
           const qrAmount = parseFloat((row.original as any).qr_amount || '0')
+          const qrSoldSeats = (row.original as any).seatsQr || 0
 
           return (
-            <Typography variant='body2' fontWeight='medium' color='info.main'>
-              {formatCurrency(qrAmount)}
-            </Typography>
+            <div className='flex flex-col'>
+              <Typography variant='body2' fontWeight='bold'>
+                {qrSoldSeats} asientos
+              </Typography>
+              <Typography variant='body2' fontWeight='medium' color='info.main'>
+                {formatCurrency(qrAmount)}
+              </Typography>
+            </div>
           )
         }
       }),
+
       columnHelper.accessor('cash_amount', {
         header: 'Monto Efectivo',
         cell: ({ row }) => {
           const cashAmount = parseFloat((row.original as any).cash_amount || '0')
+          const cashSoldSeats = (row.original as any).seatsCash || 0
 
           return (
-            <Typography variant='body2' fontWeight='medium' color='warning.main'>
-              {formatCurrency(cashAmount)}
-            </Typography>
+            <div className='flex flex-col'>
+              <Typography variant='body2' fontWeight='bold'>
+                {cashSoldSeats} asientos
+              </Typography>
+              <Typography variant='body2' fontWeight='medium' color='warning.main'>
+                {formatCurrency(cashAmount)}
+              </Typography>
+            </div>
           )
         }
       }),
@@ -592,25 +598,38 @@ const ViajesListTable = () => {
           >
             <Box display='flex' flexDirection='column' gap={0.5}>
               <Box display='flex' justifyContent='space-between' gap={3}>
-                <Typography variant='body2' fontWeight={600}>TOTAL APP</Typography>
+                <Typography variant='body2' fontWeight={600}>
+                  TOTAL APP
+                </Typography>
                 <Typography variant='body2' fontWeight={600} color='success.main'>
                   {formatCurrency(totalApp)}
                 </Typography>
               </Box>
               <Box display='flex' justifyContent='space-between' gap={3}>
-                <Typography variant='body2' fontWeight={600}>TOTAL QR</Typography>
+                <Typography variant='body2' fontWeight={600}>
+                  TOTAL QR
+                </Typography>
                 <Typography variant='body2' fontWeight={600} color='info.main'>
                   {formatCurrency(totalQr)}
                 </Typography>
               </Box>
               <Box display='flex' justifyContent='space-between' gap={3}>
-                <Typography variant='body2' fontWeight={600}>TOTAL EFECTIVO</Typography>
+                <Typography variant='body2' fontWeight={600}>
+                  TOTAL EFECTIVO
+                </Typography>
                 <Typography variant='body2' fontWeight={600} color='warning.main'>
                   {formatCurrency(totalCash)}
                 </Typography>
               </Box>
-              <Box display='flex' justifyContent='space-between' gap={3} sx={{ borderTop: '1px solid', borderColor: 'divider', pt: 0.5, mt: 0.5 }}>
-                <Typography variant='body2' fontWeight={700}>TOTAL GENERAL</Typography>
+              <Box
+                display='flex'
+                justifyContent='space-between'
+                gap={3}
+                sx={{ borderTop: '1px solid', borderColor: 'divider', pt: 0.5, mt: 0.5 }}
+              >
+                <Typography variant='body2' fontWeight={700}>
+                  TOTAL GENERAL
+                </Typography>
                 <Typography variant='body2' fontWeight={700} color='primary.main'>
                   {formatCurrency(totalGeneral)}
                 </Typography>

@@ -135,9 +135,7 @@ const VentasTable = () => {
     baseColumns.push({
       id: 'cant_viajes',
       header: 'CANT. DE VIAJES',
-      cell: () => (
-        <Typography variant='body2'>1</Typography>
-      ),
+      cell: () => <Typography variant='body2'>1</Typography>,
       meta: { align: 'center' }
     })
 
@@ -145,9 +143,7 @@ const VentasTable = () => {
       baseColumns.push({
         accessorKey: 'commission_app_total',
         header: 'TOTAL COMISION APP',
-        cell: ({ row }) => (
-          <Typography variant='body2'>{formatCurrency(row.original.commission_app_total)}</Typography>
-        ),
+        cell: ({ row }) => <Typography variant='body2'>{formatCurrency(row.original.commission_app_total)}</Typography>,
         meta: { align: 'right' }
       })
     }
@@ -164,9 +160,7 @@ const VentasTable = () => {
       {
         accessorKey: 'tickets_app_count',
         header: 'CANT. VENTAS APP',
-        cell: ({ row }) => (
-          <Typography variant='body2'>{row.original.tickets_app_count}</Typography>
-        ),
+        cell: ({ row }) => <Typography variant='body2'>{row.original.tickets_app_count}</Typography>,
         meta: { align: 'center' }
       },
       {
@@ -264,7 +258,7 @@ const VentasTable = () => {
                 onClick={() => generateMutation.mutate()}
                 disabled={generateMutation.isPending}
               >
-                Generar
+                Generar comisiones
               </Button>
             )}
           </div>

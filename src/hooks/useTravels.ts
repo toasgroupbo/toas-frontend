@@ -130,7 +130,7 @@ const deleteTravel = async (id: number): Promise<void> => {
 
 const fetchTravelsForCashier = async (
   filters?: TravelFilters
-): Promise<{ data: Travel[]; amounts: { office: number; app: number } }> => {
+): Promise<{ data: Travel[]; amounts: { cash: number; qr: number; app: number } }> => {
   const queryParams = new URLSearchParams()
 
   if (filters?.status) {
@@ -154,14 +154,14 @@ const fetchTravelsForCashier = async (
   }
 
   const url = `/api/travels/for-cashier/all${queryParams.toString() ? `?${queryParams.toString()}` : ''}`
-  const response = await api.get<{ data: Travel[]; meta: any; amounts: { office: number; app: number } }>(url)
+  const response = await api.get<{ data: Travel[]; meta: any; amounts: { cash: number; qr: number; app: number } }>(url)
 
   return { data: response.data.data, amounts: response.data.amounts }
 }
 
 const fetchTravelsForAdmin = async (
   filters?: TravelFilters
-): Promise<{ data: Travel[]; amounts: { office: number; app: number } }> => {
+): Promise<{ data: Travel[]; amounts: { cash: number; qr: number; app: number } }> => {
   const actingAsCompany = localStorage.getItem('acting_as_company')
   const queryParams = new URLSearchParams()
 
@@ -196,14 +196,14 @@ const fetchTravelsForAdmin = async (
   }
 
   const url = `/api/travels${queryParams.toString() ? `?${queryParams.toString()}` : ''}`
-  const response = await api.get<{ data: Travel[]; meta: any; amounts: { office: number; app: number } }>(url)
+  const response = await api.get<{ data: Travel[]; meta: any; amounts: { cash: number; qr: number; app: number } }>(url)
 
-  return { data: response.data.data, amounts: response.data.amounts || { office: 0, app: 0 } }
+  return { data: response.data.data, amounts: response.data.amounts || { cash: 0, qr: 0, app: 0 } }
 }
 
 const fetchTravelsForOwner = async (
   filters?: TravelFilters
-): Promise<{ data: Travel[]; amounts: { office: number; app: number } }> => {
+): Promise<{ data: Travel[]; amounts: { cash: number; qr: number; app: number } }> => {
   const params: Record<string, any> = {}
 
   if (filters?.status) {
@@ -230,7 +230,7 @@ const fetchTravelsForOwner = async (
     params.isPaid = filters.isPaid
   }
 
-  const response = await api.get<{ data: Travel[]; meta: any; amounts: { office: number; app: number } }>(
+  const response = await api.get<{ data: Travel[]; meta: any; amounts: { cash: number; qr: number; app: number } }>(
     '/api/travels/for-cashier/owner/all',
     { params }
   )

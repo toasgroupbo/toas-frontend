@@ -90,7 +90,6 @@ const ViajesOwnerListTable = () => {
 
   const { data: ownerRoutes } = useOwnerRoutes()
 
-  // Extraer orígenes únicos - filtrados por destino seleccionado si hay uno
   const uniqueOrigins = useMemo(() => {
     if (!ownerRoutes || ownerRoutes.length === 0) return []
     const originsMap = new Map<number, { id: number; name: string }>()
@@ -99,7 +98,6 @@ const ViajesOwnerListTable = () => {
       const originPlace = route.officeOrigin.place
       const destPlace = route.officeDestination.place
 
-      // Si hay un destino seleccionado, solo mostrar orígenes que tengan ruta hacia ese destino
       if (destinationPlaceId && destPlace.id !== Number(destinationPlaceId)) {
         return
       }
@@ -112,7 +110,6 @@ const ViajesOwnerListTable = () => {
     return Array.from(originsMap.values())
   }, [ownerRoutes, destinationPlaceId])
 
-  // Extraer destinos únicos - filtrados por origen seleccionado si hay uno
   const uniqueDestinations = useMemo(() => {
     if (!ownerRoutes || ownerRoutes.length === 0) return []
     const destinationsMap = new Map<number, { id: number; name: string }>()
@@ -121,7 +118,6 @@ const ViajesOwnerListTable = () => {
       const originPlace = route.officeOrigin.place
       const destPlace = route.officeDestination.place
 
-      // Si hay un origen seleccionado, solo mostrar destinos que tengan ruta desde ese origen
       if (originPlaceId && originPlace.id !== Number(originPlaceId)) {
         return
       }
@@ -148,7 +144,6 @@ const ViajesOwnerListTable = () => {
   const { data: travelsResponse, isLoading, error } = useTravelsForOwner(apiFilters)
 
   const travels = travelsResponse?.data || []
-  const amounts = travelsResponse?.amounts || { office: 0, app: 0 }
 
   const filteredTravels = useMemo(() => {
     if (!travels) return []
@@ -156,9 +151,11 @@ const ViajesOwnerListTable = () => {
     return travels
   }, [travels])
 
-  const totalOfficeAmount = amounts.office || 0
-  const totalAppAmount = amounts.app || 0
-  const totalAmount = totalOfficeAmount + totalAppAmount
+  const amounts = travelsResponse?.amounts || { cash: 0, qr: 0, app: 0 }
+  const totalCash = amounts.cash
+  const totalQr = amounts.qr
+  const totalApp = amounts.app
+  const totalGeneral = totalCash + totalQr + totalApp
 
   const formatDateTime = (dateString: string) => {
     const date = new Date(dateString)
@@ -257,41 +254,81 @@ const ViajesOwnerListTable = () => {
           )
         }
       }),
+      columnHelper.accessor('app_amount', {
+        header: 'Monto App',
+        cell: ({ row }) => {
+          const appAmount = parseFloat((row.original as any).app_amount || '0')
+          const appSoldSeats = (row.original as any).seatsApp || 0
+
+          return (
+            <div className='flex flex-col'>
+              <Typography variant='body2' fontWeight='bold'>
+                {appSoldSeats} asientos
+              </Typography>
+              <Typography variant='body2' fontWeight='medium' color='success.main'>
+                {formatCurrency(appAmount)}
+              </Typography>
+            </div>
+          )
+        }
+      }),
       columnHelper.accessor('qr_amount', {
         header: 'Monto QR',
         cell: ({ row }) => {
           const qrAmount = parseFloat(row.original.qr_amount || '0')
+          const qrSoldSeats = (row.original as any).seatsQr || 0
 
           return (
-            <Typography variant='body2' fontWeight='medium' color='info.main'>
-              {formatCurrency(qrAmount)}
-            </Typography>
+            <div className='flex flex-col'>
+              <Typography variant='body2' fontWeight='bold'>
+                {qrSoldSeats} asientos
+              </Typography>
+              <Typography variant='body2' fontWeight='medium' color='info.main'>
+                {formatCurrency(qrAmount)}
+              </Typography>
+            </div>
           )
         }
       }),
+
       columnHelper.accessor('cash_amount', {
         header: 'Monto Efectivo',
         cell: ({ row }) => {
           const cashAmount = parseFloat(row.original.cash_amount || '0')
+          const cashSoldSeats = (row.original as any).seatsCash || 0
 
           return (
-            <Typography variant='body2' fontWeight='medium' color='warning.main'>
-              {formatCurrency(cashAmount)}
-            </Typography>
+            <div className='flex flex-col'>
+              <Typography variant='body2' fontWeight='bold'>
+                {cashSoldSeats} asientos
+              </Typography>
+              <Typography variant='body2' fontWeight='medium' color='warning.main'>
+                {formatCurrency(cashAmount)}
+              </Typography>
+            </div>
           )
         }
       }),
       columnHelper.accessor('totalSoldSeats', {
         header: 'Monto Total',
         cell: ({ row }) => {
+          const totalSoldSeats = (row.original as any).totalSoldSeats || 0
+          const totalBusSeats = (row.original as any).totalBusSeats || 0
+
           const totalSoldAmount =
-            parseFloat(row.original.cash_amount || '0') +
-            parseFloat(row.original.qr_amount || '0')
+            parseFloat((row.original as any).app_amount || '0') +
+            parseFloat(row.original.qr_amount || '0') +
+            parseFloat(row.original.cash_amount || '0')
 
           return (
-            <Typography variant='body2' fontWeight='bold' color='primary.main'>
-              {formatCurrency(totalSoldAmount)}
-            </Typography>
+            <div className='flex flex-col'>
+              <Typography variant='body2' fontWeight='bold'>
+                {totalSoldSeats} de {totalBusSeats} asientos
+              </Typography>
+              <Typography variant='caption' color='primary.main' fontWeight='medium'>
+                {formatCurrency(totalSoldAmount)}
+              </Typography>
+            </div>
           )
         }
       }),

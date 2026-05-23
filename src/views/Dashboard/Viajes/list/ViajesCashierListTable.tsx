@@ -2,6 +2,8 @@
 
 import { useEffect, useMemo, useState } from 'react'
 
+import { useRouter } from 'next/navigation'
+
 import Card from '@mui/material/Card'
 import Button from '@mui/material/Button'
 import Chip from '@mui/material/Chip'
@@ -48,6 +50,7 @@ import CancelTravelDialog from '@/views/Dashboard/Viajes/components/CancelTravel
 import TravelDetailDialog from '@/views/Dashboard/Viajes/components/TravelDetailDialog'
 import { useSnackbar } from '@/contexts/SnackbarContext'
 import { useCashierRoutes } from '@/hooks/useCashierTravels'
+import { useAuth } from '@/contexts/AuthContext'
 
 type TravelWithActionsType = Travel & {
   actions?: string
@@ -103,7 +106,12 @@ const ViajesCashierListTable = () => {
   const [detailDialogOpen, setDetailDialogOpen] = useState(false)
   const [detailTravel, setDetailTravel] = useState<Travel | null>(null)
 
+  const router = useRouter()
   const { showSuccess, showError } = useSnackbar()
+  const { userRole } = useAuth()
+
+  // Show tickets button only for CASHIER and CASHIER_SELLER
+  const canViewTickets = userRole === 'CASHIER' || userRole === 'CASHIER_SELLER'
 
   const { data: cashierRoutes } = useCashierRoutes()
 
@@ -157,25 +165,11 @@ const ViajesCashierListTable = () => {
     return travels
   }, [travels])
 
-  // Calculate totals from travels data
-  const { totalApp, totalQr, totalCash, totalGeneral } = useMemo(() => {
-    let app = 0
-    let qr = 0
-    let cash = 0
-
-    travels.forEach(travel => {
-      app += parseFloat(travel.app_amount || '0')
-      qr += parseFloat(travel.qr_amount || '0')
-      cash += parseFloat(travel.cash_amount || '0')
-    })
-
-    return {
-      totalApp: app,
-      totalQr: qr,
-      totalCash: cash,
-      totalGeneral: app + qr + cash
-    }
-  }, [travels])
+  const amounts = travelsResponse?.amounts || { cash: 0, qr: 0, app: 0 }
+  const totalCash = amounts.cash
+  const totalQr = amounts.qr
+  const totalApp = amounts.app
+  const totalGeneral = totalCash + totalQr + totalApp
 
   const handleOpenCreateDialog = () => {
     setCreateDialogOpen(true)
@@ -233,6 +227,10 @@ const ViajesCashierListTable = () => {
   const handleCloseDetailDialog = () => {
     setDetailDialogOpen(false)
     setDetailTravel(null)
+  }
+
+  const handleViewTickets = (travelId: number) => {
+    router.push(`/tickets/list?travelId=${travelId}`)
   }
 
   const handleConfirmCancel = async (password: string) => {
@@ -315,6 +313,20 @@ const ViajesCashierListTable = () => {
                   <i className='tabler-file-description' style={{ fontSize: '18px' }} />
                 </IconButton>
               </Tooltip>
+              {canViewTickets && (
+                <Tooltip title='Ver Tickets'>
+                  <IconButton
+                    size='small'
+                    onClick={() => handleViewTickets(row.original.id)}
+                    sx={{
+                      color: 'success.main',
+                      '&:hover': { backgroundColor: 'success.light', color: 'white' }
+                    }}
+                  >
+                    <i className='tabler-ticket' style={{ fontSize: '18px' }} />
+                  </IconButton>
+                </Tooltip>
+              )}
               {isActive && (
                 <Tooltip title='Cancelar Viaje'>
                   <IconButton
@@ -391,39 +403,43 @@ const ViajesCashierListTable = () => {
           )
         }
       }),
-      columnHelper.accessor('app_amount', {
-        header: 'Monto App',
-        cell: ({ row }) => {
-          const appAmount = parseFloat(row.original.app_amount || '0')
 
-          return (
-            <Typography variant='body2' fontWeight='medium' color='success.main'>
-              {formatCurrency(appAmount)}
-            </Typography>
-          )
-        }
-      }),
       columnHelper.accessor('qr_amount', {
         header: 'Monto QR',
         cell: ({ row }) => {
           const qrAmount = parseFloat(row.original.qr_amount || '0')
+          const qrSoldSeats = (row.original as any).seatsQr || 0
+          const qrTotalSeats = (row.original as any).qr_total_seats || 0
 
           return (
-            <Typography variant='body2' fontWeight='medium' color='info.main'>
-              {formatCurrency(qrAmount)}
-            </Typography>
+            <div className='flex flex-col'>
+              <Typography variant='body2' fontWeight='bold'>
+                {qrSoldSeats} asientos
+              </Typography>
+              <Typography variant='body2' fontWeight='medium' color='info.main'>
+                {formatCurrency(qrAmount)}
+              </Typography>
+            </div>
           )
         }
       }),
+
       columnHelper.accessor('cash_amount', {
         header: 'Monto Efectivo',
         cell: ({ row }) => {
           const cashAmount = parseFloat(row.original.cash_amount || '0')
+          const cashSoldSeats = (row.original as any).seatsCash || 0
+          const cashTotalSeats = (row.original as any).cash_total_seats || 0
 
           return (
-            <Typography variant='body2' fontWeight='medium' color='warning.main'>
-              {formatCurrency(cashAmount)}
-            </Typography>
+            <div className='flex flex-col'>
+              <Typography variant='body2' fontWeight='bold'>
+                {cashSoldSeats} asientos
+              </Typography>
+              <Typography variant='body2' fontWeight='medium' color='warning.main'>
+                {formatCurrency(cashAmount)}
+              </Typography>
+            </div>
           )
         }
       }),
@@ -526,7 +542,7 @@ const ViajesCashierListTable = () => {
         }
       })
     ],
-    []
+    [canViewTickets]
   )
 
   const table = useReactTable({
@@ -686,25 +702,30 @@ const ViajesCashierListTable = () => {
           >
             <Box display='flex' flexDirection='column' gap={0.5}>
               <Box display='flex' justifyContent='space-between' gap={3}>
-                <Typography variant='body2' fontWeight={600}>TOTAL APP</Typography>
-                <Typography variant='body2' fontWeight={600} color='success.main'>
-                  {formatCurrency(totalApp)}
+                <Typography variant='body2' fontWeight={600}>
+                  TOTAL QR
                 </Typography>
-              </Box>
-              <Box display='flex' justifyContent='space-between' gap={3}>
-                <Typography variant='body2' fontWeight={600}>TOTAL QR</Typography>
                 <Typography variant='body2' fontWeight={600} color='info.main'>
                   {formatCurrency(totalQr)}
                 </Typography>
               </Box>
               <Box display='flex' justifyContent='space-between' gap={3}>
-                <Typography variant='body2' fontWeight={600}>TOTAL EFECTIVO</Typography>
+                <Typography variant='body2' fontWeight={600}>
+                  TOTAL EFECTIVO
+                </Typography>
                 <Typography variant='body2' fontWeight={600} color='warning.main'>
                   {formatCurrency(totalCash)}
                 </Typography>
               </Box>
-              <Box display='flex' justifyContent='space-between' gap={3} sx={{ borderTop: '1px solid', borderColor: 'divider', pt: 0.5, mt: 0.5 }}>
-                <Typography variant='body2' fontWeight={700}>TOTAL GENERAL</Typography>
+              <Box
+                display='flex'
+                justifyContent='space-between'
+                gap={3}
+                sx={{ borderTop: '1px solid', borderColor: 'divider', pt: 0.5, mt: 0.5 }}
+              >
+                <Typography variant='body2' fontWeight={700}>
+                  TOTAL GENERAL
+                </Typography>
                 <Typography variant='body2' fontWeight={700} color='primary.main'>
                   {formatCurrency(totalGeneral)}
                 </Typography>

@@ -2,6 +2,8 @@
 
 import React, { useState, useMemo, useEffect } from 'react'
 
+import { useSearchParams } from 'next/navigation'
+
 import Card from '@mui/material/Card'
 import Box from '@mui/material/Box'
 import Typography from '@mui/material/Typography'
@@ -501,9 +503,24 @@ const TravelsForSale = () => {
     travel: Travel | null
   }>({ ticket: null, travel: null })
 
+  const searchParams = useSearchParams()
   const { userRole } = useAuth()
   const isSeller = userRole === 'CASHIER_SELLER'
   const { data: cashierRoutes } = useCashierRoutes()
+
+  // Check if travelId is passed in URL to show tickets directly
+  useEffect(() => {
+    const travelIdParam = searchParams.get('travelId')
+
+    if (travelIdParam) {
+      const travelId = parseInt(travelIdParam, 10)
+
+      if (!isNaN(travelId)) {
+        setSelectedTravelForTickets(travelId)
+        setShowTicketsList(true)
+      }
+    }
+  }, [searchParams])
 
   const cashierPlaceName = useMemo(() => {
     if (!cashierRoutes || cashierRoutes.length === 0) return null
