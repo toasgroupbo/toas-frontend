@@ -96,7 +96,7 @@ const columnHelper = createColumnHelper<TravelWithActionsType>()
 const ViajesCashierListTable = () => {
   const [rowSelection, setRowSelection] = useState({})
   const [searchQuery, setSearchQuery] = useState('')
-  const [statusFilter, setStatusFilter] = useState<string>('all')
+  const [statusFilter, setStatusFilter] = useState<string>('active')
   const [startDate, setStartDate] = useState<string>(getTodayDate())
   const [endDate, setEndDate] = useState<string>('')
   const [destinationPlaceId, setDestinationPlaceId] = useState<string>('')

@@ -79,7 +79,7 @@ const columnHelper = createColumnHelper<TravelWithActionsType>()
 
 const ViajesOwnerListTable = () => {
   const [searchQuery, setSearchQuery] = useState('')
-  const [statusFilter, setStatusFilter] = useState<string>('all')
+  const [statusFilter, setStatusFilter] = useState<string>('active')
   const [isPaidFilter, setIsPaidFilter] = useState<string>('all')
   const [startDate, setStartDate] = useState<string>(getTodayDate())
   const [endDate, setEndDate] = useState<string>('')
