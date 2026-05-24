@@ -141,11 +141,6 @@ const verticalMenuData = (): VerticalMenuDataType[] => [
     icon: 'tabler-calculator',
     href: '/arqueo/list'
   }, */
-  {
-    label: 'Salidas',
-    icon: 'tabler-clock-up',
-    href: '/salidas/list'
-  },
 
   //  CONFIGURACIÓN
 

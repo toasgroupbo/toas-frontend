@@ -42,7 +42,7 @@ export const filterMenuByRole = (
         ]
 
         if (isImpersonating) {
-          const excludeWhenImpersonating = ['Venta de Tickets', 'Arqueo de Caja']
+          const excludeWhenImpersonating = ['Venta de Tickets', 'Arqueo de Caja', 'OPERACIONES']
 
           if (excludeWhenImpersonating.includes(item.label)) {
             return false
@@ -103,9 +103,7 @@ export const filterMenuByRole = (
           'Dueños',
           'Cajeros',
           'Oficinas',
-          'Viajes',
-          'OPERACIONES',
-          'Salidas'
+          'Viajes'
         ]
 
         return empresaMenus.includes(item.label)
