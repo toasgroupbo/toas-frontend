@@ -192,15 +192,7 @@ const UpcomingDeparturesTable = ({ data, isLoading }: UpcomingDeparturesTablePro
       width: 130,
       align: 'center',
       headerAlign: 'center',
-      valueGetter: (_, row) => {
-        const totalSeats = row.totalBusSeats ?? row.total_seats ?? row.bus?.capacity ?? null
-
-        if (totalSeats === null) return 'N/D'
-
-        const freeSeats = totalSeats - row.tickets_count
-
-        return freeSeats >= 0 ? freeSeats : 0
-      },
+      valueGetter: (_, row) => row.seatsAvailable ?? 0,
       renderCell: (params: GridRenderCellParams) => (
         <Tooltip title='Asientos disponibles'>
           <Typography variant='body2' color='primary.main' className='font-medium'>
@@ -215,7 +207,7 @@ const UpcomingDeparturesTable = ({ data, isLoading }: UpcomingDeparturesTablePro
       width: 120,
       align: 'center',
       headerAlign: 'center',
-      valueGetter: (_, row) => row.tickets_app_count ?? 0,
+      valueGetter: (_, row) => row.seatsApp ?? 0,
       renderCell: (params: GridRenderCellParams) => (
         <Tooltip title='Boletos vendidos por App'>
           <Typography variant='body2' color='info.main' className='font-medium'>
@@ -230,7 +222,7 @@ const UpcomingDeparturesTable = ({ data, isLoading }: UpcomingDeparturesTablePro
       width: 140,
       align: 'center',
       headerAlign: 'center',
-      valueGetter: (_, row) => row.tickets_office_count ?? 0,
+      valueGetter: (_, row) => row.seatsOffice ?? 0,
       renderCell: (params: GridRenderCellParams) => (
         <Tooltip title='Boletos vendidos en oficina'>
           <Typography variant='body2' color='warning.main' className='font-medium'>
@@ -245,7 +237,7 @@ const UpcomingDeparturesTable = ({ data, isLoading }: UpcomingDeparturesTablePro
       width: 130,
       align: 'center',
       headerAlign: 'center',
-      valueGetter: (_, row) => row.tickets_count ?? 0,
+      valueGetter: (_, row) => row.totalSoldSeats ?? 0,
       renderCell: (params: GridRenderCellParams) => (
         <Tooltip title='Total de boletos vendidos'>
           <Typography variant='body2' className='font-bold'>

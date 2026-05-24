@@ -581,16 +581,14 @@ const TravelsForSale = () => {
     })
   }, [travels])
 
-  // Agrupar viajes por fecha de salida
   const travelsByDate = useMemo(() => {
     if (!activeTravels || activeTravels.length === 0) return {}
 
     const grouped: Record<string, typeof activeTravels> = {}
 
     activeTravels.forEach(travel => {
-      const dateWithoutZ = travel.departure_time.replace('Z', '')
-      const date = new Date(dateWithoutZ)
-      const dateKey = date.toISOString().split('T')[0]
+      const date = new Date(travel.departure_time)
+      const dateKey = date.toLocaleDateString('en-CA', { timeZone: 'America/La_Paz' }) // formato YYYY-MM-DD
 
       if (!grouped[dateKey]) {
         grouped[dateKey] = []
@@ -599,10 +597,11 @@ const TravelsForSale = () => {
       grouped[dateKey].push(travel)
     })
 
+    // Ordenar viajes dentro de cada grupo por hora de salida
     Object.keys(grouped).forEach(key => {
       grouped[key].sort((a, b) => {
-        const dateA = new Date(a.departure_time.replace('Z', ''))
-        const dateB = new Date(b.departure_time.replace('Z', ''))
+        const dateA = new Date(a.departure_time)
+        const dateB = new Date(b.departure_time)
 
         return dateA.getTime() - dateB.getTime()
       })
