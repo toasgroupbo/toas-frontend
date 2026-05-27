@@ -264,7 +264,7 @@ const UpcomingDeparturesTable = ({ data, isLoading }: UpcomingDeparturesTablePro
   return (
     <Card>
       <CardHeader
-        title='PRÓXIMAS SALIDAS'
+        title='PRÓXIMAS SALIDAS DE HOY EN ADELANTE'
         action={
           <Box className='flex items-center gap-4'>
             <ToggleButtonGroup
@@ -277,7 +277,6 @@ const UpcomingDeparturesTable = ({ data, isLoading }: UpcomingDeparturesTablePro
               <ToggleButton value='all'>TODAS</ToggleButton>
               <ToggleButton value='active'>ACTIVOS</ToggleButton>
               <ToggleButton value='closed'>CERRADOS</ToggleButton>
-              <ToggleButton value='cancelled'>CANCELADOS</ToggleButton>
             </ToggleButtonGroup>
           </Box>
         }

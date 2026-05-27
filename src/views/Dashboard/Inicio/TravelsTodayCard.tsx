@@ -30,7 +30,7 @@ interface TravelsTodayCardProps {
 const TravelsTodayCard = ({ data, isLoading }: TravelsTodayCardProps) => {
   const theme = useTheme()
 
-  const chartSeries = [data?.actives ?? 0, data?.closed ?? 0, data?.canceled ?? 0]
+  const chartSeries = [data?.actives ?? 0, data?.closed ?? 0]
   const hasData = chartSeries.some(v => v > 0)
 
   const chartOptions: ApexOptions = {
@@ -39,13 +39,12 @@ const TravelsTodayCard = ({ data, isLoading }: TravelsTodayCardProps) => {
     },
     colors: [
       'var(--mui-palette-success-main)',
-      'var(--mui-palette-secondary-main)',
-      'var(--mui-palette-error-main)'
+      'var(--mui-palette-secondary-main)'
     ],
     stroke: { width: 0 },
     legend: { show: false },
     dataLabels: { enabled: false },
-    labels: ['Activos', 'Cerrados', 'Cancelados'],
+    labels: ['Activos', 'Cerrados'],
     states: {
       hover: { filter: { type: 'none' } },
       active: { filter: { type: 'none' } }
@@ -92,8 +91,7 @@ const TravelsTodayCard = ({ data, isLoading }: TravelsTodayCardProps) => {
 
   const items = [
     { label: 'Activos', value: data?.actives ?? 0, color: 'success' as const },
-    { label: 'Cerrados', value: data?.closed ?? 0, color: 'secondary' as const },
-    { label: 'Cancelados', value: data?.canceled ?? 0, color: 'error' as const }
+    { label: 'Cerrados', value: data?.closed ?? 0, color: 'secondary' as const }
   ]
 
   return (

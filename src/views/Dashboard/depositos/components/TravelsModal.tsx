@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useMemo, useCallback } from 'react'
+import { useState, useMemo, useCallback, useEffect } from 'react'
 
 import {
   Dialog,
@@ -129,6 +129,11 @@ const TravelsModal = ({ open, onClose, company }: TravelsModalProps) => {
 
   const { data: places } = usePlaces()
 
+  // Resetear página cuando cambian los filtros
+  useEffect(() => {
+    setCurrentPage(1)
+  }, [isPaidFilter, startDate, endDate, originPlaceId, destinationPlaceId, pageSize])
+
   const filters = useMemo(() => {
     return {
       companyId: Number(company.id),
@@ -137,18 +142,19 @@ const TravelsModal = ({ open, onClose, company }: TravelsModalProps) => {
       startDate: startDate || undefined,
       endDate: endDate || undefined,
       origin_placeId: originPlaceId ? Number(originPlaceId) : undefined,
-      destination_placeId: destinationPlaceId ? Number(destinationPlaceId) : undefined
+      destination_placeId: destinationPlaceId ? Number(destinationPlaceId) : undefined,
+      page: currentPage,
+      limit: pageSize
     }
-  }, [company.id, isPaidFilter, startDate, endDate, originPlaceId, destinationPlaceId])
+  }, [company.id, isPaidFilter, startDate, endDate, originPlaceId, destinationPlaceId, currentPage, pageSize])
 
-  const { data: travels, isLoading, error } = useTransactionTravels(filters)
+  const { data: travels, isLoading, error, meta } = useTransactionTravels(filters)
 
-  const paginatedData = useMemo(() => {
-    return travels.slice((currentPage - 1) * pageSize, currentPage * pageSize)
-  }, [travels, currentPage, pageSize])
+  // Usar datos directamente del servidor (ya vienen paginados)
+  const paginatedData = travels
 
-  const totalRecords = travels.length
-  const totalPages = Math.ceil(totalRecords / pageSize)
+  const totalRecords = meta?.total ?? 0
+  const totalPages = meta?.lastPage ?? 1
 
   const handleOpenTransactionDialog = (travel: Travel) => {
     setSelectedTravel(travel)

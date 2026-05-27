@@ -514,79 +514,79 @@ const ViajesListTable = () => {
           </div>
         </div>
 
-        <div className='flex flex-wrap gap-4 px-6 pb-4 items-center'>
-          <CustomTextField
-            select
-            label='Origen'
-            value={originPlaceId}
-            onChange={e => setOriginPlaceId(e.target.value)}
-            size='small'
-            sx={{ minWidth: 150 }}
-          >
-            <MenuItem value=''>Todos</MenuItem>
-            {uniqueOrigins.map(place => (
-              <MenuItem key={place.id} value={place.id.toString()}>
-                {place.name}
-              </MenuItem>
-            ))}
-          </CustomTextField>
+        <div className='flex flex-wrap justify-between gap-4 px-6 pb-4 items-center'>
+          <div className='flex flex-wrap gap-4 items-center'>
+            <CustomTextField
+              select
+              label='Origen'
+              value={originPlaceId}
+              onChange={e => setOriginPlaceId(e.target.value)}
+              size='small'
+              sx={{ minWidth: 150 }}
+            >
+              <MenuItem value=''>Todos</MenuItem>
+              {uniqueOrigins.map(place => (
+                <MenuItem key={place.id} value={place.id.toString()}>
+                  {place.name}
+                </MenuItem>
+              ))}
+            </CustomTextField>
 
-          <i className='tabler-arrow-right' style={{ fontSize: '20px', color: 'var(--mui-palette-text-secondary)' }} />
+            <i className='tabler-arrow-right' style={{ fontSize: '20px', color: 'var(--mui-palette-text-secondary)' }} />
 
-          <CustomTextField
-            select
-            label='Destino'
-            value={destinationPlaceId}
-            onChange={e => setDestinationPlaceId(e.target.value)}
-            size='small'
-            sx={{ minWidth: 150 }}
-          >
-            <MenuItem value=''>Todos</MenuItem>
-            {uniqueDestinations.map(place => (
-              <MenuItem key={place.id} value={place.id.toString()}>
-                {place.name}
-              </MenuItem>
-            ))}
-          </CustomTextField>
+            <CustomTextField
+              select
+              label='Destino'
+              value={destinationPlaceId}
+              onChange={e => setDestinationPlaceId(e.target.value)}
+              size='small'
+              sx={{ minWidth: 150 }}
+            >
+              <MenuItem value=''>Todos</MenuItem>
+              {uniqueDestinations.map(place => (
+                <MenuItem key={place.id} value={place.id.toString()}>
+                  {place.name}
+                </MenuItem>
+              ))}
+            </CustomTextField>
 
-          <CustomTextField
-            type='date'
-            label='Fecha Inicio'
-            value={startDate}
-            onChange={e => setStartDate(e.target.value)}
-            InputLabelProps={{ shrink: true }}
-            size='small'
-            sx={{ width: '150px' }}
-          />
-          <Typography variant='body2' color='text.secondary'>
-            a
-          </Typography>
-          <CustomTextField
-            type='date'
-            label='Fecha Fin'
-            value={endDate}
-            onChange={e => setEndDate(e.target.value)}
-            InputLabelProps={{ shrink: true }}
-            size='small'
-            sx={{ width: '150px' }}
-          />
+            <CustomTextField
+              type='date'
+              label='Fecha Inicio'
+              value={startDate}
+              onChange={e => setStartDate(e.target.value)}
+              InputLabelProps={{ shrink: true }}
+              size='small'
+              sx={{ width: '150px' }}
+            />
+            <Typography variant='body2' color='text.secondary'>
+              a
+            </Typography>
+            <CustomTextField
+              type='date'
+              label='Fecha Fin'
+              value={endDate}
+              onChange={e => setEndDate(e.target.value)}
+              InputLabelProps={{ shrink: true }}
+              size='small'
+              sx={{ width: '150px' }}
+            />
 
-          <CustomTextField
-            select
-            label='Estado'
-            value={statusFilter}
-            onChange={e => setStatusFilter(e.target.value)}
-            size='small'
-            sx={{ minWidth: 120 }}
-          >
-            <MenuItem value='all'>Todos</MenuItem>
-            <MenuItem value='active'>Activo</MenuItem>
-            <MenuItem value='closed'>Cerrado</MenuItem>
-            <MenuItem value='cancelled'>Cancelado</MenuItem>
-          </CustomTextField>
-        </div>
+            <CustomTextField
+              select
+              label='Estado'
+              value={statusFilter}
+              onChange={e => setStatusFilter(e.target.value)}
+              size='small'
+              sx={{ minWidth: 120 }}
+            >
+              <MenuItem value='all'>Todos</MenuItem>
+              <MenuItem value='active'>Activo</MenuItem>
+              <MenuItem value='closed'>Cerrado</MenuItem>
+              <MenuItem value='cancelled'>Cancelado</MenuItem>
+            </CustomTextField>
+          </div>
 
-        <div className='flex flex-wrap justify-end items-center gap-4 px-6 pb-4'>
           <Box
             sx={{
               border: '1px solid',

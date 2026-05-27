@@ -230,9 +230,12 @@ const ViajesCashierListTable = () => {
     setDetailTravel(null)
   }
 
-  const handleViewTickets = useCallback((travelId: number) => {
-    router.push(`/tickets/list?travelId=${travelId}`)
-  }, [router])
+  const handleViewTickets = useCallback(
+    (travelId: number) => {
+      router.push(`/tickets/list?travelId=${travelId}`)
+    },
+    [router]
+  )
 
   const handleConfirmCancel = async (password: string) => {
     if (!selectedTravel) return
@@ -595,7 +598,7 @@ const ViajesCashierListTable = () => {
       <Card>
         <div className='flex flex-wrap justify-between gap-4 p-6'>
           <div className='flex flex-col gap-2'>
-            <Typography variant='h4'>Mis Viajes</Typography>
+            <Typography variant='h4'>Mis Viajes - Mis Ventas</Typography>
           </div>
 
           {!isCashierSeller && (
@@ -612,88 +615,88 @@ const ViajesCashierListTable = () => {
           )}
         </div>
 
-        <div className='flex flex-wrap gap-4 px-6 pb-4 items-center'>
-          <Box
-            sx={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: 1,
-              px: 2,
-              py: 1,
-              bgcolor: 'primary.lighter',
-              borderRadius: 1,
-              border: '1px solid',
-              borderColor: 'primary.main'
-            }}
-          >
-            <i className='tabler-map-pin' style={{ fontSize: '18px', color: 'var(--mui-palette-primary-main)' }} />
-            <Box>
-              <Typography variant='caption' color='text.secondary'>
-                Origen
-              </Typography>
-              <Typography variant='body2' fontWeight='medium' color='primary.main'>
-                {cashierPlaceName || 'Cargando...'}
-              </Typography>
+        <div className='flex flex-wrap justify-between gap-4 px-6 pb-4 items-center'>
+          <div className='flex flex-wrap gap-4 items-center'>
+            <Box
+              sx={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 1,
+                px: 2,
+                py: 1,
+                bgcolor: 'primary.lighter',
+                borderRadius: 1,
+                border: '1px solid',
+                borderColor: 'primary.main'
+              }}
+            >
+              <i className='tabler-map-pin' style={{ fontSize: '18px', color: 'var(--mui-palette-primary-main)' }} />
+              <Box>
+                <Typography variant='caption' color='text.secondary'>
+                  Origen
+                </Typography>
+                <Typography variant='body2' fontWeight='medium' color='primary.main'>
+                  {cashierPlaceName || 'Cargando...'}
+                </Typography>
+              </Box>
             </Box>
-          </Box>
 
-          <i className='tabler-arrow-right' style={{ fontSize: '20px', color: 'var(--mui-palette-text-secondary)' }} />
+            <i className='tabler-arrow-right' style={{ fontSize: '20px', color: 'var(--mui-palette-text-secondary)' }} />
 
-          <CustomTextField
-            select
-            label='Destino'
-            value={destinationPlaceId}
-            onChange={e => setDestinationPlaceId(e.target.value)}
-            size='small'
-            sx={{ minWidth: 150 }}
-          >
-            <MenuItem value=''>Todos</MenuItem>
-            {uniqueDestinations.map(place => (
-              <MenuItem key={place.id} value={place.id.toString()}>
-                {place.name}
-              </MenuItem>
-            ))}
-          </CustomTextField>
-
-          <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
             <CustomTextField
-              type='date'
-              label='Fecha Inicio'
-              value={startDate}
-              onChange={e => setStartDate(e.target.value)}
-              InputLabelProps={{ shrink: true }}
+              select
+              label='Destino'
+              value={destinationPlaceId}
+              onChange={e => setDestinationPlaceId(e.target.value)}
               size='small'
-              sx={{ width: '150px' }}
-            />
-            <Typography variant='body2' color='text.secondary'>
-              a
-            </Typography>
+              sx={{ minWidth: 150 }}
+            >
+              <MenuItem value=''>Todos</MenuItem>
+              {uniqueDestinations.map(place => (
+                <MenuItem key={place.id} value={place.id.toString()}>
+                  {place.name}
+                </MenuItem>
+              ))}
+            </CustomTextField>
+
+            <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
+              <CustomTextField
+                type='date'
+                label='Fecha Inicio'
+                value={startDate}
+                onChange={e => setStartDate(e.target.value)}
+                InputLabelProps={{ shrink: true }}
+                size='small'
+                sx={{ width: '150px' }}
+              />
+              <Typography variant='body2' color='text.secondary'>
+                a
+              </Typography>
+              <CustomTextField
+                type='date'
+                label='Fecha Fin'
+                value={endDate}
+                onChange={e => setEndDate(e.target.value)}
+                InputLabelProps={{ shrink: true }}
+                size='small'
+                sx={{ width: '150px' }}
+              />
+            </Box>
+
             <CustomTextField
-              type='date'
-              label='Fecha Fin'
-              value={endDate}
-              onChange={e => setEndDate(e.target.value)}
-              InputLabelProps={{ shrink: true }}
+              select
+              label='Estado'
+              value={statusFilter}
+              onChange={e => setStatusFilter(e.target.value)}
               size='small'
-              sx={{ width: '150px' }}
-            />
-          </Box>
+              sx={{ minWidth: 120 }}
+            >
+              <MenuItem value='all'>Todos</MenuItem>
+              <MenuItem value='active'>Activo</MenuItem>
+              <MenuItem value='closed'>Cerrado</MenuItem>
+            </CustomTextField>
+          </div>
 
-          <CustomTextField
-            select
-            label='Estado'
-            value={statusFilter}
-            onChange={e => setStatusFilter(e.target.value)}
-            size='small'
-            sx={{ minWidth: 120 }}
-          >
-            <MenuItem value='all'>Todos</MenuItem>
-            <MenuItem value='active'>Activo</MenuItem>
-            <MenuItem value='closed'>Cerrado</MenuItem>
-          </CustomTextField>
-        </div>
-
-        <div className='flex flex-wrap justify-end items-center gap-4 px-6 pb-4'>
           <Box
             sx={{
               border: '1px solid',
@@ -737,18 +740,6 @@ const ViajesCashierListTable = () => {
           </Box>
         </div>
         <div className='flex flex-wrap justify-between gap-4 px-6 pb-6'>
-          <div className='flex flex-wrap gap-4 items-center'>
-            <DebouncedInput
-              value={searchQuery}
-              onChange={value => {
-                setSearchQuery(String(value))
-                table.setPageIndex(0)
-              }}
-              placeholder='Buscar viajes...'
-              className='max-sm:is-full min-w-[300px] flex-1 max-w-md'
-            />
-          </div>
-
           <div className='flex max-sm:flex-col items-start sm:items-center gap-4 max-sm:is-full'>
             <CustomTextField
               select

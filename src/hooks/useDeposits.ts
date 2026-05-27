@@ -144,6 +144,14 @@ const fetchTransactionTravels = async (filters: TravelsFilters): Promise<Travels
     params.destination_placeId = filters.destination_placeId
   }
 
+  if (filters.page) {
+    params.page = filters.page
+  }
+
+  if (filters.limit) {
+    params.limit = filters.limit
+  }
+
   const response = await api.get<TravelsPaginatedResponse>('/api/transactions/travels', { params })
 
   return response.data

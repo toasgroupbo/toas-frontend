@@ -161,6 +161,8 @@ export interface TravelsFilters {
   endDate?: string
   origin_placeId?: number
   destination_placeId?: number
+  page?: number
+  limit?: number
 }
 
 // Company with transaction debt info
