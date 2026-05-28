@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 
 import Card from '@mui/material/Card'
 import Typography from '@mui/material/Typography'
@@ -24,6 +24,9 @@ import DebouncedInput from '@/views/Dashboard/Tickets/sold/components/DebouncedI
 import { useAuth } from '@/contexts/AuthContext'
 
 const getTodayDate = () => new Date().toISOString().split('T')[0]
+
+// Helper to validate complete date format (YYYY-MM-DD = 10 chars)
+const isValidDateInput = (date: string) => date === '' || date.length === 10
 
 const formatCurrency = (value: string | number) => {
   const num = typeof value === 'string' ? parseFloat(value) : value
@@ -51,8 +54,34 @@ const VentasTable = () => {
   const [currentPage, setCurrentPage] = useState<number>(1)
   const [startDate, setStartDate] = useState<string>(getTodayDate())
   const [endDate, setEndDate] = useState<string>('')
+  const [startDateInput, setStartDateInput] = useState<string>(getTodayDate())
+  const [endDateInput, setEndDateInput] = useState<string>('')
   const [searchQuery, setSearchQuery] = useState<string>('')
   const [chartModalOpen, setChartModalOpen] = useState<boolean>(false)
+
+  // Debounce effect for start date
+  useEffect(() => {
+    if (!isValidDateInput(startDateInput)) return
+
+    const timeout = setTimeout(() => {
+      setStartDate(startDateInput)
+      setCurrentPage(1)
+    }, 800)
+
+    return () => clearTimeout(timeout)
+  }, [startDateInput])
+
+  // Debounce effect for end date
+  useEffect(() => {
+    if (!isValidDateInput(endDateInput)) return
+
+    const timeout = setTimeout(() => {
+      setEndDate(endDateInput)
+      setCurrentPage(1)
+    }, 800)
+
+    return () => clearTimeout(timeout)
+  }, [endDateInput])
 
   const generateMutation = useGenerateCommissions()
 
@@ -229,8 +258,8 @@ const VentasTable = () => {
             <CustomTextField
               type='date'
               label='Fecha inicio'
-              value={startDate}
-              onChange={e => setStartDate(e.target.value)}
+              value={startDateInput}
+              onChange={e => setStartDateInput(e.target.value)}
               InputLabelProps={{ shrink: true }}
               sx={{ width: '150px' }}
             />
@@ -238,8 +267,8 @@ const VentasTable = () => {
             <CustomTextField
               type='date'
               label='Fecha Final'
-              value={endDate}
-              onChange={e => setEndDate(e.target.value)}
+              value={endDateInput}
+              onChange={e => setEndDateInput(e.target.value)}
               InputLabelProps={{ shrink: true }}
               sx={{ width: '150px' }}
             />

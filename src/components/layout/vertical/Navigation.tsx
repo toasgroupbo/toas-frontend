@@ -8,6 +8,8 @@ import Link from 'next/link'
 
 // MUI Imports
 import { styled, useColorScheme, useTheme } from '@mui/material/styles'
+import Typography from '@mui/material/Typography'
+import Box from '@mui/material/Box'
 
 // Type Imports
 import type { Mode } from '@core/types'
@@ -20,6 +22,7 @@ import Logo from '@components/layout/shared/Logo'
 // Hook Imports
 import useVerticalNav from '@menu/hooks/useVerticalNav'
 import { useSettings } from '@core/hooks/useSettings'
+import { useAuth } from '@/contexts/AuthContext'
 
 // Style Imports
 import navigationCustomStyles from '@core/styles/vertical/navigationCustomStyles'
@@ -55,6 +58,7 @@ const Navigation = (props: Props) => {
   const { updateSettings, settings } = useSettings()
   const { mode: muiMode, systemMode: muiSystemMode } = useColorScheme()
   const theme = useTheme()
+  const { user, actingAsCompany } = useAuth()
 
   // Refs
   const shadowRef = useRef(null)
@@ -120,6 +124,47 @@ const Navigation = (props: Props) => {
           />
         )}
       </NavHeader>
+
+      {/* User Info Section */}
+      {user && !(isCollapsed && !isHovered) && (
+        <Box
+          sx={{
+            px: 3,
+            py: 1.5,
+            borderBottom: '1px solid',
+            borderColor: 'divider',
+            textAlign: actingAsCompany?.name || user.company?.name ? 'left' : 'center'
+          }}
+        >
+          <Typography
+            variant={actingAsCompany?.name || user.company?.name ? 'body2' : 'subtitle2'}
+            fontWeight='bold'
+            sx={{
+              color: 'text.primary',
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              whiteSpace: 'nowrap',
+              textTransform: actingAsCompany?.name || user.company?.name ? 'none' : 'uppercase'
+            }}
+          >
+            {user.fullName}
+          </Typography>
+          {(actingAsCompany?.name || user.company?.name) && (
+            <Typography
+              variant='caption'
+              sx={{
+                color: 'text.secondary',
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                whiteSpace: 'nowrap',
+                display: 'block'
+              }}
+            >
+              {actingAsCompany?.name || user.company?.name}
+            </Typography>
+          )}
+        </Box>
+      )}
       <StyledBoxForShadow ref={shadowRef} />
       <VerticalMenu scrollMenu={scrollMenu} />
     </VerticalNav>

@@ -73,6 +73,9 @@ const DebouncedInput = ({
 
 const columnHelper = createColumnHelper<CustomerWithActionsType>()
 
+// Helper to validate complete date format (YYYY-MM-DD = 10 chars)
+const isValidDateInput = (date: string) => date === '' || date.length === 10
+
 const ClientsTable = () => {
   const [rowSelection, setRowSelection] = useState({})
   const [selectedCustomerIds, setSelectedCustomerIds] = useState<Set<string>>(new Set())
@@ -83,7 +86,33 @@ const ClientsTable = () => {
   const [verificationFilter, setVerificationFilter] = useState<boolean | 'all'>('all')
   const [startDate, setStartDate] = useState<string>('')
   const [endDate, setEndDate] = useState<string>('')
+  const [startDateInput, setStartDateInput] = useState<string>('')
+  const [endDateInput, setEndDateInput] = useState<string>('')
   const [rechargeModalOpen, setRechargeModalOpen] = useState(false)
+
+  // Debounce effect for start date
+  useEffect(() => {
+    if (!isValidDateInput(startDateInput)) return
+
+    const timeout = setTimeout(() => {
+      setStartDate(startDateInput)
+      setCurrentPage(1)
+    }, 800)
+
+    return () => clearTimeout(timeout)
+  }, [startDateInput])
+
+  // Debounce effect for end date
+  useEffect(() => {
+    if (!isValidDateInput(endDateInput)) return
+
+    const timeout = setTimeout(() => {
+      setEndDate(endDateInput)
+      setCurrentPage(1)
+    }, 800)
+
+    return () => clearTimeout(timeout)
+  }, [endDateInput])
   const [qrModalOpen, setQrModalOpen] = useState(false)
   const [selectedCustomersForRecharge, setSelectedCustomersForRecharge] = useState<any[]>([])
   const [alertMessage, setAlertMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
@@ -406,11 +435,8 @@ const ClientsTable = () => {
             <CustomTextField
               type='date'
               label='Fecha Inicio'
-              value={startDate}
-              onChange={e => {
-                setStartDate(e.target.value)
-                setCurrentPage(1)
-              }}
+              value={startDateInput}
+              onChange={e => setStartDateInput(e.target.value)}
               InputLabelProps={{ shrink: true }}
               className='min-w-[150px]'
             />
@@ -418,11 +444,8 @@ const ClientsTable = () => {
             <CustomTextField
               type='date'
               label='Fecha Fin'
-              value={endDate}
-              onChange={e => {
-                setEndDate(e.target.value)
-                setCurrentPage(1)
-              }}
+              value={endDateInput}
+              onChange={e => setEndDateInput(e.target.value)}
               InputLabelProps={{ shrink: true }}
               className='min-w-[150px]'
             />

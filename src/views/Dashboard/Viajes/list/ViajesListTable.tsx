@@ -42,6 +42,9 @@ import TravelDetailDialog from '../components/TravelDetailDialog'
 
 const getTodayDate = () => new Date().toISOString().split('T')[0]
 
+// Helper to validate complete date format (YYYY-MM-DD = 10 chars)
+const isValidDateInput = (date: string) => date === '' || date.length === 10
+
 const fuzzyFilter: FilterFn<any> = (row, columnId, value, addMeta) => {
   const itemRank = rankItem(row.getValue(columnId), value)
 
@@ -85,12 +88,36 @@ const ViajesListTable = () => {
   const [statusFilter, setStatusFilter] = useState<string>('active')
   const [startDate, setStartDate] = useState<string>(getTodayDate())
   const [endDate, setEndDate] = useState<string>('')
+  const [startDateInput, setStartDateInput] = useState<string>(getTodayDate())
+  const [endDateInput, setEndDateInput] = useState<string>('')
   const [originPlaceId, setOriginPlaceId] = useState<string>('')
   const [destinationPlaceId, setDestinationPlaceId] = useState<string>('')
   const [ticketsDialogOpen, setTicketsDialogOpen] = useState(false)
   const [selectedTravel, setSelectedTravel] = useState<Travel | null>(null)
   const [reportDialogOpen, setReportDialogOpen] = useState(false)
   const [reportTravel, setReportTravel] = useState<Travel | null>(null)
+
+  // Debounce effect for start date
+  useEffect(() => {
+    if (!isValidDateInput(startDateInput)) return
+
+    const timeout = setTimeout(() => {
+      setStartDate(startDateInput)
+    }, 800)
+
+    return () => clearTimeout(timeout)
+  }, [startDateInput])
+
+  // Debounce effect for end date
+  useEffect(() => {
+    if (!isValidDateInput(endDateInput)) return
+
+    const timeout = setTimeout(() => {
+      setEndDate(endDateInput)
+    }, 800)
+
+    return () => clearTimeout(timeout)
+  }, [endDateInput])
 
   const apiFilters = useMemo((): TravelFilters => {
     return {
@@ -553,8 +580,8 @@ const ViajesListTable = () => {
             <CustomTextField
               type='date'
               label='Fecha Inicio'
-              value={startDate}
-              onChange={e => setStartDate(e.target.value)}
+              value={startDateInput}
+              onChange={e => setStartDateInput(e.target.value)}
               InputLabelProps={{ shrink: true }}
               size='small'
               sx={{ width: '150px' }}
@@ -565,8 +592,8 @@ const ViajesListTable = () => {
             <CustomTextField
               type='date'
               label='Fecha Fin'
-              value={endDate}
-              onChange={e => setEndDate(e.target.value)}
+              value={endDateInput}
+              onChange={e => setEndDateInput(e.target.value)}
               InputLabelProps={{ shrink: true }}
               size='small'
               sx={{ width: '150px' }}

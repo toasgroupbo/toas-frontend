@@ -1035,29 +1035,6 @@ const TravelsForSale = () => {
                 </MenuItem>
               )}
             </CustomTextField>
-
-            {/* Fecha */}
-            <CustomTextField
-              type='date'
-              value={departureTimeFilter}
-              onChange={e => {
-                setDepartureTimeFilter(e.target.value)
-                setCurrentPage(1)
-              }}
-              label='Fecha (Opcional)'
-              size='small'
-              sx={{ minWidth: { xs: '100%', sm: 180, md: 220 } }}
-              InputLabelProps={{
-                shrink: true
-              }}
-              InputProps={{
-                startAdornment: (
-                  <Box sx={{ mr: 1, display: 'flex', alignItems: 'center' }}>
-                    <i className='tabler-calendar' />
-                  </Box>
-                )
-              }}
-            />
           </Box>
         </Box>
 

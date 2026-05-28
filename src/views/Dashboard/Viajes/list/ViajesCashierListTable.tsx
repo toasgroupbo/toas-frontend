@@ -93,13 +93,40 @@ const DebouncedInput = ({
 
 const columnHelper = createColumnHelper<TravelWithActionsType>()
 
+// Helper to validate complete date format (YYYY-MM-DD = 10 chars)
+const isValidDateInput = (date: string) => date === '' || date.length === 10
+
 const ViajesCashierListTable = () => {
   const [rowSelection, setRowSelection] = useState({})
   const [searchQuery, setSearchQuery] = useState('')
   const [statusFilter, setStatusFilter] = useState<string>('active')
   const [startDate, setStartDate] = useState<string>(getTodayDate())
   const [endDate, setEndDate] = useState<string>('')
+  const [startDateInput, setStartDateInput] = useState<string>(getTodayDate())
+  const [endDateInput, setEndDateInput] = useState<string>('')
   const [destinationPlaceId, setDestinationPlaceId] = useState<string>('')
+
+  // Debounce effect for start date
+  useEffect(() => {
+    if (!isValidDateInput(startDateInput)) return
+
+    const timeout = setTimeout(() => {
+      setStartDate(startDateInput)
+    }, 800)
+
+    return () => clearTimeout(timeout)
+  }, [startDateInput])
+
+  // Debounce effect for end date
+  useEffect(() => {
+    if (!isValidDateInput(endDateInput)) return
+
+    const timeout = setTimeout(() => {
+      setEndDate(endDateInput)
+    }, 800)
+
+    return () => clearTimeout(timeout)
+  }, [endDateInput])
   const [createDialogOpen, setCreateDialogOpen] = useState(false)
   const [cancelDialogOpen, setCancelDialogOpen] = useState(false)
   const [selectedTravel, setSelectedTravel] = useState<Travel | null>(null)
@@ -663,8 +690,8 @@ const ViajesCashierListTable = () => {
               <CustomTextField
                 type='date'
                 label='Fecha Inicio'
-                value={startDate}
-                onChange={e => setStartDate(e.target.value)}
+                value={startDateInput}
+                onChange={e => setStartDateInput(e.target.value)}
                 InputLabelProps={{ shrink: true }}
                 size='small'
                 sx={{ width: '150px' }}
@@ -675,8 +702,8 @@ const ViajesCashierListTable = () => {
               <CustomTextField
                 type='date'
                 label='Fecha Fin'
-                value={endDate}
-                onChange={e => setEndDate(e.target.value)}
+                value={endDateInput}
+                onChange={e => setEndDateInput(e.target.value)}
                 InputLabelProps={{ shrink: true }}
                 size='small'
                 sx={{ width: '150px' }}

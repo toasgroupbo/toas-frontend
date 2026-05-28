@@ -1,6 +1,6 @@
 'use client'
 
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 
 import Card from '@mui/material/Card'
 import Chip from '@mui/material/Chip'
@@ -33,6 +33,9 @@ type TravelWithActionsType = Travel & {
   actions?: string
 }
 
+// Helper to validate complete date format (YYYY-MM-DD = 10 chars)
+const isValidDateInput = (date: string) => date === '' || date.length === 10
+
 const columnHelper = createColumnHelper<TravelWithActionsType>()
 
 const ViajesOwnerListTable = () => {
@@ -40,12 +43,38 @@ const ViajesOwnerListTable = () => {
   const [isPaidFilter, setIsPaidFilter] = useState<string>('pending')
   const [startDate, setStartDate] = useState<string>('')
   const [endDate, setEndDate] = useState<string>('')
+  const [startDateInput, setStartDateInput] = useState<string>('')
+  const [endDateInput, setEndDateInput] = useState<string>('')
   const [originPlaceId, setOriginPlaceId] = useState<string>('')
   const [destinationPlaceId, setDestinationPlaceId] = useState<string>('')
   const [selectedTravel, setSelectedTravel] = useState<TravelWithActionsType | null>(null)
   const [transactionModalOpen, setTransactionModalOpen] = useState(false)
   const [currentPage, setCurrentPage] = useState(1)
   const [pageSize, setPageSize] = useState(10)
+
+  // Debounce effect for start date
+  useEffect(() => {
+    if (!isValidDateInput(startDateInput)) return
+
+    const timeout = setTimeout(() => {
+      setStartDate(startDateInput)
+      setCurrentPage(1)
+    }, 800)
+
+    return () => clearTimeout(timeout)
+  }, [startDateInput])
+
+  // Debounce effect for end date
+  useEffect(() => {
+    if (!isValidDateInput(endDateInput)) return
+
+    const timeout = setTimeout(() => {
+      setEndDate(endDateInput)
+      setCurrentPage(1)
+    }, 800)
+
+    return () => clearTimeout(timeout)
+  }, [endDateInput])
 
   const { data: ownerRoutes } = useOwnerRoutes()
 
@@ -464,11 +493,8 @@ const ViajesOwnerListTable = () => {
             <CustomTextField
               type='date'
               label='Fecha Inicio'
-              value={startDate}
-              onChange={e => {
-                setStartDate(e.target.value)
-                setCurrentPage(1)
-              }}
+              value={startDateInput}
+              onChange={e => setStartDateInput(e.target.value)}
               InputLabelProps={{ shrink: true }}
               size='small'
               sx={{ width: '150px' }}
@@ -479,11 +505,8 @@ const ViajesOwnerListTable = () => {
             <CustomTextField
               type='date'
               label='Fecha Fin'
-              value={endDate}
-              onChange={e => {
-                setEndDate(e.target.value)
-                setCurrentPage(1)
-              }}
+              value={endDateInput}
+              onChange={e => setEndDateInput(e.target.value)}
               InputLabelProps={{ shrink: true }}
               size='small'
               sx={{ width: '150px' }}
