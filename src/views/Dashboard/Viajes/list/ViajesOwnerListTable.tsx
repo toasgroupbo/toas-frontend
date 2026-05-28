@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useMemo, useState } from 'react'
+import { useMemo, useState } from 'react'
 
 import Card from '@mui/material/Card'
 import Chip from '@mui/material/Chip'
@@ -9,22 +9,17 @@ import Typography from '@mui/material/Typography'
 import Box from '@mui/material/Box'
 import CircularProgress from '@mui/material/CircularProgress'
 import Alert from '@mui/material/Alert'
-import type { TextFieldProps } from '@mui/material/TextField'
+import IconButton from '@mui/material/IconButton'
+import Tooltip from '@mui/material/Tooltip'
 import classnames from 'classnames'
-import { rankItem } from '@tanstack/match-sorter-utils'
 import {
   createColumnHelper,
   flexRender,
   getCoreRowModel,
   useReactTable,
-  getFilteredRowModel,
-  getFacetedRowModel,
-  getFacetedUniqueValues,
-  getFacetedMinMaxValues,
-  getPaginationRowModel,
   getSortedRowModel
 } from '@tanstack/react-table'
-import type { ColumnDef, FilterFn } from '@tanstack/react-table'
+import type { ColumnDef } from '@tanstack/react-table'
 import { Pagination } from '@mui/material'
 
 import CustomTextField from '@core/components/mui/TextField'
@@ -34,59 +29,23 @@ import { useOwnerRoutes } from '@/hooks/useCashierTravels'
 import type { Travel } from '@/types/api/travels'
 import TransactionDetailsModal from '@/views/Dashboard/Viajes/components/TransactionDetailsModal'
 
-const getTodayDate = () => new Date().toISOString().split('T')[0]
-
 type TravelWithActionsType = Travel & {
   actions?: string
-}
-
-const fuzzyFilter: FilterFn<any> = (row, columnId, value, addMeta) => {
-  const itemRank = rankItem(row.getValue(columnId), value)
-
-  addMeta({ itemRank })
-
-  return itemRank.passed
-}
-
-const DebouncedInput = ({
-  value: initialValue,
-  onChange,
-  debounce = 500,
-  ...props
-}: {
-  value: string | number
-  onChange: (value: string | number) => void
-  debounce?: number
-} & Omit<TextFieldProps, 'onChange'>) => {
-  const [value, setValue] = useState(initialValue)
-
-  useEffect(() => {
-    setValue(initialValue)
-  }, [initialValue])
-
-  useEffect(() => {
-    const timeout = setTimeout(() => {
-      onChange(value)
-    }, debounce)
-
-    return () => clearTimeout(timeout)
-  }, [value])
-
-  return <CustomTextField {...props} value={value} onChange={e => setValue(e.target.value)} />
 }
 
 const columnHelper = createColumnHelper<TravelWithActionsType>()
 
 const ViajesOwnerListTable = () => {
-  const [searchQuery, setSearchQuery] = useState('')
-  const [statusFilter, setStatusFilter] = useState<string>('active')
-  const [isPaidFilter, setIsPaidFilter] = useState<string>('all')
-  const [startDate, setStartDate] = useState<string>(getTodayDate())
+  const [statusFilter, setStatusFilter] = useState<string>('closed')
+  const [isPaidFilter, setIsPaidFilter] = useState<string>('pending')
+  const [startDate, setStartDate] = useState<string>('')
   const [endDate, setEndDate] = useState<string>('')
   const [originPlaceId, setOriginPlaceId] = useState<string>('')
   const [destinationPlaceId, setDestinationPlaceId] = useState<string>('')
   const [selectedTravel, setSelectedTravel] = useState<TravelWithActionsType | null>(null)
   const [transactionModalOpen, setTransactionModalOpen] = useState(false)
+  const [currentPage, setCurrentPage] = useState(1)
+  const [pageSize, setPageSize] = useState(10)
 
   const { data: ownerRoutes } = useOwnerRoutes()
 
@@ -132,30 +91,24 @@ const ViajesOwnerListTable = () => {
 
   const apiFilters = useMemo((): TravelFilters => {
     return {
-      status: statusFilter !== 'all' ? (statusFilter as 'active' | 'closed' | 'cancelled') : undefined,
+      status: statusFilter !== 'all' ? (statusFilter as 'active' | 'closed') : undefined,
       startDate: startDate || undefined,
       endDate: endDate || undefined,
       origin_placeId: originPlaceId ? Number(originPlaceId) : undefined,
       destination_placeId: destinationPlaceId ? Number(destinationPlaceId) : undefined,
-      isPaid: isPaidFilter === 'all' ? undefined : isPaidFilter === 'paid'
+      isPaid: isPaidFilter === 'all' ? undefined : isPaidFilter === 'paid',
+      page: currentPage,
+      limit: pageSize
     }
-  }, [statusFilter, startDate, endDate, originPlaceId, destinationPlaceId, isPaidFilter])
+  }, [statusFilter, startDate, endDate, originPlaceId, destinationPlaceId, isPaidFilter, currentPage, pageSize])
 
   const { data: travelsResponse, isLoading, error } = useTravelsForOwner(apiFilters)
 
   const travels = travelsResponse?.data || []
-
-  const filteredTravels = useMemo(() => {
-    if (!travels) return []
-
-    return travels
-  }, [travels])
+  const meta = travelsResponse?.meta
 
   const amounts = travelsResponse?.amounts || { cash: 0, qr: 0, app: 0 }
-  const totalCash = amounts.cash
   const totalQr = amounts.qr
-  const totalApp = amounts.app
-  const totalGeneral = totalCash + totalQr + totalApp
 
   const formatDateTime = (dateString: string) => {
     const date = new Date(dateString)
@@ -176,27 +129,35 @@ const ViajesOwnerListTable = () => {
     return `Bs. ${numAmount.toFixed(2)}`
   }
 
-  const formatDateOnly = (dateString: string) => {
-    const date = new Date(dateString)
-
-    return date.toLocaleDateString('es-BO', {
-      timeZone: 'America/La_Paz',
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric'
-    })
-  }
-
-  const handleRowClick = (travel: TravelWithActionsType) => {
-    // Only allow click when transaction status is COMPLETED
-    if (travel.transaction?.status === 'COMPLETED') {
-      setSelectedTravel(travel)
-      setTransactionModalOpen(true)
-    }
+  const handleViewTransaction = (travel: TravelWithActionsType) => {
+    setSelectedTravel(travel)
+    setTransactionModalOpen(true)
   }
 
   const columns = useMemo<ColumnDef<TravelWithActionsType, any>[]>(
     () => [
+      columnHelper.display({
+        id: 'actions',
+        header: 'Ver',
+        cell: ({ row }) => {
+          const hasTransaction = row.original.transaction?.status === 'COMPLETED'
+
+          return (
+            <Tooltip title={hasTransaction ? 'Ver detalles de pago' : 'Sin información de pago'}>
+              <span>
+                <IconButton
+                  size='small'
+                  color={hasTransaction ? 'primary' : 'default'}
+                  disabled={!hasTransaction}
+                  onClick={() => handleViewTransaction(row.original)}
+                >
+                  <i className='tabler-eye' style={{ fontSize: '20px' }} />
+                </IconButton>
+              </span>
+            </Tooltip>
+          )
+        }
+      }),
       columnHelper.accessor('bus', {
         header: 'Bus',
         cell: ({ row }) => (
@@ -423,28 +384,12 @@ const ViajesOwnerListTable = () => {
   )
 
   const table = useReactTable({
-    data: filteredTravels,
+    data: travels,
     columns,
-    filterFns: {
-      fuzzy: fuzzyFilter
-    },
-    state: {
-      globalFilter: searchQuery
-    },
-    globalFilterFn: fuzzyFilter,
-    onGlobalFilterChange: setSearchQuery,
     getCoreRowModel: getCoreRowModel(),
-    getFilteredRowModel: getFilteredRowModel(),
     getSortedRowModel: getSortedRowModel(),
-    getPaginationRowModel: getPaginationRowModel(),
-    getFacetedRowModel: getFacetedRowModel(),
-    getFacetedUniqueValues: getFacetedUniqueValues(),
-    getFacetedMinMaxValues: getFacetedMinMaxValues(),
-    initialState: {
-      pagination: {
-        pageSize: 10
-      }
-    }
+    manualPagination: true,
+    pageCount: meta?.lastPage ?? 1
   })
 
   if (isLoading) {
@@ -459,16 +404,15 @@ const ViajesOwnerListTable = () => {
     return <Alert severity='error'>Error al cargar los viajes. Por favor, intenta nuevamente.</Alert>
   }
 
-  const totalRows = table.getFilteredRowModel().rows.length
-  const pageIndex = table.getState().pagination.pageIndex
-  const pageSize = table.getState().pagination.pageSize
+  const totalRows = meta?.total ?? 0
+  const totalPages = meta?.lastPage ?? 1
 
   return (
     <Box>
       <Card>
         <div className='flex flex-wrap justify-between gap-4 p-6'>
           <div className='flex flex-col gap-2'>
-            <Typography variant='h4'>Viajes de mis Buses</Typography>
+            <Typography variant='h4'>Viajes de mis Buses y Reporte de Depósitos</Typography>
             <Typography variant='body2' color='text.secondary'>
               Vista de solo lectura de los viajes asignados a tus buses
             </Typography>
@@ -480,7 +424,10 @@ const ViajesOwnerListTable = () => {
             select
             label='Origen'
             value={originPlaceId}
-            onChange={e => setOriginPlaceId(e.target.value)}
+            onChange={e => {
+              setOriginPlaceId(e.target.value)
+              setCurrentPage(1)
+            }}
             size='small'
             sx={{ minWidth: 180 }}
           >
@@ -498,7 +445,10 @@ const ViajesOwnerListTable = () => {
             select
             label='Destino'
             value={destinationPlaceId}
-            onChange={e => setDestinationPlaceId(e.target.value)}
+            onChange={e => {
+              setDestinationPlaceId(e.target.value)
+              setCurrentPage(1)
+            }}
             size='small'
             sx={{ minWidth: 180 }}
           >
@@ -515,7 +465,10 @@ const ViajesOwnerListTable = () => {
               type='date'
               label='Fecha Inicio'
               value={startDate}
-              onChange={e => setStartDate(e.target.value)}
+              onChange={e => {
+                setStartDate(e.target.value)
+                setCurrentPage(1)
+              }}
               InputLabelProps={{ shrink: true }}
               size='small'
               sx={{ width: '150px' }}
@@ -527,7 +480,10 @@ const ViajesOwnerListTable = () => {
               type='date'
               label='Fecha Fin'
               value={endDate}
-              onChange={e => setEndDate(e.target.value)}
+              onChange={e => {
+                setEndDate(e.target.value)
+                setCurrentPage(1)
+              }}
               InputLabelProps={{ shrink: true }}
               size='small'
               sx={{ width: '150px' }}
@@ -538,20 +494,25 @@ const ViajesOwnerListTable = () => {
             select
             label='Estado'
             value={statusFilter}
-            onChange={e => setStatusFilter(e.target.value)}
+            onChange={e => {
+              setStatusFilter(e.target.value)
+              setCurrentPage(1)
+            }}
             size='small'
             sx={{ minWidth: 120 }}
           >
             <MenuItem value='all'>Todos</MenuItem>
             <MenuItem value='active'>Activo</MenuItem>
             <MenuItem value='closed'>Cerrado</MenuItem>
-            <MenuItem value='cancelled'>Cancelado</MenuItem>
           </CustomTextField>
           <CustomTextField
             select
             label='Pagado'
             value={isPaidFilter}
-            onChange={e => setIsPaidFilter(e.target.value)}
+            onChange={e => {
+              setIsPaidFilter(e.target.value)
+              setCurrentPage(1)
+            }}
             size='small'
             sx={{ minWidth: 120 }}
           >
@@ -561,7 +522,7 @@ const ViajesOwnerListTable = () => {
           </CustomTextField>
         </div>
 
-        {/*  <div className='flex flex-wrap justify-between items-center gap-4 px-6 pb-4'>
+        <div className='flex flex-wrap justify-between gap-4 px-6 pb-6'>
           <Box
             sx={{
               bgcolor: 'info.lighter',
@@ -575,73 +536,20 @@ const ViajesOwnerListTable = () => {
             }}
           >
             <Typography variant='caption' color='info.main' fontWeight='medium'>
-              Total Ventas Oficina
+              Total Depósito QR
             </Typography>
             <Typography variant='h6' color='info.dark' fontWeight='bold'>
-              {formatCurrency(totalOfficeAmount)}
+              {formatCurrency(totalQr)}
             </Typography>
           </Box>
-
-          <Box
-            sx={{
-              bgcolor: 'success.lighter',
-              px: 3,
-              py: 1.5,
-              borderRadius: 2,
-              border: '1px solid',
-              borderColor: 'success.main',
-              minWidth: '180px',
-              textAlign: 'center'
-            }}
-          >
-            <Typography variant='caption' color='success.main' fontWeight='medium'>
-              Total Ventas App
-            </Typography>
-            <Typography variant='h6' color='success.dark' fontWeight='bold'>
-              {formatCurrency(totalAppAmount)}
-            </Typography>
-          </Box>
-
-          <Box
-            sx={{
-              bgcolor: 'primary.lighter',
-              px: 3,
-              py: 1.5,
-              borderRadius: 2,
-              border: '1px solid',
-              borderColor: 'primary.main',
-              minWidth: '180px',
-              textAlign: 'center'
-            }}
-          >
-            <Typography variant='caption' color='primary.main' fontWeight='medium'>
-              Total General
-            </Typography>
-            <Typography variant='h6' color='primary.dark' fontWeight='bold'>
-              {formatCurrency(totalAmount)}
-            </Typography>
-          </Box>
-        </div> */}
-
-        <div className='flex flex-wrap justify-between gap-4 px-6 pb-6'>
-          <div className='flex flex-wrap gap-4 items-center'>
-            <DebouncedInput
-              value={searchQuery}
-              onChange={value => {
-                setSearchQuery(String(value))
-                table.setPageIndex(0)
-              }}
-              placeholder='Buscar viajes...'
-              className='max-sm:is-full min-w-[300px] flex-1 max-w-md'
-            />
-          </div>
 
           <div className='flex max-sm:flex-col items-start sm:items-center gap-4 max-sm:is-full'>
             <CustomTextField
               select
               value={pageSize}
               onChange={e => {
-                table.setPageSize(Number(e.target.value))
+                setPageSize(Number(e.target.value))
+                setCurrentPage(1)
               }}
               className='flex-auto max-sm:is-full sm:is-[70px]'
             >
@@ -692,18 +600,14 @@ const ViajesOwnerListTable = () => {
               <tbody>
                 {table.getRowModel().rows.map(row => {
                   const isDisabled = !row.original.enabled
-                  const isCompleted = row.original.transaction?.status === 'COMPLETED'
 
                   return (
                     <tr
                       key={row.id}
-                      onClick={() => handleRowClick(row.original)}
                       style={{
                         opacity: isDisabled ? 0.5 : 1,
-                        backgroundColor: isDisabled ? 'var(--mui-palette-action-disabledBackground)' : undefined,
-                        cursor: isCompleted ? 'pointer' : 'default'
+                        backgroundColor: isDisabled ? 'var(--mui-palette-action-disabledBackground)' : undefined
                       }}
-                      className={isCompleted ? 'hover:bg-[var(--mui-palette-action-hover)]' : ''}
                     >
                       {row.getVisibleCells().map(cell => (
                         <td key={cell.id}>{flexRender(cell.column.columnDef.cell, cell.getContext())}</td>
@@ -719,16 +623,16 @@ const ViajesOwnerListTable = () => {
         <div className='flex justify-between items-center flex-wrap pli-6 border-bs bs-auto plb-[12.5px] gap-2'>
           <Typography color='text.disabled'>
             {totalRows > 0
-              ? `Mostrando ${pageIndex * pageSize + 1} a ${Math.min((pageIndex + 1) * pageSize, totalRows)} de ${totalRows} viajes`
+              ? `Mostrando ${(currentPage - 1) * pageSize + 1} a ${Math.min(currentPage * pageSize, totalRows)} de ${totalRows} viajes`
               : 'No hay viajes'}
           </Typography>
           <Pagination
             shape='rounded'
             color='primary'
             variant='tonal'
-            count={table.getPageCount()}
-            page={pageIndex + 1}
-            onChange={(_, page) => table.setPageIndex(page - 1)}
+            count={totalPages}
+            page={currentPage}
+            onChange={(_, page) => setCurrentPage(page)}
             showFirstButton
             showLastButton
           />

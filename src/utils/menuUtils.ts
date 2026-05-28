@@ -186,5 +186,12 @@ export const filterMenuByRole = (
     }
 
     return false
+  }).map(item => {
+    // Transformar label para CASHIER_OWNER
+    if (userRole === 'CASHIER_OWNER' && item.label === 'Viajes') {
+      return { ...item, label: 'Viajes y Depósitos' }
+    }
+
+    return item
   })
 }

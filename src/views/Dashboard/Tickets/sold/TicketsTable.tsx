@@ -37,6 +37,7 @@ import type { Ticket } from '@/types/api/tickets'
 import DebouncedInput from './components/DebouncedInput'
 import TicketDetailDialog from './components/TicketDetailDialog'
 import CancelTicketDialog from './components/CancelTicketDialog'
+import TicketsSummaryModal from './components/TicketsSummaryModal'
 import { getStatusColor, getStatusLabel } from './utils/ticketStatus'
 import { formatDate, formatTime } from '../sale/utils/dateFormatters'
 
@@ -68,12 +69,30 @@ const TicketsTable = ({ initialTravelId }: TicketsTableProps) => {
   const [openDetailDialog, setOpenDetailDialog] = useState(false)
   const [selectedTicket, setSelectedTicket] = useState<Ticket | null>(null)
   const [statusFilter, setStatusFilter] = useState<string>('all')
+  const [openSummaryModal, setOpenSummaryModal] = useState(false)
 
   const { data: travels, isLoading: travelsLoading } = useCashierTravels()
   const { data: ticketsResponse, isLoading, error } = useTicketsByTravel(selectedTravelId)
 
   const tickets = useMemo(() => ticketsResponse?.tickets || [], [ticketsResponse])
+  const cashiers = useMemo(() => ticketsResponse?.cashiers || [], [ticketsResponse])
+  const totals = useMemo(() => ticketsResponse?.totals || { totalCash: '0.00', totalQr: '0.00' }, [ticketsResponse])
   const cancelTicketMutation = useCancelTicket()
+
+  // Get travel info from first ticket
+  const selectedTravelInfo = useMemo(() => {
+    if (tickets.length > 0 && tickets[0].travel) {
+      const travel = tickets[0].travel
+
+      return {
+        origin: travel.route?.officeOrigin?.place?.name || 'N/A',
+        destination: travel.route?.officeDestination?.place?.name || 'N/A',
+        departureTime: travel.departure_time
+      }
+    }
+
+    return null
+  }, [tickets])
 
   const [data, setData] = useState<Ticket[]>([])
 
@@ -344,9 +363,42 @@ const TicketsTable = ({ initialTravelId }: TicketsTableProps) => {
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, flexGrow: 1 }}>
             <i className='tabler-ticket' style={{ fontSize: '32px', color: 'var(--mui-palette-primary-main)' }} />
             <div>
-              <Typography variant='h5' fontWeight='bold'>
-                Tickets Vendidos
-              </Typography>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, flexWrap: 'wrap' }}>
+                <Typography variant='h5' fontWeight='bold'>
+                  Tickets Vendidos
+                </Typography>
+                {selectedTravelInfo && (
+                  <Box
+                    sx={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 1,
+                      bgcolor: 'action.hover',
+                      px: 2,
+                      py: 0.5,
+                      borderRadius: 1
+                    }}
+                  >
+                    <i className='tabler-route' style={{ fontSize: '16px', color: 'var(--mui-palette-primary-main)' }} />
+                    <Typography variant='body2' fontWeight='medium'>
+                      {selectedTravelInfo.origin}
+                    </Typography>
+                    <i className='tabler-arrow-right' style={{ fontSize: '14px' }} />
+                    <Typography variant='body2' fontWeight='medium'>
+                      {selectedTravelInfo.destination}
+                    </Typography>
+                    <Box sx={{ mx: 1, height: '16px', borderLeft: '1px solid', borderColor: 'divider' }} />
+                    <i className='tabler-calendar' style={{ fontSize: '16px', color: 'var(--mui-palette-info-main)' }} />
+                    <Typography variant='body2'>
+                      {formatDate(selectedTravelInfo.departureTime)}
+                    </Typography>
+                    <i className='tabler-clock' style={{ fontSize: '16px', color: 'var(--mui-palette-warning-main)' }} />
+                    <Typography variant='body2'>
+                      {formatTime(selectedTravelInfo.departureTime)}
+                    </Typography>
+                  </Box>
+                )}
+              </Box>
               <Typography variant='body2' color='text.secondary'>
                 {initialTravelId
                   ? 'Mostrando tickets del viaje seleccionado'
@@ -355,8 +407,13 @@ const TicketsTable = ({ initialTravelId }: TicketsTableProps) => {
             </div>
           </Box>
           {(selectedTravelId || initialTravelId) && tickets && tickets.length > 0 && (
-            <Button variant='outlined' color='primary' startIcon={<i className='tabler-file-download' />}>
-              Descargar PDF
+            <Button
+              variant='outlined'
+              color='primary'
+              startIcon={<i className='tabler-report' />}
+              onClick={() => setOpenSummaryModal(true)}
+            >
+              Ver Detalles
             </Button>
           )}
         </Box>
@@ -629,6 +686,16 @@ const TicketsTable = ({ initialTravelId }: TicketsTableProps) => {
         ticket={ticketToCancel}
         onConfirmCancel={handleCancelTicket}
         isLoading={cancelTicketMutation.isPending}
+      />
+
+      <TicketsSummaryModal
+        open={openSummaryModal}
+        onClose={() => setOpenSummaryModal(false)}
+        travelInfo={selectedTravelInfo}
+        cashiers={cashiers}
+        totals={totals}
+        ticketsCount={tickets.length}
+        seatsCount={tickets.reduce((sum, ticket) => sum + ticket.seats.length, 0)}
       />
     </Box>
   )

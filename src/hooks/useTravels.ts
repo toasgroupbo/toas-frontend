@@ -12,6 +12,8 @@ export interface TravelFilters {
   destination_placeId?: number
   companyId?: number
   isPaid?: boolean
+  page?: number
+  limit?: number
 }
 
 interface UseTravelsParams {
@@ -203,8 +205,16 @@ const fetchTravelsForAdmin = async (
 
 const fetchTravelsForOwner = async (
   filters?: TravelFilters
-): Promise<{ data: Travel[]; amounts: { cash: number; qr: number; app: number } }> => {
+): Promise<{ data: Travel[]; meta: any; amounts: { cash: number; qr: number; app: number } }> => {
   const params: Record<string, any> = {}
+
+  if (filters?.page) {
+    params.page = filters.page
+  }
+
+  if (filters?.limit) {
+    params.limit = filters.limit
+  }
 
   if (filters?.status) {
     params.status = filters.status
@@ -235,7 +245,7 @@ const fetchTravelsForOwner = async (
     { params }
   )
 
-  return { data: response.data.data, amounts: response.data.amounts }
+  return { data: response.data.data, meta: response.data.meta, amounts: response.data.amounts }
 }
 
 const deleteTravelForCashier = async (id: number): Promise<void> => {
