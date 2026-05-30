@@ -181,9 +181,7 @@ const VentasTable = () => {
       {
         accessorKey: 'commission_company_total',
         header: 'COMISION PLATAFORMA',
-        cell: ({ row }) => (
-          <Typography variant='body2'>{formatCurrency(row.original.commission_company_total)}</Typography>
-        ),
+        cell: ({ row }) => <Typography variant='body2'>{formatCurrency(row.original.commission_company)}</Typography>,
         meta: { align: 'right' }
       },
       {

@@ -12,21 +12,43 @@ import Chip from '@mui/material/Chip'
 import Divider from '@mui/material/Divider'
 import Grid from '@mui/material/Grid2'
 
-interface FormAchPayment {
+interface PaymentDetail {
   TitularName?: string
   AccountNumber?: string
   DocumentNumber?: string
-  BankDescription?: string
+  DocumentExtension?: string
+  BankDescription?: string | null
+  BranchOfficeDescription?: string | null
   Amount?: number
+  PaymentType?: string
+  GlossPayment?: string
+  FirstDetail?: string
+  OperationNumberDebitHost?: string
+  OperationStatusDescription?: string
 }
 
 interface BatchDetailResponse {
   Amount?: number
+  Currency?: string
+  FundSource?: string
   FundDestination?: string
+  Description?: string
   StatusOperation?: string
+  SourceAccount?: string
+  TypeOperation?: string
+  ProcessBatchId?: number
+  DateProcess?: string
   Spreadsheet?: {
-    FormAchPayments?: FormAchPayment[]
+    FormAchPayments?: PaymentDetail[]
+    FormProvidersPayments?: PaymentDetail[]
+    FormOddPayments?: PaymentDetail[]
+    FormYapePayments?: PaymentDetail[]
   }
+  UserInvolveds?: Array<{
+    UserName?: string
+    DateAction?: string
+    UserDescription?: string
+  }>
 }
 
 interface Transaction {
@@ -93,7 +115,12 @@ const TransactionDetailsModal = ({ open, onClose, travel }: TransactionDetailsMo
 
   const transaction = travel.transaction
   const batchDetail = transaction.batchDetailResponse
-  const paymentDetail = batchDetail?.Spreadsheet?.FormAchPayments?.[0]
+
+  // Get payment detail from either FormAchPayments or FormProvidersPayments
+  const paymentDetail =
+    batchDetail?.Spreadsheet?.FormAchPayments?.[0] || batchDetail?.Spreadsheet?.FormProvidersPayments?.[0]
+
+  const isAchPayment = (batchDetail?.Spreadsheet?.FormAchPayments?.length || 0) > 0
 
   return (
     <Dialog open={open} onClose={onClose} maxWidth='sm' fullWidth>
@@ -190,14 +217,34 @@ const TransactionDetailsModal = ({ open, onClose, travel }: TransactionDetailsMo
                 </Typography>
                 <Typography variant='body2' fontFamily='monospace'>
                   {paymentDetail.DocumentNumber || '-'}
+                  {paymentDetail.DocumentExtension && ` (${paymentDetail.DocumentExtension.trim()})`}
                 </Typography>
               </Grid>
-              <Grid size={{ xs: 12 }}>
+              {isAchPayment && paymentDetail.BankDescription && (
+                <Grid size={{ xs: 12 }}>
+                  <Typography variant='caption' color='text.secondary'>
+                    Banco
+                  </Typography>
+                  <Typography variant='body2' fontWeight={500}>
+                    {paymentDetail.BankDescription}
+                    {paymentDetail.BranchOfficeDescription && ` - ${paymentDetail.BranchOfficeDescription}`}
+                  </Typography>
+                </Grid>
+              )}
+              <Grid size={{ xs: 6 }}>
                 <Typography variant='caption' color='text.secondary'>
-                  Banco
+                  Nro. Operación
+                </Typography>
+                <Typography variant='body2' fontFamily='monospace' fontWeight={500} color='success.main'>
+                  {paymentDetail.OperationNumberDebitHost || '-'}
+                </Typography>
+              </Grid>
+              <Grid size={{ xs: 6 }}>
+                <Typography variant='caption' color='text.secondary'>
+                  Estado
                 </Typography>
                 <Typography variant='body2' fontWeight={500}>
-                  {paymentDetail.BankDescription || '-'}
+                  {paymentDetail.OperationStatusDescription || batchDetail?.StatusOperation || '-'}
                 </Typography>
               </Grid>
               <Grid size={{ xs: 12 }}>
@@ -205,7 +252,7 @@ const TransactionDetailsModal = ({ open, onClose, travel }: TransactionDetailsMo
                   Concepto
                 </Typography>
                 <Typography variant='body2' color='text.secondary' fontStyle='italic'>
-                  {batchDetail?.FundDestination || '-'}
+                  {batchDetail?.FundDestination || paymentDetail.GlossPayment || '-'}
                 </Typography>
               </Grid>
             </Grid>

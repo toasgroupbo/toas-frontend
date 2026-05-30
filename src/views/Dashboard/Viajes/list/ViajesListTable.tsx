@@ -23,11 +23,6 @@ import {
   flexRender,
   getCoreRowModel,
   useReactTable,
-  getFilteredRowModel,
-  getFacetedRowModel,
-  getFacetedUniqueValues,
-  getFacetedMinMaxValues,
-  getPaginationRowModel,
   getSortedRowModel
 } from '@tanstack/react-table'
 import type { ColumnDef, FilterFn } from '@tanstack/react-table'
@@ -96,6 +91,8 @@ const ViajesListTable = () => {
   const [selectedTravel, setSelectedTravel] = useState<Travel | null>(null)
   const [reportDialogOpen, setReportDialogOpen] = useState(false)
   const [reportTravel, setReportTravel] = useState<Travel | null>(null)
+  const [currentPage, setCurrentPage] = useState(1)
+  const [pageSize, setPageSize] = useState(10)
 
   // Debounce effect for start date
   useEffect(() => {
@@ -103,6 +100,7 @@ const ViajesListTable = () => {
 
     const timeout = setTimeout(() => {
       setStartDate(startDateInput)
+      setCurrentPage(1)
     }, 800)
 
     return () => clearTimeout(timeout)
@@ -114,6 +112,7 @@ const ViajesListTable = () => {
 
     const timeout = setTimeout(() => {
       setEndDate(endDateInput)
+      setCurrentPage(1)
     }, 800)
 
     return () => clearTimeout(timeout)
@@ -121,17 +120,20 @@ const ViajesListTable = () => {
 
   const apiFilters = useMemo((): TravelFilters => {
     return {
+      page: currentPage,
+      limit: pageSize,
       status: statusFilter !== 'all' ? (statusFilter as 'active' | 'closed' | 'cancelled') : undefined,
       startDate: startDate || undefined,
       endDate: endDate || undefined,
       origin_placeId: originPlaceId ? Number(originPlaceId) : undefined,
       destination_placeId: destinationPlaceId ? Number(destinationPlaceId) : undefined
     }
-  }, [statusFilter, startDate, endDate, originPlaceId, destinationPlaceId])
+  }, [currentPage, pageSize, statusFilter, startDate, endDate, originPlaceId, destinationPlaceId])
 
   const { data: travelsResponse, isLoading, error } = useTravelsForAdmin(apiFilters)
 
-  const travels = travelsResponse?.data || []
+  const travels = useMemo(() => travelsResponse?.data || [], [travelsResponse?.data])
+  const meta = travelsResponse?.meta
 
   // Get totals from API response amounts
   const amounts = travelsResponse?.amounts || { cash: 0, qr: 0, app: 0 }
@@ -503,17 +505,8 @@ const ViajesListTable = () => {
     onRowSelectionChange: setRowSelection,
     onGlobalFilterChange: setSearchQuery,
     getCoreRowModel: getCoreRowModel(),
-    getFilteredRowModel: getFilteredRowModel(),
     getSortedRowModel: getSortedRowModel(),
-    getPaginationRowModel: getPaginationRowModel(),
-    getFacetedRowModel: getFacetedRowModel(),
-    getFacetedUniqueValues: getFacetedUniqueValues(),
-    getFacetedMinMaxValues: getFacetedMinMaxValues(),
-    initialState: {
-      pagination: {
-        pageSize: 10
-      }
-    }
+    manualPagination: true
   })
 
   if (isLoading) {
@@ -528,9 +521,8 @@ const ViajesListTable = () => {
     return <Alert severity='error'>Error al cargar los viajes. Por favor, intenta nuevamente.</Alert>
   }
 
-  const totalRows = table.getFilteredRowModel().rows.length
-  const pageIndex = table.getState().pagination.pageIndex
-  const pageSize = table.getState().pagination.pageSize
+  const totalRows = meta?.total || 0
+  const totalPages = meta?.lastPage || 1
 
   return (
     <Box>
@@ -547,7 +539,10 @@ const ViajesListTable = () => {
               select
               label='Origen'
               value={originPlaceId}
-              onChange={e => setOriginPlaceId(e.target.value)}
+              onChange={e => {
+                setOriginPlaceId(e.target.value)
+                setCurrentPage(1)
+              }}
               size='small'
               sx={{ minWidth: 150 }}
             >
@@ -565,7 +560,10 @@ const ViajesListTable = () => {
               select
               label='Destino'
               value={destinationPlaceId}
-              onChange={e => setDestinationPlaceId(e.target.value)}
+              onChange={e => {
+                setDestinationPlaceId(e.target.value)
+                setCurrentPage(1)
+              }}
               size='small'
               sx={{ minWidth: 150 }}
             >
@@ -603,7 +601,10 @@ const ViajesListTable = () => {
               select
               label='Estado'
               value={statusFilter}
-              onChange={e => setStatusFilter(e.target.value)}
+              onChange={e => {
+                setStatusFilter(e.target.value)
+                setCurrentPage(1)
+              }}
               size='small'
               sx={{ minWidth: 120 }}
             >
@@ -671,7 +672,7 @@ const ViajesListTable = () => {
               value={searchQuery}
               onChange={value => {
                 setSearchQuery(String(value))
-                table.setPageIndex(0)
+                setCurrentPage(1)
               }}
               placeholder='Buscar viajes...'
               className='max-sm:is-full min-w-[300px] flex-1 max-w-md'
@@ -683,7 +684,8 @@ const ViajesListTable = () => {
               select
               value={pageSize}
               onChange={e => {
-                table.setPageSize(Number(e.target.value))
+                setPageSize(Number(e.target.value))
+                setCurrentPage(1)
               }}
               className='flex-auto max-sm:is-full sm:is-[70px]'
             >
@@ -758,16 +760,16 @@ const ViajesListTable = () => {
         <div className='flex justify-between items-center flex-wrap pli-6 border-bs bs-auto plb-[12.5px] gap-2'>
           <Typography color='text.disabled'>
             {totalRows > 0
-              ? `Mostrando ${pageIndex * pageSize + 1} a ${Math.min((pageIndex + 1) * pageSize, totalRows)} de ${totalRows} viajes`
+              ? `Mostrando ${(currentPage - 1) * pageSize + 1} a ${Math.min(currentPage * pageSize, totalRows)} de ${totalRows} viajes`
               : 'No hay viajes'}
           </Typography>
           <Pagination
             shape='rounded'
             color='primary'
             variant='tonal'
-            count={table.getPageCount()}
-            page={pageIndex + 1}
-            onChange={(_, page) => table.setPageIndex(page - 1)}
+            count={totalPages}
+            page={currentPage}
+            onChange={(_, page) => setCurrentPage(page)}
             showFirstButton
             showLastButton
           />

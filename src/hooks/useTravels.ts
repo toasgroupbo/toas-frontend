@@ -130,10 +130,28 @@ const deleteTravel = async (id: number): Promise<void> => {
   await api.delete(url)
 }
 
-const fetchTravelsForCashier = async (
-  filters?: TravelFilters
-): Promise<{ data: Travel[]; amounts: { cash: number; qr: number; app: number } }> => {
+interface TravelsResponse {
+  data: Travel[]
+  meta: {
+    total: number
+    page: number
+    limit: number
+    lastPage: number
+    offset: number
+  }
+  amounts: { cash: number; qr: number; app: number }
+}
+
+const fetchTravelsForCashier = async (filters?: TravelFilters): Promise<TravelsResponse> => {
   const queryParams = new URLSearchParams()
+
+  if (filters?.page) {
+    queryParams.append('page', filters.page.toString())
+  }
+
+  if (filters?.limit) {
+    queryParams.append('limit', filters.limit.toString())
+  }
 
   if (filters?.status) {
     queryParams.append('status', filters.status)
@@ -156,16 +174,26 @@ const fetchTravelsForCashier = async (
   }
 
   const url = `/api/travels/for-cashier/all${queryParams.toString() ? `?${queryParams.toString()}` : ''}`
-  const response = await api.get<{ data: Travel[]; meta: any; amounts: { cash: number; qr: number; app: number } }>(url)
+  const response = await api.get<TravelsResponse>(url)
 
-  return { data: response.data.data, amounts: response.data.amounts }
+  return {
+    data: response.data.data,
+    meta: response.data.meta || { total: 0, page: 1, limit: 10, lastPage: 1, offset: 0 },
+    amounts: response.data.amounts || { cash: 0, qr: 0, app: 0 }
+  }
 }
 
-const fetchTravelsForAdmin = async (
-  filters?: TravelFilters
-): Promise<{ data: Travel[]; amounts: { cash: number; qr: number; app: number } }> => {
+const fetchTravelsForAdmin = async (filters?: TravelFilters): Promise<TravelsResponse> => {
   const actingAsCompany = localStorage.getItem('acting_as_company')
   const queryParams = new URLSearchParams()
+
+  if (filters?.page) {
+    queryParams.append('page', filters.page.toString())
+  }
+
+  if (filters?.limit) {
+    queryParams.append('limit', filters.limit.toString())
+  }
 
   if (filters?.status) {
     queryParams.append('status', filters.status)
@@ -198,9 +226,13 @@ const fetchTravelsForAdmin = async (
   }
 
   const url = `/api/travels${queryParams.toString() ? `?${queryParams.toString()}` : ''}`
-  const response = await api.get<{ data: Travel[]; meta: any; amounts: { cash: number; qr: number; app: number } }>(url)
+  const response = await api.get<TravelsResponse>(url)
 
-  return { data: response.data.data, amounts: response.data.amounts || { cash: 0, qr: 0, app: 0 } }
+  return {
+    data: response.data.data,
+    meta: response.data.meta || { total: 0, page: 1, limit: 10, lastPage: 1, offset: 0 },
+    amounts: response.data.amounts || { cash: 0, qr: 0, app: 0 }
+  }
 }
 
 const fetchTravelsForOwner = async (
@@ -334,19 +366,39 @@ export const useDeleteTravel = () => {
 
 export const useTravelsForCashier = (filters?: TravelFilters) => {
   return useQuery({
-    queryKey: ['travelsForCashier', filters],
+    queryKey: [
+      'travelsForCashier',
+      filters?.page,
+      filters?.limit,
+      filters?.status,
+      filters?.startDate,
+      filters?.endDate,
+      filters?.origin_placeId,
+      filters?.destination_placeId
+    ],
     queryFn: () => fetchTravelsForCashier(filters),
     retry: 1,
-    staleTime: 30000
+    staleTime: 30000,
+    placeholderData: previousData => previousData
   })
 }
 
 export const useTravelsForAdmin = (filters?: TravelFilters) => {
   return useQuery({
-    queryKey: ['travelsForAdmin', filters],
+    queryKey: [
+      'travelsForAdmin',
+      filters?.page,
+      filters?.limit,
+      filters?.status,
+      filters?.startDate,
+      filters?.endDate,
+      filters?.origin_placeId,
+      filters?.destination_placeId
+    ],
     queryFn: () => fetchTravelsForAdmin(filters),
     retry: 2,
-    staleTime: 30000
+    staleTime: 30000,
+    placeholderData: previousData => previousData
   })
 }
 

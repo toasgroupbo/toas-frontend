@@ -23,11 +23,6 @@ import {
   flexRender,
   getCoreRowModel,
   useReactTable,
-  getFilteredRowModel,
-  getFacetedRowModel,
-  getFacetedUniqueValues,
-  getFacetedMinMaxValues,
-  getPaginationRowModel,
   getSortedRowModel
 } from '@tanstack/react-table'
 import type { ColumnDef, FilterFn } from '@tanstack/react-table'
@@ -105,6 +100,8 @@ const ViajesCashierListTable = () => {
   const [startDateInput, setStartDateInput] = useState<string>(getTodayDate())
   const [endDateInput, setEndDateInput] = useState<string>('')
   const [destinationPlaceId, setDestinationPlaceId] = useState<string>('')
+  const [currentPage, setCurrentPage] = useState(1)
+  const [pageSize, setPageSize] = useState(10)
 
   // Debounce effect for start date
   useEffect(() => {
@@ -112,6 +109,7 @@ const ViajesCashierListTable = () => {
 
     const timeout = setTimeout(() => {
       setStartDate(startDateInput)
+      setCurrentPage(1)
     }, 800)
 
     return () => clearTimeout(timeout)
@@ -123,6 +121,7 @@ const ViajesCashierListTable = () => {
 
     const timeout = setTimeout(() => {
       setEndDate(endDateInput)
+      setCurrentPage(1)
     }, 800)
 
     return () => clearTimeout(timeout)
@@ -172,17 +171,20 @@ const ViajesCashierListTable = () => {
 
   const apiFilters = useMemo((): TravelFilters => {
     return {
+      page: currentPage,
+      limit: pageSize,
       status: statusFilter !== 'all' ? (statusFilter as 'active' | 'closed') : undefined,
       startDate: startDate || undefined,
       endDate: endDate || undefined,
       origin_placeId: originPlaceId,
       destination_placeId: destinationPlaceId ? Number(destinationPlaceId) : undefined
     }
-  }, [statusFilter, startDate, endDate, originPlaceId, destinationPlaceId])
+  }, [currentPage, pageSize, statusFilter, startDate, endDate, originPlaceId, destinationPlaceId])
 
   const { data: travelsResponse, isLoading, error } = useTravelsForCashier(apiFilters)
 
-  const travels = travelsResponse?.data || []
+  const travels = useMemo(() => travelsResponse?.data || [], [travelsResponse?.data])
+  const meta = travelsResponse?.meta
 
   const createMutation = useCreateTravelForCashier()
   const cancelMutation = useCancelTravelForCashier()
@@ -197,7 +199,7 @@ const ViajesCashierListTable = () => {
   const totalCash = amounts.cash
   const totalQr = amounts.qr
   const totalApp = amounts.app
-  const totalGeneral = totalCash + totalQr + totalApp
+  const totalGeneral = totalCash + totalQr
 
   const handleOpenCreateDialog = () => {
     setCreateDialogOpen(true)
@@ -358,7 +360,7 @@ const ViajesCashierListTable = () => {
                   </IconButton>
                 </Tooltip>
               )}
-              {isActive && !isCashierSeller && (
+              {/*   {isActive && !isCashierSeller && (
                 <Tooltip title='Cancelar Viaje'>
                   <IconButton
                     size='small'
@@ -371,7 +373,7 @@ const ViajesCashierListTable = () => {
                     <i className='tabler-ban' style={{ fontSize: '18px' }} />
                   </IconButton>
                 </Tooltip>
-              )}
+              )} */}
             </div>
           )
         },
@@ -481,9 +483,7 @@ const ViajesCashierListTable = () => {
           const totalBusSeats = row.original.totalBusSeats || 0
 
           const totalSoldAmount =
-            parseFloat(row.original.app_amount || '0') +
-            parseFloat(row.original.cash_amount || '0') +
-            parseFloat(row.original.qr_amount || '0')
+            parseFloat(row.original.cash_amount || '0') + parseFloat(row.original.qr_amount || '0')
 
           return (
             <div className='flex flex-col'>
@@ -591,17 +591,8 @@ const ViajesCashierListTable = () => {
     onRowSelectionChange: setRowSelection,
     onGlobalFilterChange: setSearchQuery,
     getCoreRowModel: getCoreRowModel(),
-    getFilteredRowModel: getFilteredRowModel(),
     getSortedRowModel: getSortedRowModel(),
-    getPaginationRowModel: getPaginationRowModel(),
-    getFacetedRowModel: getFacetedRowModel(),
-    getFacetedUniqueValues: getFacetedUniqueValues(),
-    getFacetedMinMaxValues: getFacetedMinMaxValues(),
-    initialState: {
-      pagination: {
-        pageSize: 10
-      }
-    }
+    manualPagination: true
   })
 
   if (isLoading) {
@@ -616,9 +607,8 @@ const ViajesCashierListTable = () => {
     return <Alert severity='error'>Error al cargar los viajes. Por favor, intenta nuevamente.</Alert>
   }
 
-  const totalRows = table.getFilteredRowModel().rows.length
-  const pageIndex = table.getState().pagination.pageIndex
-  const pageSize = table.getState().pagination.pageSize
+  const totalRows = meta?.total || 0
+  const totalPages = meta?.lastPage || 1
 
   return (
     <Box>
@@ -668,13 +658,19 @@ const ViajesCashierListTable = () => {
               </Box>
             </Box>
 
-            <i className='tabler-arrow-right' style={{ fontSize: '20px', color: 'var(--mui-palette-text-secondary)' }} />
+            <i
+              className='tabler-arrow-right'
+              style={{ fontSize: '20px', color: 'var(--mui-palette-text-secondary)' }}
+            />
 
             <CustomTextField
               select
               label='Destino'
               value={destinationPlaceId}
-              onChange={e => setDestinationPlaceId(e.target.value)}
+              onChange={e => {
+                setDestinationPlaceId(e.target.value)
+                setCurrentPage(1)
+              }}
               size='small'
               sx={{ minWidth: 150 }}
             >
@@ -714,7 +710,10 @@ const ViajesCashierListTable = () => {
               select
               label='Estado'
               value={statusFilter}
-              onChange={e => setStatusFilter(e.target.value)}
+              onChange={e => {
+                setStatusFilter(e.target.value)
+                setCurrentPage(1)
+              }}
               size='small'
               sx={{ minWidth: 120 }}
             >
@@ -772,7 +771,8 @@ const ViajesCashierListTable = () => {
               select
               value={pageSize}
               onChange={e => {
-                table.setPageSize(Number(e.target.value))
+                setPageSize(Number(e.target.value))
+                setCurrentPage(1)
               }}
               className='flex-auto max-sm:is-full sm:is-[70px]'
             >
@@ -847,16 +847,16 @@ const ViajesCashierListTable = () => {
         <div className='flex justify-between items-center flex-wrap pli-6 border-bs bs-auto plb-[12.5px] gap-2'>
           <Typography color='text.disabled'>
             {totalRows > 0
-              ? `Mostrando ${pageIndex * pageSize + 1} a ${Math.min((pageIndex + 1) * pageSize, totalRows)} de ${totalRows} viajes`
+              ? `Mostrando ${(currentPage - 1) * pageSize + 1} a ${Math.min(currentPage * pageSize, totalRows)} de ${totalRows} viajes`
               : 'No hay viajes'}
           </Typography>
           <Pagination
             shape='rounded'
             color='primary'
             variant='tonal'
-            count={table.getPageCount()}
-            page={pageIndex + 1}
-            onChange={(_, page) => table.setPageIndex(page - 1)}
+            count={totalPages}
+            page={currentPage}
+            onChange={(_, page) => setCurrentPage(page)}
             showFirstButton
             showLastButton
           />
