@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useMemo, useEffect } from 'react'
+import React, { useState, useMemo, useEffect, useRef } from 'react'
 
 import { useSearchParams } from 'next/navigation'
 
@@ -550,6 +550,20 @@ const TravelsForSale = () => {
     }
   }, [uniqueDestinations, destinationPlaceIdFilter])
 
+  // Ref to track initial mount (to avoid resetting page on first render)
+  const isInitialMount = useRef(true)
+
+  // Reset page when filters change (skip initial mount)
+  useEffect(() => {
+    if (isInitialMount.current) {
+      isInitialMount.current = false
+
+      return
+    }
+
+    setCurrentPage(1)
+  }, [destinationPlaceIdFilter, departureTimeFilter, pageSize])
+
   const filters = useMemo(() => {
     if (!destinationPlaceIdFilter) {
       return undefined
@@ -557,11 +571,13 @@ const TravelsForSale = () => {
 
     return {
       departure_time: departureTimeFilter || undefined,
-      destination_placeId: Number(destinationPlaceIdFilter)
+      destination_placeId: Number(destinationPlaceIdFilter),
+      page: currentPage,
+      limit: pageSize
     }
-  }, [departureTimeFilter, destinationPlaceIdFilter])
+  }, [departureTimeFilter, destinationPlaceIdFilter, currentPage, pageSize])
 
-  const { data: travels, isLoading, error } = useCashierTravels(filters)
+  const { data: travels, isLoading, error, meta } = useCashierTravels(filters)
 
   const createTicketMutation = useCreateTicket()
   const confirmTicketMutation = useConfirmTicket()
@@ -569,18 +585,20 @@ const TravelsForSale = () => {
   const assignPassengersMutation = useAssignPassengers()
   const closeTravelMutation = useCloseTravel()
 
+  // Process travels from server (already paginated)
   const activeTravels = useMemo(() => {
     if (!travels) return []
 
-    return travels.filter(travel => {
+    return travels.map(travel => {
       if (!travel.travelSeats) {
         travel.travelSeats = []
       }
 
-      return travel.travel_status === 'active'
+      return travel
     })
   }, [travels])
 
+  // Group travels by date for display
   const travelsByDate = useMemo(() => {
     if (!activeTravels || activeTravels.length === 0) return {}
 
@@ -588,7 +606,7 @@ const TravelsForSale = () => {
 
     activeTravels.forEach(travel => {
       const date = new Date(travel.departure_time)
-      const dateKey = date.toLocaleDateString('en-CA', { timeZone: 'America/La_Paz' }) // formato YYYY-MM-DD
+      const dateKey = date.toLocaleDateString('en-CA', { timeZone: 'America/La_Paz' })
 
       if (!grouped[dateKey]) {
         grouped[dateKey] = []
@@ -597,7 +615,7 @@ const TravelsForSale = () => {
       grouped[dateKey].push(travel)
     })
 
-    // Ordenar viajes dentro de cada grupo por hora de salida
+    // Sort travels within each group by departure time
     Object.keys(grouped).forEach(key => {
       grouped[key].sort((a, b) => {
         const dateA = new Date(a.departure_time)
@@ -614,33 +632,16 @@ const TravelsForSale = () => {
     return Object.keys(travelsByDate).sort((a, b) => new Date(a).getTime() - new Date(b).getTime())
   }, [travelsByDate])
 
+  // Server-side pagination - data is already paginated
   const paginatedTravels = useMemo(() => {
-    const startIndex = (currentPage - 1) * pageSize
-    let count = 0
-    const result: { dateKey: string; travels: Travel[] }[] = []
+    return sortedDates.map(dateKey => ({
+      dateKey,
+      travels: travelsByDate[dateKey]
+    }))
+  }, [sortedDates, travelsByDate])
 
-    for (const dateKey of sortedDates) {
-      const travelsForDate = travelsByDate[dateKey]
-
-      for (const travel of travelsForDate) {
-        if (count >= startIndex && count < startIndex + pageSize) {
-          const existing = result.find(r => r.dateKey === dateKey)
-
-          if (existing) {
-            existing.travels.push(travel)
-          } else {
-            result.push({ dateKey, travels: [travel] })
-          }
-        }
-
-        count++
-      }
-    }
-
-    return result
-  }, [sortedDates, travelsByDate, currentPage, pageSize])
-
-  const totalPages = Math.ceil(activeTravels.length / pageSize)
+  const totalPages = meta?.lastPage || 1
+  const totalRecords = meta?.total || activeTravels.length
 
   const handleSellTicket = async (data: Omit<CreateTicketDto, 'payment_type'>, travel: Travel) => {
     setPendingTicketData(data)
@@ -945,7 +946,7 @@ const TravelsForSale = () => {
                 Viajes Disponibles
               </Typography>
               <Typography variant='body2' color='text.secondary' sx={{ fontSize: { xs: '0.75rem', md: '0.875rem' } }}>
-                {activeTravels.length} {activeTravels.length === 1 ? 'viaje disponible' : 'viajes disponibles'}
+                {totalRecords} {totalRecords === 1 ? 'viaje disponible' : 'viajes disponibles'}
               </Typography>
             </div>
           </Box>
@@ -1008,10 +1009,7 @@ const TravelsForSale = () => {
             <CustomTextField
               select
               value={destinationPlaceIdFilter}
-              onChange={e => {
-                setDestinationPlaceIdFilter(e.target.value)
-                setCurrentPage(1)
-              }}
+              onChange={e => setDestinationPlaceIdFilter(e.target.value)}
               label='Destino'
               size='small'
               sx={{ minWidth: { xs: '100%', sm: 200, md: 250 } }}
@@ -1038,7 +1036,7 @@ const TravelsForSale = () => {
           </Box>
         </Box>
 
-        {activeTravels.length === 0 ? (
+        {totalRecords === 0 ? (
           <Box sx={{ py: 8, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2 }}>
             <i className='tabler-info-circle' style={{ fontSize: '48px', color: 'var(--mui-palette-text-disabled)' }} />
             <Typography variant='h6' color='text.secondary'>
@@ -1165,8 +1163,8 @@ const TravelsForSale = () => {
                 color='text.secondary'
                 sx={{ fontSize: { xs: '0.75rem', md: '0.875rem' }, textAlign: { xs: 'center', sm: 'left' } }}
               >
-                Mostrando {(currentPage - 1) * pageSize + 1} a {Math.min(currentPage * pageSize, activeTravels.length)}{' '}
-                de {activeTravels.length}
+                Mostrando {(currentPage - 1) * pageSize + 1} a {Math.min(currentPage * pageSize, totalRecords)}{' '}
+                de {totalRecords}
               </Typography>
               <Box
                 sx={{
@@ -1180,10 +1178,7 @@ const TravelsForSale = () => {
                 <CustomTextField
                   select
                   value={pageSize}
-                  onChange={e => {
-                    setPageSize(Number(e.target.value))
-                    setCurrentPage(1)
-                  }}
+                  onChange={e => setPageSize(Number(e.target.value))}
                   size='small'
                   sx={{ width: { xs: '70px', sm: '80px' } }}
                 >

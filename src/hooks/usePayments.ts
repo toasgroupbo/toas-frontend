@@ -1,6 +1,6 @@
 'use client'
 
-import { useMutation } from '@tanstack/react-query'
+import { useMutation, useQueryClient } from '@tanstack/react-query'
 
 import { api } from '@/libs/axios'
 
@@ -50,7 +50,17 @@ export const useGenerateQR = () => {
 }
 
 export const useVerifyQR = () => {
+  const queryClient = useQueryClient()
+
   return useMutation({
-    mutationFn: verifyQR
+    mutationFn: verifyQR,
+    onSuccess: data => {
+      // Invalidate queries when payment is confirmed
+      if (data.status === 'PAID') {
+        queryClient.invalidateQueries({ queryKey: ['tickets'] })
+        queryClient.invalidateQueries({ queryKey: ['tickets-by-travel'] })
+        queryClient.invalidateQueries({ queryKey: ['cashier-travels'] })
+      }
+    }
   })
 }

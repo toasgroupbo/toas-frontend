@@ -114,45 +114,19 @@ const fetchTransactionCompanies = async (): Promise<CompanyWithDebt[]> => {
 }
 
 const fetchTransactionTravels = async (filters: TravelsFilters): Promise<TravelsPaginatedResponse> => {
-  const params: Record<string, any> = {}
+  const queryParams = new URLSearchParams()
 
-  if (filters.companyId) {
-    params.companyId = filters.companyId
-  }
+  if (filters.companyId) queryParams.append('companyId', filters.companyId.toString())
+  if (filters.status) queryParams.append('status', filters.status)
+  if (filters.isPaid !== undefined) queryParams.append('isPaid', filters.isPaid.toString())
+  if (filters.startDate) queryParams.append('startDate', filters.startDate)
+  if (filters.endDate) queryParams.append('endDate', filters.endDate)
+  if (filters.origin_placeId) queryParams.append('origin_placeId', filters.origin_placeId.toString())
+  if (filters.destination_placeId) queryParams.append('destination_placeId', filters.destination_placeId.toString())
+  if (filters.page) queryParams.append('page', filters.page.toString())
+  if (filters.limit) queryParams.append('limit', filters.limit.toString())
 
-  if (filters.status) {
-    params.status = filters.status
-  }
-
-  if (filters.isPaid !== undefined) {
-    params.isPaid = filters.isPaid
-  }
-
-  if (filters.startDate) {
-    params.startDate = filters.startDate
-  }
-
-  if (filters.endDate) {
-    params.endDate = filters.endDate
-  }
-
-  if (filters.origin_placeId) {
-    params.origin_placeId = filters.origin_placeId
-  }
-
-  if (filters.destination_placeId) {
-    params.destination_placeId = filters.destination_placeId
-  }
-
-  if (filters.page) {
-    params.page = filters.page
-  }
-
-  if (filters.limit) {
-    params.limit = filters.limit
-  }
-
-  const response = await api.get<TravelsPaginatedResponse>('/api/transactions/travels', { params })
+  const response = await api.get<TravelsPaginatedResponse>(`/api/transactions/travels?${queryParams.toString()}`)
 
   return response.data
 }
@@ -172,6 +146,7 @@ export const useTransactionTravels = (filters: TravelsFilters = {}) => {
     queryKey: ['transaction-travels', filters],
     queryFn: () => fetchTransactionTravels(filters),
     enabled: !!filters.companyId,
+    placeholderData: previousData => previousData,
     staleTime: 30000,
     retry: 2
   })

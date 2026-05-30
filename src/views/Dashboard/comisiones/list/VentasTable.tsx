@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useMemo, useEffect } from 'react'
+import { useState, useMemo, useEffect, useRef } from 'react'
 
 import Card from '@mui/material/Card'
 import Typography from '@mui/material/Typography'
@@ -9,7 +9,7 @@ import Button from '@mui/material/Button'
 import CircularProgress from '@mui/material/CircularProgress'
 import Alert from '@mui/material/Alert'
 import MenuItem from '@mui/material/MenuItem'
-import Pagination from '@mui/material/Pagination'
+import { Pagination } from '@mui/material'
 import Avatar from '@mui/material/Avatar'
 import classnames from 'classnames'
 import { flexRender, getCoreRowModel, useReactTable, getSortedRowModel } from '@tanstack/react-table'
@@ -50,8 +50,8 @@ const VentasTable = () => {
   const { isCompanyAdmin, isImpersonating } = useAuth()
   const isCompanyMode = isImpersonating || isCompanyAdmin
 
-  const [pageSize, setPageSize] = useState<number>(10)
-  const [currentPage, setCurrentPage] = useState<number>(1)
+  const [currentPage, setCurrentPage] = useState(1)
+  const [pageSize, setPageSize] = useState(10)
   const [startDate, setStartDate] = useState<string>(getTodayDate())
   const [endDate, setEndDate] = useState<string>('')
   const [startDateInput, setStartDateInput] = useState<string>(getTodayDate())
@@ -59,13 +59,27 @@ const VentasTable = () => {
   const [searchQuery, setSearchQuery] = useState<string>('')
   const [chartModalOpen, setChartModalOpen] = useState<boolean>(false)
 
+  // Refs to track if this is the initial mount (to avoid resetting page on first render)
+  const isInitialStartDate = useRef(true)
+  const isInitialEndDate = useRef(true)
+
   // Debounce effect for start date
   useEffect(() => {
     if (!isValidDateInput(startDateInput)) return
 
+    // Capture the initial state BEFORE the timeout
+    const shouldResetPage = !isInitialStartDate.current
+
+    if (isInitialStartDate.current) {
+      isInitialStartDate.current = false
+    }
+
     const timeout = setTimeout(() => {
       setStartDate(startDateInput)
-      setCurrentPage(1)
+
+      if (shouldResetPage) {
+        setCurrentPage(1)
+      }
     }, 800)
 
     return () => clearTimeout(timeout)
@@ -75,9 +89,19 @@ const VentasTable = () => {
   useEffect(() => {
     if (!isValidDateInput(endDateInput)) return
 
+    // Capture the initial state BEFORE the timeout
+    const shouldResetPage = !isInitialEndDate.current
+
+    if (isInitialEndDate.current) {
+      isInitialEndDate.current = false
+    }
+
     const timeout = setTimeout(() => {
       setEndDate(endDateInput)
-      setCurrentPage(1)
+
+      if (shouldResetPage) {
+        setCurrentPage(1)
+      }
     }, 800)
 
     return () => clearTimeout(timeout)
@@ -85,22 +109,22 @@ const VentasTable = () => {
 
   const generateMutation = useGenerateCommissions()
 
-  const filters = useMemo(() => {
-    return {
+  const queryParams = useMemo(
+    () => ({
+      page: currentPage,
+      limit: pageSize,
       startDate: startDate || undefined,
       endDate: endDate || undefined,
       search: searchQuery || undefined
-    }
-  }, [startDate, endDate, searchQuery])
+    }),
+    [currentPage, pageSize, startDate, endDate, searchQuery]
+  )
 
-  const { data: commissions, isLoading, error, totals } = useCommissions(filters)
+  const { data: commissionsResponse, isLoading, error } = useCommissions(queryParams)
 
-  const paginatedData = useMemo(() => {
-    return commissions?.slice((currentPage - 1) * pageSize, currentPage * pageSize) || []
-  }, [commissions, currentPage, pageSize])
-
-  const totalRecords = commissions?.length || 0
-  const totalPages = Math.ceil(totalRecords / pageSize)
+  const commissions = commissionsResponse?.data || []
+  const meta = commissionsResponse?.meta
+  const totals = commissionsResponse?.totals
 
   const totalCommissionApp = parseFloat(totals?.total_commission_app || '0')
   const totalPlatform = parseFloat(totals?.total_commission_company || '0')
@@ -206,10 +230,11 @@ const VentasTable = () => {
   }, [currentPage, pageSize, isCompanyMode])
 
   const table = useReactTable<Commission>({
-    data: paginatedData,
+    data: commissions,
     columns,
     getCoreRowModel: getCoreRowModel(),
-    getSortedRowModel: getSortedRowModel()
+    getSortedRowModel: getSortedRowModel(),
+    manualPagination: true
   })
 
   if (isLoading) {
@@ -246,7 +271,15 @@ const VentasTable = () => {
               <DebouncedInput
                 placeholder='Buscar empresa...'
                 value={searchQuery}
-                onChange={value => setSearchQuery(String(value))}
+                onChange={value => {
+                  const newValue = String(value)
+
+                  // Only reset page if search value actually changed
+                  if (newValue !== searchQuery) {
+                    setSearchQuery(newValue)
+                    setCurrentPage(1)
+                  }
+                }}
                 debounce={500}
                 size='small'
                 sx={{ minWidth: 200 }}
@@ -326,7 +359,7 @@ const VentasTable = () => {
                 variant='contained'
                 color='primary'
                 startIcon={<i className='tabler-chart-bar' />}
-                disabled={totalRecords === 0}
+                disabled={(meta?.total || 0) === 0}
                 onClick={() => setChartModalOpen(true)}
               >
                 Gráfico
@@ -382,15 +415,18 @@ const VentasTable = () => {
                 </tr>
               ))}
             </thead>
-            <tbody>
-              {paginatedData.length === 0 ? (
+
+            {commissions.length === 0 ? (
+              <tbody>
                 <tr>
-                  <td colSpan={columns.length} className='text-center py-8'>
+                  <td colSpan={table.getVisibleFlatColumns().length} className='text-center py-8'>
                     <Typography>No hay datos de comisiones disponibles</Typography>
                   </td>
                 </tr>
-              ) : (
-                table.getRowModel().rows.map(row => (
+              </tbody>
+            ) : (
+              <tbody>
+                {table.getRowModel().rows.map(row => (
                   <tr key={row.id}>
                     {row.getVisibleCells().map(cell => {
                       const align = (cell.column.columnDef.meta as { align?: string })?.align || 'left'
@@ -402,30 +438,28 @@ const VentasTable = () => {
                       )
                     })}
                   </tr>
-                ))
-              )}
-            </tbody>
+                ))}
+              </tbody>
+            )}
           </table>
         </div>
 
         <div className='flex justify-between items-center flex-wrap pli-6 border-bs bs-auto plb-[12.5px] gap-2'>
           <Typography color='text.disabled'>
-            {totalRecords > 0
-              ? `Mostrando ${(currentPage - 1) * pageSize + 1} a ${Math.min(currentPage * pageSize, totalRecords)} de ${totalRecords} comisiones`
+            {(meta?.total || 0) > 0
+              ? `Mostrando ${(currentPage - 1) * pageSize + 1} a ${Math.min(currentPage * pageSize, meta?.total || 0)} de ${meta?.total || 0} comisiones`
               : 'Sin datos'}
           </Typography>
-          {totalPages > 1 && (
-            <Pagination
-              shape='rounded'
-              color='primary'
-              variant='tonal'
-              count={totalPages}
-              page={currentPage}
-              onChange={(_, page) => setCurrentPage(page)}
-              showFirstButton
-              showLastButton
-            />
-          )}
+          <Pagination
+            shape='rounded'
+            color='primary'
+            variant='tonal'
+            count={meta?.lastPage || 1}
+            page={currentPage}
+            onChange={(_, page) => setCurrentPage(page)}
+            showFirstButton
+            showLastButton
+          />
         </div>
       </Card>
 

@@ -408,8 +408,13 @@ const ClientsTable = () => {
             <DebouncedInput
               value={searchQuery}
               onChange={value => {
-                setSearchQuery(String(value))
-                setCurrentPage(1)
+                const newValue = String(value)
+
+                // Only reset page if search value actually changed
+                if (newValue !== searchQuery) {
+                  setSearchQuery(newValue)
+                  setCurrentPage(1)
+                }
               }}
               placeholder='Buscar clientes...'
               className='max-sm:is-full min-w-[300px] flex-1 max-w-md'

@@ -137,7 +137,7 @@ const ViajesOwnerListTable = () => {
   const meta = travelsResponse?.meta
 
   const amounts = travelsResponse?.amounts || { cash: 0, qr: 0, app: 0 }
-  const totalQr = amounts.qr
+  const totalQr = amounts.qr + amounts.app
 
   const formatDateTime = (dateString: string) => {
     const date = new Date(dateString)
@@ -240,6 +240,30 @@ const ViajesOwnerListTable = () => {
                 <i className='tabler-clock' style={{ fontSize: '14px', color: 'var(--mui-palette-info-main)' }} />
                 <Typography variant='caption'>{formatDateTime(row.original.departure_time)}</Typography>
               </div>
+            </div>
+          )
+        }
+      }),
+      columnHelper.display({
+        id: 'deposito_qr',
+        header: 'Depósito QR',
+        cell: ({ row }) => {
+          const appAmount = parseFloat((row.original as any).app_amount || '0')
+          const qrAmount = parseFloat(row.original.qr_amount || '0')
+          const appSoldSeats = (row.original as any).seatsApp || 0
+          const qrSoldSeats = (row.original as any).seatsQr || 0
+
+          const totalDepositoQr = appAmount + qrAmount
+          const totalSeatsQr = appSoldSeats + qrSoldSeats
+
+          return (
+            <div className='flex flex-col'>
+              <Typography variant='body2' fontWeight='bold'>
+                {totalSeatsQr} asientos
+              </Typography>
+              <Typography variant='body2' fontWeight='medium' color='info.main'>
+                {formatCurrency(totalDepositoQr)}
+              </Typography>
             </div>
           )
         }

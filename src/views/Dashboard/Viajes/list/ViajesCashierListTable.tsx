@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState, useRef } from 'react'
 
 import { useRouter } from 'next/navigation'
 
@@ -103,13 +103,27 @@ const ViajesCashierListTable = () => {
   const [currentPage, setCurrentPage] = useState(1)
   const [pageSize, setPageSize] = useState(10)
 
+  // Refs to track if this is the initial mount (to avoid resetting page on first render)
+  const isInitialStartDate = useRef(true)
+  const isInitialEndDate = useRef(true)
+
   // Debounce effect for start date
   useEffect(() => {
     if (!isValidDateInput(startDateInput)) return
 
+    // Capture the initial state BEFORE the timeout
+    const shouldResetPage = !isInitialStartDate.current
+
+    if (isInitialStartDate.current) {
+      isInitialStartDate.current = false
+    }
+
     const timeout = setTimeout(() => {
       setStartDate(startDateInput)
-      setCurrentPage(1)
+
+      if (shouldResetPage) {
+        setCurrentPage(1)
+      }
     }, 800)
 
     return () => clearTimeout(timeout)
@@ -119,13 +133,24 @@ const ViajesCashierListTable = () => {
   useEffect(() => {
     if (!isValidDateInput(endDateInput)) return
 
+    // Capture the initial state BEFORE the timeout
+    const shouldResetPage = !isInitialEndDate.current
+
+    if (isInitialEndDate.current) {
+      isInitialEndDate.current = false
+    }
+
     const timeout = setTimeout(() => {
       setEndDate(endDateInput)
-      setCurrentPage(1)
+
+      if (shouldResetPage) {
+        setCurrentPage(1)
+      }
     }, 800)
 
     return () => clearTimeout(timeout)
   }, [endDateInput])
+
   const [createDialogOpen, setCreateDialogOpen] = useState(false)
   const [cancelDialogOpen, setCancelDialogOpen] = useState(false)
   const [selectedTravel, setSelectedTravel] = useState<Travel | null>(null)
@@ -312,28 +337,6 @@ const ViajesCashierListTable = () => {
 
   const columns = useMemo<ColumnDef<TravelWithActionsType, any>[]>(
     () => [
-      {
-        id: 'select',
-        header: ({ table }) => (
-          <Checkbox
-            {...{
-              checked: table.getIsAllRowsSelected(),
-              indeterminate: table.getIsSomeRowsSelected(),
-              onChange: table.getToggleAllRowsSelectedHandler()
-            }}
-          />
-        ),
-        cell: ({ row }) => (
-          <Checkbox
-            {...{
-              checked: row.getIsSelected(),
-              disabled: !row.getCanSelect(),
-              indeterminate: row.getIsSomeSelected(),
-              onChange: row.getToggleSelectedHandler()
-            }}
-          />
-        )
-      },
       columnHelper.accessor('actions', {
         header: 'Acciones',
         cell: ({ row }) => {

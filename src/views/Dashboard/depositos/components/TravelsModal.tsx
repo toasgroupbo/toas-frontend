@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useMemo, useCallback, useEffect } from 'react'
+import { useState, useMemo, useCallback, useEffect, useRef } from 'react'
 
 import {
   Dialog,
@@ -127,10 +127,19 @@ const TravelsModal = ({ open, onClose, company }: TravelsModalProps) => {
   const [paymentDetailsDialogOpen, setPaymentDetailsDialogOpen] = useState(false)
   const [paymentDetailsTravel, setPaymentDetailsTravel] = useState<Travel | null>(null)
 
+  // Ref to track initial mount
+  const isInitialMount = useRef(true)
+
   const { data: places } = usePlaces()
 
-  // Resetear página cuando cambian los filtros
+  // Resetear página cuando cambian los filtros (skip initial mount)
   useEffect(() => {
+    if (isInitialMount.current) {
+      isInitialMount.current = false
+
+      return
+    }
+
     setCurrentPage(1)
   }, [isPaidFilter, startDate, endDate, originPlaceId, destinationPlaceId, pageSize])
 
@@ -360,7 +369,8 @@ const TravelsModal = ({ open, onClose, company }: TravelsModalProps) => {
     data: paginatedData,
     columns,
     getCoreRowModel: getCoreRowModel(),
-    getSortedRowModel: getSortedRowModel()
+    getSortedRowModel: getSortedRowModel(),
+    manualPagination: true
   })
 
   return (

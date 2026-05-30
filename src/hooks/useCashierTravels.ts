@@ -9,24 +9,45 @@ import { useAuth } from '@/contexts/AuthContext'
 interface FetchCashierTravelsParams {
   departure_time?: string
   destination_placeId?: number
+  page?: number
+  limit?: number
 }
 
-const fetchCashierTravels = async (params?: FetchCashierTravelsParams): Promise<Travel[]> => {
+interface CashierTravelsMeta {
+  total: number
+  page: number
+  lastPage: number
+  limit: number
+  offset: number
+  hasNextPage: boolean
+  hasPreviousPage: boolean
+}
+
+interface CashierTravelsAmounts {
+  cash: number
+  qr: number
+  app: number
+}
+
+interface CashierTravelsResponse {
+  data: Travel[]
+  meta: CashierTravelsMeta
+  amounts: CashierTravelsAmounts
+}
+
+const fetchCashierTravels = async (params?: FetchCashierTravelsParams): Promise<CashierTravelsResponse> => {
   const queryParams = new URLSearchParams()
 
-  if (params?.departure_time) {
-    queryParams.append('departure_time', params.departure_time)
-  }
-
-  if (params?.destination_placeId) {
-    queryParams.append('destination_placeId', params.destination_placeId.toString())
-  }
+  if (params?.departure_time) queryParams.append('departure_time', params.departure_time)
+  if (params?.destination_placeId) queryParams.append('destination_placeId', params.destination_placeId.toString())
+  if (params?.page) queryParams.append('page', params.page.toString())
+  if (params?.limit) queryParams.append('limit', params.limit.toString())
 
   const url = `/api/travels/for-cashier/all${queryParams.toString() ? `?${queryParams.toString()}` : ''}`
 
-  const response = await api.get<{ data: Travel[]; meta: any; amounts: any }>(url)
+  const response = await api.get<CashierTravelsResponse>(url)
 
-  return response.data.data
+  return response.data
 }
 
 const fetchCashierTravelById = async (id: number): Promise<Travel> => {
@@ -38,12 +59,21 @@ const fetchCashierTravelById = async (id: number): Promise<Travel> => {
 export const useCashierTravels = (params?: FetchCashierTravelsParams) => {
   const { isCashier } = useAuth()
 
-  return useQuery({
+  const query = useQuery({
     queryKey: ['cashier-travels', params],
     queryFn: () => fetchCashierTravels(params),
     enabled: isCashier,
+    placeholderData: previousData => previousData,
+    staleTime: 30000,
     retry: false
   })
+
+  return {
+    ...query,
+    data: query.data?.data || [],
+    meta: query.data?.meta,
+    amounts: query.data?.amounts
+  }
 }
 
 export const useCashierTravelById = (id: number | null) => {

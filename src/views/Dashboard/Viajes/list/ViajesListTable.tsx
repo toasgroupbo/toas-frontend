@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useState, useRef } from 'react'
 
 import Card from '@mui/material/Card'
 import Chip from '@mui/material/Chip'
@@ -94,13 +94,27 @@ const ViajesListTable = () => {
   const [currentPage, setCurrentPage] = useState(1)
   const [pageSize, setPageSize] = useState(10)
 
+  // Refs to track if this is the initial mount (to avoid resetting page on first render)
+  const isInitialStartDate = useRef(true)
+  const isInitialEndDate = useRef(true)
+
   // Debounce effect for start date
   useEffect(() => {
     if (!isValidDateInput(startDateInput)) return
 
+    // Capture the initial state BEFORE the timeout
+    const shouldResetPage = !isInitialStartDate.current
+
+    if (isInitialStartDate.current) {
+      isInitialStartDate.current = false
+    }
+
     const timeout = setTimeout(() => {
       setStartDate(startDateInput)
-      setCurrentPage(1)
+
+      if (shouldResetPage) {
+        setCurrentPage(1)
+      }
     }, 800)
 
     return () => clearTimeout(timeout)
@@ -110,9 +124,19 @@ const ViajesListTable = () => {
   useEffect(() => {
     if (!isValidDateInput(endDateInput)) return
 
+    // Capture the initial state BEFORE the timeout
+    const shouldResetPage = !isInitialEndDate.current
+
+    if (isInitialEndDate.current) {
+      isInitialEndDate.current = false
+    }
+
     const timeout = setTimeout(() => {
       setEndDate(endDateInput)
-      setCurrentPage(1)
+
+      if (shouldResetPage) {
+        setCurrentPage(1)
+      }
     }, 800)
 
     return () => clearTimeout(timeout)
@@ -236,28 +260,6 @@ const ViajesListTable = () => {
 
   const columns = useMemo<ColumnDef<Travel, any>[]>(
     () => [
-      {
-        id: 'select',
-        header: ({ table }) => (
-          <Checkbox
-            {...{
-              checked: table.getIsAllRowsSelected(),
-              indeterminate: table.getIsSomeRowsSelected(),
-              onChange: table.getToggleAllRowsSelectedHandler()
-            }}
-          />
-        ),
-        cell: ({ row }) => (
-          <Checkbox
-            {...{
-              checked: row.getIsSelected(),
-              disabled: !row.getCanSelect(),
-              indeterminate: row.getIsSomeSelected(),
-              onChange: row.getToggleSelectedHandler()
-            }}
-          />
-        )
-      },
       {
         id: 'actions',
         header: 'Acciones',
@@ -554,7 +556,10 @@ const ViajesListTable = () => {
               ))}
             </CustomTextField>
 
-            <i className='tabler-arrow-right' style={{ fontSize: '20px', color: 'var(--mui-palette-text-secondary)' }} />
+            <i
+              className='tabler-arrow-right'
+              style={{ fontSize: '20px', color: 'var(--mui-palette-text-secondary)' }}
+            />
 
             <CustomTextField
               select
@@ -671,8 +676,13 @@ const ViajesListTable = () => {
             <DebouncedInput
               value={searchQuery}
               onChange={value => {
-                setSearchQuery(String(value))
-                setCurrentPage(1)
+                const newValue = String(value)
+
+                // Only reset page if search value actually changed
+                if (newValue !== searchQuery) {
+                  setSearchQuery(newValue)
+                  setCurrentPage(1)
+                }
               }}
               placeholder='Buscar viajes...'
               className='max-sm:is-full min-w-[300px] flex-1 max-w-md'
