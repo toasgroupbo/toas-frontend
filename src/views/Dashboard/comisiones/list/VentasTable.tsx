@@ -46,6 +46,17 @@ const formatDate = (dateString: string) => {
   })
 }
 
+const formatTime = (dateString: string) => {
+  const date = new Date(dateString)
+
+  return date.toLocaleTimeString('es-BO', {
+    timeZone: 'America/La_Paz',
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false
+  })
+}
+
 const VentasTable = () => {
   const { isCompanyAdmin, isImpersonating } = useAuth()
   const isCompanyMode = isImpersonating || isCompanyAdmin
@@ -146,9 +157,14 @@ const VentasTable = () => {
         accessorKey: 'departure_time',
         header: 'FECHA SALIDA',
         cell: ({ row }) => (
-          <Typography variant='body2' sx={{ textTransform: 'capitalize' }}>
-            {formatDate(row.original.departure_time)}
-          </Typography>
+          <div className='flex flex-col'>
+            <Typography variant='body2' sx={{ textTransform: 'capitalize' }}>
+              {formatDate(row.original.departure_time)}
+            </Typography>
+            <Typography variant='caption' color='text.secondary'>
+              {formatTime(row.original.departure_time)}
+            </Typography>
+          </div>
         ),
         meta: { align: 'left' }
       }
