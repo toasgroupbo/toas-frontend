@@ -467,6 +467,7 @@ const VentasTable = () => {
         open={chartModalOpen}
         onClose={() => setChartModalOpen(false)}
         data={commissions || []}
+        totals={totals}
         isCompanyAdmin={isCompanyMode}
       />
     </>

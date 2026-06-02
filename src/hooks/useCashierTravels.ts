@@ -9,6 +9,7 @@ import { useAuth } from '@/contexts/AuthContext'
 interface FetchCashierTravelsParams {
   departure_time?: string
   destination_placeId?: number
+  status?: 'active' | 'closed' | 'cancelled'
   page?: number
   limit?: number
 }
@@ -40,6 +41,7 @@ const fetchCashierTravels = async (params?: FetchCashierTravelsParams): Promise<
 
   if (params?.departure_time) queryParams.append('departure_time', params.departure_time)
   if (params?.destination_placeId) queryParams.append('destination_placeId', params.destination_placeId.toString())
+  if (params?.status) queryParams.append('status', params.status)
   if (params?.page) queryParams.append('page', params.page.toString())
   if (params?.limit) queryParams.append('limit', params.limit.toString())
 

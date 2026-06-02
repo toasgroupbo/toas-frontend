@@ -170,28 +170,6 @@ const OfficesListTable = () => {
 
   const columns = useMemo<ColumnDef<OfficeWithActionsType, any>[]>(
     () => [
-      {
-        id: 'select',
-        header: ({ table }) => (
-          <Checkbox
-            {...{
-              checked: table.getIsAllRowsSelected(),
-              indeterminate: table.getIsSomeRowsSelected(),
-              onChange: table.getToggleAllRowsSelectedHandler()
-            }}
-          />
-        ),
-        cell: ({ row }) => (
-          <Checkbox
-            {...{
-              checked: row.getIsSelected(),
-              disabled: !row.getCanSelect(),
-              indeterminate: row.getIsSomeSelected(),
-              onChange: row.getToggleSelectedHandler()
-            }}
-          />
-        )
-      },
       columnHelper.accessor('actions', {
         header: 'Acciones',
         cell: ({ row }) => (

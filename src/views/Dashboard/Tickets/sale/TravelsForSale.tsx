@@ -572,6 +572,7 @@ const TravelsForSale = () => {
     return {
       departure_time: departureTimeFilter || undefined,
       destination_placeId: Number(destinationPlaceIdFilter),
+      status: 'active' as const,
       page: currentPage,
       limit: pageSize
     }

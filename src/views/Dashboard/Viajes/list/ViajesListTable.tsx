@@ -672,7 +672,7 @@ const ViajesListTable = () => {
         </div>
 
         <div className='flex flex-wrap justify-between gap-4 px-6 pb-6'>
-          <div className='flex flex-wrap gap-4 items-center'>
+          {/* <div className='flex flex-wrap gap-4 items-center'>
             <DebouncedInput
               value={searchQuery}
               onChange={value => {
@@ -687,7 +687,7 @@ const ViajesListTable = () => {
               placeholder='Buscar viajes...'
               className='max-sm:is-full min-w-[300px] flex-1 max-w-md'
             />
-          </div>
+          </div> */}
 
           <div className='flex max-sm:flex-col items-start sm:items-center gap-4 max-sm:is-full'>
             <CustomTextField

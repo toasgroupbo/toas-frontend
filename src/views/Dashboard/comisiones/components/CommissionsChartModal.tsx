@@ -14,7 +14,7 @@ import Card from '@mui/material/Card'
 import { useTheme } from '@mui/material/styles'
 import type { ApexOptions } from 'apexcharts'
 
-import type { Commission } from '@/types/api/commissions'
+import type { Commission, CommissionsTotals } from '@/types/api/commissions'
 
 const AppReactApexCharts = dynamic(() => import('@/libs/styles/AppReactApexCharts'), { ssr: false })
 
@@ -22,10 +22,11 @@ interface CommissionsChartModalProps {
   open: boolean
   onClose: () => void
   data: Commission[]
+  totals?: CommissionsTotals
   isCompanyAdmin?: boolean
 }
 
-const CommissionsChartModal = ({ open, onClose, data, isCompanyAdmin = false }: CommissionsChartModalProps) => {
+const CommissionsChartModal = ({ open, onClose, data, totals, isCompanyAdmin = false }: CommissionsChartModalProps) => {
   const theme = useTheme()
 
   const labels = data.map(item => {
@@ -146,8 +147,8 @@ const CommissionsChartModal = ({ open, onClose, data, isCompanyAdmin = false }: 
     }
   }
 
-  const totalCommissionApp = commissionApp.reduce((a, b) => a + b, 0)
-  const totalCommissionPlatform = commissionPlatform.reduce((a, b) => a + b, 0)
+  const totalCommissionApp = parseFloat(totals?.total_commission_app || '0')
+  const totalCommissionPlatform = parseFloat(totals?.total_commission_company || '0')
 
   return (
     <Dialog open={open} onClose={onClose} maxWidth='md' fullWidth>

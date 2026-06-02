@@ -436,15 +436,19 @@ const TravelDetailDialog = ({ open, onClose, travel, companyName, isCashier = fa
                     </Typography>
                   </Grid>
 
-                  <Grid item xs={4}>
-                    <Typography variant='body2'>App</Typography>
-                  </Grid>
-                  <Grid item xs={4}>
-                    <Typography variant='body2'>-</Typography>
-                  </Grid>
-                  <Grid item xs={4}>
-                    <Typography variant='body2'>{formatCurrency(appQrAmount)}</Typography>
-                  </Grid>
+                  {!isCashierSeller && (
+                    <>
+                      <Grid item xs={4}>
+                        <Typography variant='body2'>App</Typography>
+                      </Grid>
+                      <Grid item xs={4}>
+                        <Typography variant='body2'>-</Typography>
+                      </Grid>
+                      <Grid item xs={4}>
+                        <Typography variant='body2'>{formatCurrency(appQrAmount)}</Typography>
+                      </Grid>
+                    </>
+                  )}
 
                   {cashiers.map(cashier => (
                     <Grid container spacing={1} key={cashier.id}>

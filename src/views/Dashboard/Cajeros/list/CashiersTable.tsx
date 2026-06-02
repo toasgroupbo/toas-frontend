@@ -200,28 +200,6 @@ const CashiersTable = () => {
 
   const columns = useMemo<ColumnDef<CashierWithActionsType, any>[]>(
     () => [
-      {
-        id: 'select',
-        header: ({ table }) => (
-          <Checkbox
-            {...{
-              checked: table.getIsAllRowsSelected(),
-              indeterminate: table.getIsSomeRowsSelected(),
-              onChange: table.getToggleAllRowsSelectedHandler()
-            }}
-          />
-        ),
-        cell: ({ row }) => (
-          <Checkbox
-            {...{
-              checked: row.getIsSelected(),
-              disabled: !row.getCanSelect(),
-              indeterminate: row.getIsSomeSelected(),
-              onChange: row.getToggleSelectedHandler()
-            }}
-          />
-        )
-      },
       columnHelper.accessor('actions', {
         header: 'Acciones',
         cell: ({ row }) => (
@@ -325,7 +303,10 @@ const CashiersTable = () => {
                 </Typography>
               </div>
               <div className='flex items-center gap-1 ml-5'>
-                <i className='tabler-map-pin' style={{ fontSize: '14px', color: 'var(--mui-palette-text-secondary)' }} />
+                <i
+                  className='tabler-map-pin'
+                  style={{ fontSize: '14px', color: 'var(--mui-palette-text-secondary)' }}
+                />
                 <Typography variant='caption' color='text.secondary'>
                   {row.original.office.place.name}
                 </Typography>
