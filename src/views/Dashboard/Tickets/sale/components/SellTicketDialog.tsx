@@ -31,7 +31,7 @@ import { formatFullDateTime } from '../utils/dateFormatters'
 interface SellTicketDialogProps {
   open: boolean
   onClose: () => void
-  onSubmit: (data: Omit<CreateTicketDto, 'payment_type'>, travel: Travel) => Promise<void>
+  onSubmit: (data: CreateTicketDto, travel: Travel) => Promise<void>
   isLoading?: boolean
   preSelectedTravel?: Travel
 }
@@ -137,7 +137,7 @@ const SellTicketDialog = ({ open, onClose, onSubmit, isLoading = false, preSelec
     setValue('selectedSeats', Array.from(newSelected))
   }
 
-  const handleFormSubmit = async (data: FormData) => {
+  const handleFormSubmit = async (data: FormData, paymentType: 'cash' | 'qr') => {
     if (selectedSeats.size === 0) {
       return
     }
@@ -192,13 +192,14 @@ const SellTicketDialog = ({ open, onClose, onSubmit, isLoading = false, preSelec
       return
     }
 
-    const createData: Omit<CreateTicketDto, 'payment_type'> = {
+    const createData: CreateTicketDto = {
       travelId: typeof data.travelId === 'number' ? data.travelId : Number(data.travelId),
       billing: {
         ci: data.billing.ci,
         nombre: data.billing.nombre
       },
-      seatSelections: seatSelections
+      seatSelections: seatSelections,
+      payment_type: paymentType
     }
 
     await onSubmit(createData, latestTravelData)
@@ -286,7 +287,7 @@ const SellTicketDialog = ({ open, onClose, onSubmit, isLoading = false, preSelec
         </Box>
       </DialogTitle>
 
-      <form onSubmit={handleSubmit(handleFormSubmit)}>
+      <form onSubmit={e => e.preventDefault()}>
         <DialogContent>
           <Grid container spacing={4}>
             {!preSelectedTravel && (
@@ -518,24 +519,36 @@ const SellTicketDialog = ({ open, onClose, onSubmit, isLoading = false, preSelec
           }}
         >
           <Button
-            type='submit'
-            variant='contained'
-            fullWidth={isMobile}
-            disabled={isLoading || selectedSeats.size === 0}
-            startIcon={isLoading ? <CircularProgress size={20} /> : <i className='tabler-ticket' />}
-            sx={{ order: { xs: 1, sm: 2 } }}
-          >
-            {isLoading ? 'Vendiendo...' : isMobile ? 'Vender' : 'Vender Ticket'}
-          </Button>
-          <Button
             onClick={handleClose}
             variant='outlined'
             color='secondary'
             fullWidth={isMobile}
             disabled={isLoading}
-            sx={{ order: { xs: 2, sm: 1 } }}
+            sx={{ order: { xs: 3, sm: 1 }, flex: { sm: 1 } }}
           >
             Cancelar
+          </Button>
+          <Button
+            onClick={handleSubmit(data => handleFormSubmit(data, 'cash'))}
+            variant='contained'
+            color='success'
+            fullWidth={isMobile}
+            disabled={isLoading || selectedSeats.size === 0}
+            startIcon={isLoading ? <CircularProgress size={20} /> : <i className='tabler-cash' />}
+            sx={{ order: { xs: 1, sm: 2 }, flex: { sm: 1 } }}
+          >
+            {isLoading ? 'Procesando...' : isMobile ? 'Efectivo' : 'Vender en Efectivo'}
+          </Button>
+          <Button
+            onClick={handleSubmit(data => handleFormSubmit(data, 'qr'))}
+            variant='contained'
+            color='info'
+            fullWidth={isMobile}
+            disabled={isLoading || selectedSeats.size === 0}
+            startIcon={isLoading ? <CircularProgress size={20} /> : <i className='tabler-qrcode' />}
+            sx={{ order: { xs: 2, sm: 3 }, flex: { sm: 1 } }}
+          >
+            {isLoading ? 'Procesando...' : isMobile ? 'QR' : 'Vender por QR'}
           </Button>
         </DialogActions>
       </form>

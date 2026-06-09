@@ -12,6 +12,9 @@ export interface GenerateQRResponse {
   }
   state: string
   message: string
+  ticketId: number
+  status: string
+  reserve_expiresAt: string
 }
 
 export interface VerifyQRResponse {

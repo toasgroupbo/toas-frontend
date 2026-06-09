@@ -27,8 +27,6 @@ import type { SeatAssignment } from './components/AssignPassengersDialog'
 import SaleSuccessDialog from './components/SaleSuccessDialog'
 import BusImagesDialog from './components/BusImagesDialog'
 import CloseTravelDialog from './components/CloseTravelDialog'
-import QRPaymentDialog from './components/QRPaymentDialog'
-import ConfirmPaymentDialog from './components/ConfirmPaymentDialog'
 import { useCreateTicket, useConfirmTicket, useCancelTicket } from '@/hooks/useTickets'
 import { useAssignPassengers } from '@/hooks/usePassengers'
 import type { CreateTicketDto, Ticket } from '@/types/api/tickets'
@@ -489,12 +487,8 @@ const TravelsForSale = () => {
   const [openConfirmCloseDialog, setOpenConfirmCloseDialog] = useState(false)
   const [openImagesDialog, setOpenImagesDialog] = useState(false)
   const [pendingTicket, setPendingTicket] = useState<Ticket | null>(null)
-  const [isProcessingPayment, setIsProcessingPayment] = useState(false)
   const [selectedTravelForTickets, setSelectedTravelForTickets] = useState<number | null>(null)
-  const [openQRDialog, setOpenQRDialog] = useState(false)
-  const [openConfirmPaymentDialog, setOpenConfirmPaymentDialog] = useState(false)
-  const [pendingAssignments, setPendingAssignments] = useState<SeatAssignment[]>([])
-  const [pendingTicketData, setPendingTicketData] = useState<Omit<CreateTicketDto, 'payment_type'> | null>(null)
+  const [pendingPaymentMethod, setPendingPaymentMethod] = useState<'cash' | 'qr'>('cash')
   const [isConfirmingPayment, setIsConfirmingPayment] = useState(false)
   const [isCancellingPayment, setIsCancellingPayment] = useState(false)
 
@@ -644,104 +638,39 @@ const TravelsForSale = () => {
   const totalPages = meta?.lastPage || 1
   const totalRecords = meta?.total || activeTravels.length
 
-  const handleSellTicket = async (data: Omit<CreateTicketDto, 'payment_type'>, travel: Travel) => {
-    setPendingTicketData(data)
-    setSelectedTravel(travel)
-
-    const selectedSeatsData = (travel.travelSeats || []).filter(seat =>
-      data.seatSelections.some(sel => sel.seatId === String(seat.id))
-    )
-
-    const pseudoTicket: Ticket = {
-      id: 0, // ID temporal
-      type: 'IN_OFFICE',
-      status: 'pending',
-      total_price: data.seatSelections.reduce((sum, sel) => sum + parseFloat(sel.price || '0'), 0).toFixed(2),
-      seats: selectedSeatsData.map(seat => {
-        const selection = data.seatSelections.find(sel => sel.seatId === String(seat.id))
-
-        return {
-          id: seat.id,
-          seatNumber: seat.seatNumber,
-          price: selection?.price || seat.price,
-          deck: seat.deck
-        }
-      }),
-      reserve_expiresAt: null,
-      createdAt: new Date().toISOString(),
-      travelSeats: selectedSeatsData.map(seat => {
-        const selection = data.seatSelections.find(sel => sel.seatId === String(seat.id))
-
-        return {
-          id: seat.id,
-          row: seat.row,
-          column: seat.column,
-          deck: seat.deck,
-          price: selection?.price || seat.price,
-          seatNumber: seat.seatNumber,
-          type: seat.type,
-          sale_type: seat.sale_type,
-          status: seat.status,
-          createdAt: seat.createdAt,
-          passenger: null
-        }
-      }),
-      buyer: {
-        id: 0,
-        email: null,
-        name: 'Cliente',
-        ci: '',
-        phone: null,
-        is_verified: false,
-        provider: null,
-        idProvider: null,
-        birthDate: null,
-        photo: null,
-        createdAt: new Date().toISOString()
-      }
-    }
-
-    setPendingTicket(pseudoTicket)
-    setOpenSellDialog(false)
-    setOpenAssignDialog(true)
-  }
-
-  const handlePayCash = async (assignments: SeatAssignment[]) => {
-    if (!pendingTicketData || !selectedTravel) return
-
+  // Crear ticket cuando el usuario elige método de pago
+  const handleCreateTicket = async (data: CreateTicketDto, travel: Travel) => {
     try {
-      setIsProcessingPayment(true)
-
-      const ticketData: CreateTicketDto = {
-        ...pendingTicketData,
-        payment_type: 'cash'
-      }
-
-      const createdTicket = await createTicketMutation.mutateAsync(ticketData)
-
-      await assignPassengersMutation.mutateAsync({
-        ticketId: createdTicket.id,
-        passengers: assignments.map(a => ({
-          seatId: a.seatId,
-          passenger: {
-            name: a.passengerName,
-            ci: a.passengerCI
-          }
-        }))
-      })
+      const createdTicket = await createTicketMutation.mutateAsync(data)
 
       setPendingTicket(createdTicket)
-      setPendingAssignments(assignments)
-      setOpenAssignDialog(false)
-      setOpenConfirmPaymentDialog(true)
+      setSelectedTravel(travel)
+      setPendingPaymentMethod(data.payment_type)
+      setOpenSellDialog(false)
+      setOpenAssignDialog(true)
     } catch (error) {
-      console.error('Error processing cash payment:', error)
-    } finally {
-      setIsProcessingPayment(false)
+      console.error('Error creating ticket:', error)
     }
   }
 
-  const handleConfirmCashPayment = async () => {
+  // Asignar pasajeros al ticket
+  const handleAssignPassengers = async (assignments: SeatAssignment[]) => {
+    if (!pendingTicket) return
+
+    await assignPassengersMutation.mutateAsync({
+      ticketId: pendingTicket.id,
+      passengers: assignments.map(a => ({
+        seatId: a.seatId,
+        passenger: {
+          name: a.passengerName,
+          ci: a.passengerCI
+        }
+      }))
+    })
+  }
+
+  // Confirmar pago (para efectivo)
+  const handleConfirmPayment = async () => {
     if (!pendingTicket || !selectedTravel) return
 
     try {
@@ -753,82 +682,37 @@ const TravelsForSale = () => {
         travel: selectedTravel
       })
 
-      setOpenConfirmPaymentDialog(false)
+      setOpenAssignDialog(false)
       setPendingTicket(null)
-      setPendingTicketData(null)
-      setPendingAssignments([])
       setSelectedTravel(undefined)
       setOpenSuccessDialog(true)
     } catch (error) {
-      console.error('Error confirming cash payment:', error)
+      console.error('Error confirming payment:', error)
     } finally {
       setIsConfirmingPayment(false)
     }
   }
 
-  const handleCancelCashPayment = async () => {
+  // Cancelar pago/ticket
+  const handleCancelPayment = async () => {
     if (!pendingTicket) return
 
     try {
       setIsCancellingPayment(true)
       await cancelTicketMutation.mutateAsync(pendingTicket.id)
 
-      setOpenConfirmPaymentDialog(false)
+      setOpenAssignDialog(false)
       setPendingTicket(null)
-      setPendingTicketData(null)
-      setPendingAssignments([])
       setSelectedTravel(undefined)
     } catch (error) {
-      console.error('Error cancelling cash payment:', error)
+      console.error('Error cancelling payment:', error)
     } finally {
       setIsCancellingPayment(false)
     }
   }
 
-  const handlePayQR = async (assignments: SeatAssignment[]) => {
-    if (!pendingTicketData || !selectedTravel) return
-
-    try {
-      setIsProcessingPayment(true)
-
-      const ticketData: CreateTicketDto = {
-        ...pendingTicketData,
-        payment_type: 'qr'
-      }
-
-      const createdTicket = await createTicketMutation.mutateAsync(ticketData)
-
-      await assignPassengersMutation.mutateAsync({
-        ticketId: createdTicket.id,
-
-        passengers: assignments.map(a => ({
-          seatId: a.seatId,
-          passenger: {
-            name: a.passengerName,
-            ci: a.passengerCI
-          }
-        }))
-      })
-
-      setPendingTicket(createdTicket)
-      setPendingAssignments(assignments)
-      setOpenAssignDialog(false)
-      setOpenQRDialog(true)
-    } catch (error) {
-      console.error('Error processing QR payment:', error)
-    } finally {
-      setIsProcessingPayment(false)
-    }
-  }
-
-  const handleCancelAssignment = async () => {
-    setOpenAssignDialog(false)
-    setPendingTicket(null)
-    setPendingTicketData(null)
-    setSelectedTravel(undefined)
-  }
-
-  const handleQRPaymentSuccess = () => {
+  // Pago QR exitoso
+  const handlePaymentSuccess = () => {
     if (!pendingTicket || !selectedTravel) return
 
     setSaleDetails({
@@ -836,26 +720,19 @@ const TravelsForSale = () => {
       travel: selectedTravel
     })
 
-    setOpenQRDialog(false)
+    setOpenAssignDialog(false)
     setPendingTicket(null)
-    setPendingTicketData(null)
-    setPendingAssignments([])
     setSelectedTravel(undefined)
     setOpenSuccessDialog(true)
   }
 
-  const handleQRPaymentCancel = async () => {
-    if (!pendingTicket) return
-
-    try {
-      await cancelTicketMutation.mutateAsync(pendingTicket.id)
-    } catch (error) {
-      console.error('Error canceling ticket:', error)
-    } finally {
-      setOpenQRDialog(false)
-      setPendingTicket(null)
-      setPendingTicketData(null)
-      setPendingAssignments([])
+  // Cerrar diálogo de asignación sin cancelar (solo si no hay ticket creado)
+  const handleCloseAssignDialog = () => {
+    if (pendingTicket) {
+      // Si hay ticket pendiente, debemos cancelarlo
+      handleCancelPayment()
+    } else {
+      setOpenAssignDialog(false)
       setSelectedTravel(undefined)
     }
   }
@@ -1209,19 +1086,24 @@ const TravelsForSale = () => {
           setOpenSellDialog(false)
           setSelectedTravel(undefined)
         }}
-        onSubmit={handleSellTicket}
+        onSubmit={handleCreateTicket}
         isLoading={createTicketMutation.isPending}
         preSelectedTravel={selectedTravel}
       />
 
       <AssignPassengersDialog
         open={openAssignDialog}
-        onClose={handleCancelAssignment}
+        onClose={handleCloseAssignDialog}
         ticket={pendingTicket}
         travel={selectedTravel || null}
-        onPayCash={handlePayCash}
-        onPayQR={handlePayQR}
-        isLoading={isProcessingPayment}
+        paymentMethod={pendingPaymentMethod}
+        onConfirmPayment={handleConfirmPayment}
+        onCancelPayment={handleCancelPayment}
+        onAssignPassengers={handleAssignPassengers}
+        onPaymentSuccess={handlePaymentSuccess}
+        isLoading={createTicketMutation.isPending}
+        isConfirming={isConfirmingPayment}
+        isCancelling={isCancellingPayment}
       />
 
       <SaleSuccessDialog
@@ -1262,28 +1144,6 @@ const TravelsForSale = () => {
         selectedTravel={selectedTravel}
         onConfirmClose={handleCloseTravel}
         isLoading={closeTravelMutation.isPending}
-      />
-
-      <QRPaymentDialog
-        open={openQRDialog}
-        onClose={() => setOpenQRDialog(false)}
-        ticket={pendingTicket}
-        travel={selectedTravel || null}
-        onPaymentSuccess={handleQRPaymentSuccess}
-        onPaymentCancel={handleQRPaymentCancel}
-      />
-
-      <ConfirmPaymentDialog
-        open={openConfirmPaymentDialog}
-        onClose={() => setOpenConfirmPaymentDialog(false)}
-        onConfirm={handleConfirmCashPayment}
-        onCancel={handleCancelCashPayment}
-        isConfirming={isConfirmingPayment}
-        isCancelling={isCancellingPayment}
-        ticket={pendingTicket}
-        travel={selectedTravel || null}
-        paymentMethod='cash'
-        assignments={pendingAssignments}
       />
     </Box>
   )
