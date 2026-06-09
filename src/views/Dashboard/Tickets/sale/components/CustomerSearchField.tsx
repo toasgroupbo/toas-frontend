@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 
 import {
   Box,
@@ -23,6 +23,8 @@ import {
   useTheme
 } from '@mui/material'
 
+import { useQueryClient } from '@tanstack/react-query'
+
 import { useSearchBillingByCi } from '@/hooks/useCustomersByCi'
 import type { BillingInfo } from '@/types/api/tickets'
 
@@ -41,6 +43,7 @@ const CustomerSearchField = ({
 }: CustomerSearchFieldProps) => {
   const theme = useTheme()
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'))
+  const queryClient = useQueryClient()
 
   const [searchTerm, setSearchTerm] = useState('')
   const [searchQuery, setSearchQuery] = useState('')
@@ -51,12 +54,15 @@ const CustomerSearchField = ({
   const [shouldSearch, setShouldSearch] = useState(false)
   const [isEditingName, setIsEditingName] = useState(false)
   const [editedName, setEditedName] = useState('')
+  const [isSearching, setIsSearching] = useState(false)
 
   const {
     data: billingData,
-    isLoading,
+    isLoading: isQueryLoading,
     error
   } = useSearchBillingByCi(searchQuery, shouldSearch && searchQuery.length > 0)
+
+  const isLoading = isSearching || isQueryLoading
 
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value
@@ -64,29 +70,28 @@ const CustomerSearchField = ({
     setSearchTerm(value)
     setSelectedBilling(null)
     setShowResults(false)
-    setShouldSearch(false)
   }
 
-  const handleSearch = () => {
+  const handleSearch = async () => {
     if (searchTerm.trim().length === 0) return
 
     const trimmedSearch = searchTerm.trim()
 
-    setSearchQuery(trimmedSearch)
+    // Mostrar loading y resultados inmediatamente
+    setIsSearching(true)
     setShowResults(true)
+    setSearchQuery(trimmedSearch)
     setShouldSearch(true)
+
+    // Invalidar cache para forzar nueva petición
+    await queryClient.invalidateQueries({ queryKey: ['billing-by-ci', trimmedSearch] })
+    setIsSearching(false)
   }
 
-  useEffect(() => {
-    if (billingData || error) {
-      setShouldSearch(false)
-    }
-  }, [billingData, error])
-
-  const handleKeyDown = (e: React.KeyboardEvent) => {
+  const handleKeyDown = async (e: React.KeyboardEvent) => {
     if (e.key === 'Enter') {
       e.preventDefault()
-      handleSearch()
+      await handleSearch()
     }
   }
 
@@ -147,7 +152,7 @@ const CustomerSearchField = ({
   }
 
   const renderSearchResults = () => {
-    if (!showResults || searchQuery.length === 0) return null
+    if (!showResults || searchTerm.trim().length === 0) return null
 
     if (isLoading) {
       return (

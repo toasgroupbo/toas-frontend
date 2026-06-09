@@ -197,16 +197,39 @@ const VentasTable = () => {
             </Typography>
           ),
           meta: { align: 'left' }
+        },
+        {
+          id: 'ruta',
+          header: 'RUTA',
+          cell: ({ row }) => {
+            const origin = row.original.travel.route?.officeOrigin?.name || 'N/A'
+            const destination = row.original.travel.route?.officeDestination?.name || 'N/A'
+
+            return (
+              <Typography variant='body2'>
+                {origin} → {destination}
+              </Typography>
+            )
+          },
+          meta: { align: 'left' }
+        },
+        {
+          id: 'placa',
+          header: 'PLACA',
+          cell: ({ row }) => (
+            <Typography variant='body2'>{row.original.travel.bus?.plaque || 'N/A'}</Typography>
+          ),
+          meta: { align: 'center' }
         }
       )
     }
 
-    baseColumns.push({
+    /*  baseColumns.push({
       id: 'cant_viajes',
       header: 'CANT. DE VIAJES',
       cell: () => <Typography variant='body2'>1</Typography>,
       meta: { align: 'center' }
-    })
+    }) */
 
     if (!isCompanyMode) {
       baseColumns.push({

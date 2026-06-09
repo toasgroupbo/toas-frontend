@@ -379,7 +379,10 @@ const TicketsTable = ({ initialTravelId }: TicketsTableProps) => {
                       borderRadius: 1
                     }}
                   >
-                    <i className='tabler-route' style={{ fontSize: '16px', color: 'var(--mui-palette-primary-main)' }} />
+                    <i
+                      className='tabler-route'
+                      style={{ fontSize: '16px', color: 'var(--mui-palette-primary-main)' }}
+                    />
                     <Typography variant='body2' fontWeight='medium'>
                       {selectedTravelInfo.origin}
                     </Typography>
@@ -388,14 +391,16 @@ const TicketsTable = ({ initialTravelId }: TicketsTableProps) => {
                       {selectedTravelInfo.destination}
                     </Typography>
                     <Box sx={{ mx: 1, height: '16px', borderLeft: '1px solid', borderColor: 'divider' }} />
-                    <i className='tabler-calendar' style={{ fontSize: '16px', color: 'var(--mui-palette-info-main)' }} />
-                    <Typography variant='body2'>
-                      {formatDate(selectedTravelInfo.departureTime)}
-                    </Typography>
-                    <i className='tabler-clock' style={{ fontSize: '16px', color: 'var(--mui-palette-warning-main)' }} />
-                    <Typography variant='body2'>
-                      {formatTime(selectedTravelInfo.departureTime)}
-                    </Typography>
+                    <i
+                      className='tabler-calendar'
+                      style={{ fontSize: '16px', color: 'var(--mui-palette-info-main)' }}
+                    />
+                    <Typography variant='body2'>{formatDate(selectedTravelInfo.departureTime)}</Typography>
+                    <i
+                      className='tabler-clock'
+                      style={{ fontSize: '16px', color: 'var(--mui-palette-warning-main)' }}
+                    />
+                    <Typography variant='body2'>{formatTime(selectedTravelInfo.departureTime)}</Typography>
                   </Box>
                 )}
               </Box>
@@ -406,16 +411,6 @@ const TicketsTable = ({ initialTravelId }: TicketsTableProps) => {
               </Typography>
             </div>
           </Box>
-          {(selectedTravelId || initialTravelId) && tickets && tickets.length > 0 && (
-            <Button
-              variant='outlined'
-              color='primary'
-              startIcon={<i className='tabler-report' />}
-              onClick={() => setOpenSummaryModal(true)}
-            >
-              Ver Detalles
-            </Button>
-          )}
         </Box>
 
         <Box sx={{ padding: '0 20px', display: 'flex', flexDirection: 'column', gap: 2 }}>

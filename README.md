@@ -32,3 +32,35 @@ You can check out [the Next.js GitHub repository](https://github.com/vercel/next
 The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
 
 Check out our [Next.js deployment documentation](https://nextjs.org/docs/deployment) for more details.
+
+┌─────────────────────────────────────────────────────────────────────┐
+│ CARGA INICIAL │
+│ GET /api/travels/for-cashier/all │
+│ GET /api/routes/for-cashier/all │
+└─────────────────────────────────────────────────────────────────────┘
+↓
+┌─────────────────────────────────────────────────────────────────────┐
+│ SELECCIÓN DE ASIENTOS Y PASAJEROS │
+│ Usuario selecciona viaje → asientos → ingresa datos pasajeros │
+└─────────────────────────────────────────────────────────────────────┘
+↓
+┌─────────────────────────────────────────────────────────────────────┐
+│ CREAR TICKET │
+│ POST /api/tickets/for-cashier (payment_type: 'cash' o 'qr') │
+│ POST /api/tickets/for-cashier/assign-passenger │
+└─────────────────────────────────────────────────────────────────────┘
+↓ ↓
+┌─────────────────┐ ┌─────────────────────────┐
+│ PAGO EFECTIVO │ │ PAGO QR │
+└────────┬────────┘ └────────────┬────────────┘
+↓ ↓
+ConfirmPaymentDialog POST /api/payments/generate
+↓ ↓
+┌─────────────┴─────────────┐ POST /api/payments/verify-qr
+↓ ↓ (cada 10s)
+Confirmar Cancelar ↓
+↓ ↓ ┌───────┴───────┐
+POST confirm/{id} POST cancel/{id} ↓ ↓
+PAGADO CANCELAR
+↓ ↓
+(éxito) POST cancel/{id}

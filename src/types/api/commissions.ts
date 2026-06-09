@@ -9,6 +9,24 @@ export interface CommissionCompany {
   enabled: boolean
 }
 
+export interface CommissionOffice {
+  id: number
+  name: string
+  address: string
+}
+
+export interface CommissionRoute {
+  id: number
+  officeOrigin?: CommissionOffice
+  officeDestination?: CommissionOffice
+}
+
+export interface CommissionBus {
+  id: number
+  name: string
+  plaque: string
+}
+
 export interface CommissionTravel {
   id: number
   departure_time: string
@@ -34,6 +52,8 @@ export interface CommissionTravel {
   assistants: Array<{ ci: string; name: string; phone: string }>
   enabled: boolean
   company: CommissionCompany
+  route?: CommissionRoute
+  bus?: CommissionBus
 }
 
 export interface Commission {
