@@ -180,6 +180,7 @@ const AssignPassengersDialog = ({
 
         if (response.status === 'PAID') {
           setQrStatus('paid')
+
           // La navegación al modal de éxito se maneja en el useEffect separado abajo
         } else if (response.status === 'EXPIRED') {
           setQrStatus('idle')
@@ -190,9 +191,11 @@ const AssignPassengersDialog = ({
             onCancelPaymentRef.current()
           }
         }
+
         // Si es PENDING, no hacer nada - el polling continuará
       } catch {
         setIsVerifying(false)
+
         // No cambiar qrStatus en caso de error, el polling continuará
       }
     }
@@ -593,7 +596,12 @@ const AssignPassengersDialog = ({
                     />
                   )}
                   {isVerifying && (
-                    <Chip icon={<CircularProgress size={14} />} label='Verificando...' color='warning' variant='outlined' />
+                    <Chip
+                      icon={<CircularProgress size={14} />}
+                      label='Verificando...'
+                      color='warning'
+                      variant='outlined'
+                    />
                   )}
                 </Box>
                 <Typography variant='caption' color='text.secondary' sx={{ mt: 1, display: 'block' }}>
@@ -763,7 +771,6 @@ const AssignPassengersDialog = ({
           {!isExpired && qrStatus !== 'paid' && (
             <>
               {paymentMethod === 'cash' ? (
-                // Botones para pago en efectivo
                 <>
                   <Button
                     onClick={handleShowCancelConfirm}
@@ -791,7 +798,6 @@ const AssignPassengersDialog = ({
                   </Button>
                 </>
               ) : (
-                // Botones para pago QR
                 <>
                   <Button
                     onClick={handleShowCancelConfirm}
@@ -848,7 +854,13 @@ const AssignPassengersDialog = ({
 
           {/* Cuando el pago QR es exitoso, mostrar botón que navega al éxito */}
           {qrStatus === 'paid' && !isExpired && (
-            <Button onClick={onPaymentSuccess} variant='contained' color='success' fullWidth startIcon={<i className='tabler-check' />}>
+            <Button
+              onClick={onPaymentSuccess}
+              variant='contained'
+              color='success'
+              fullWidth
+              startIcon={<i className='tabler-check' />}
+            >
               Continuar
             </Button>
           )}
@@ -1069,12 +1081,7 @@ const AssignPassengersDialog = ({
       </Dialog>
 
       {/* Modal de confirmación de cancelación */}
-      <Dialog
-        open={showCancelConfirm}
-        onClose={handleCloseCancelConfirm}
-        maxWidth='xs'
-        fullWidth
-      >
+      <Dialog open={showCancelConfirm} onClose={handleCloseCancelConfirm} maxWidth='xs' fullWidth>
         <DialogTitle>
           <Box display='flex' alignItems='center' gap={1.5}>
             <Box
@@ -1088,7 +1095,10 @@ const AssignPassengersDialog = ({
                 justifyContent: 'center'
               }}
             >
-              <i className='tabler-alert-triangle' style={{ fontSize: '20px', color: 'var(--mui-palette-error-main)' }} />
+              <i
+                className='tabler-alert-triangle'
+                style={{ fontSize: '20px', color: 'var(--mui-palette-error-main)' }}
+              />
             </Box>
             <Typography variant='h6' fontWeight={600}>
               Confirmar Cancelación
@@ -1097,16 +1107,12 @@ const AssignPassengersDialog = ({
         </DialogTitle>
         <DialogContent>
           <Typography variant='body2' color='text.secondary'>
-            ¿Estás seguro de que deseas cancelar esta venta? El ticket será cancelado y los asientos quedarán disponibles nuevamente.
+            ¿Estás seguro de que deseas cancelar esta venta? El ticket será cancelado y los asientos quedarán
+            disponibles nuevamente.
           </Typography>
         </DialogContent>
         <DialogActions sx={{ px: 3, pb: 3, gap: 1 }}>
-          <Button
-            onClick={handleCloseCancelConfirm}
-            variant='outlined'
-            color='secondary'
-            disabled={isCancelling}
-          >
+          <Button onClick={handleCloseCancelConfirm} variant='outlined' color='secondary' disabled={isCancelling}>
             No, continuar
           </Button>
           <Button
