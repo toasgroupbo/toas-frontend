@@ -197,32 +197,32 @@ const VentasTable = () => {
             </Typography>
           ),
           meta: { align: 'left' }
-        },
-        {
-          id: 'ruta',
-          header: 'RUTA',
-          cell: ({ row }) => {
-            const origin = row.original.travel.route?.officeOrigin?.name || 'N/A'
-            const destination = row.original.travel.route?.officeDestination?.name || 'N/A'
-
-            return (
-              <Typography variant='body2'>
-                {origin} → {destination}
-              </Typography>
-            )
-          },
-          meta: { align: 'left' }
-        },
-        {
-          id: 'placa',
-          header: 'PLACA',
-          cell: ({ row }) => (
-            <Typography variant='body2'>{row.original.travel.bus?.plaque || 'N/A'}</Typography>
-          ),
-          meta: { align: 'center' }
         }
       )
     }
+
+    // Columna RUTA / PLACA para todos los modos
+    baseColumns.push({
+      id: 'ruta',
+      header: 'RUTA / PLACA',
+      cell: ({ row }) => {
+        const origin = row.original.travel.route?.officeOrigin?.place?.name || 'N/A'
+        const destination = row.original.travel.route?.officeDestination?.place?.name || 'N/A'
+        const plaque = row.original.travel.bus?.plaque || 'N/A'
+
+        return (
+          <div className='flex flex-col'>
+            <Typography variant='body2'>
+              {origin} → {destination}
+            </Typography>
+            <Typography variant='caption' color='text.secondary'>
+              Placa: {plaque}
+            </Typography>
+          </div>
+        )
+      },
+      meta: { align: 'left' }
+    })
 
     /*  baseColumns.push({
       id: 'cant_viajes',

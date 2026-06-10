@@ -9,10 +9,18 @@ export interface CommissionCompany {
   enabled: boolean
 }
 
+export interface CommissionPlace {
+  id: number
+  name: string
+  createdAt: string
+  enabled: boolean
+}
+
 export interface CommissionOffice {
   id: number
   name: string
   address: string
+  place?: CommissionPlace
 }
 
 export interface CommissionRoute {

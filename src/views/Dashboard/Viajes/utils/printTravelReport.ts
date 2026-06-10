@@ -74,7 +74,7 @@ export const generateTravelReportHTML = ({ travel, tickets = [], companyName, ca
   const appQrAmount = parseFloat(travel.app_amount || '0')
   const totalCash = totals ? parseFloat(totals.totalCash) : parseFloat(travel.cash_amount || '0')
   const totalQr = totals ? parseFloat(totals.totalQr) : parseFloat(travel.qr_amount || '0')
-  const totalGeneral = totalCash + totalQr + appQrAmount
+  const totalGeneral = totalCash + totalQr
 
   const drivers: StaffMember[] = travel.drivers || []
   const assistants: StaffMember[] = travel.assistants || []

@@ -120,7 +120,7 @@ const TravelDetailDialog = ({ open, onClose, travel, companyName, isCashier = fa
     totalQr = totals ? parseFloat(totals.totalQr) : parseFloat(travel.qr_amount || '0')
   }
 
-  const totalGeneral = isCashierSeller ? totalCash + totalQr : totalCash + totalQr + appQrAmount
+  const totalGeneral = totalCash + totalQr
 
   const drivers = travel.drivers || []
   const assistants = travel.assistants || []
