@@ -6,21 +6,29 @@ import { api } from '@/libs/axios'
 import type { Owner, CreateOwnerDto, UpdateOwnerDto } from '@/types/api/owners'
 import { useAuth } from '@/contexts/AuthContext'
 
-const fetchOwners = async (): Promise<Owner[]> => {
+interface OwnersQueryParams {
+  enabledStatus?: boolean | 'all'
+}
+
+const fetchOwners = async (params?: OwnersQueryParams): Promise<Owner[]> => {
   const actingAsCompany = localStorage.getItem('acting_as_company')
-  let url = '/api/owners'
+  const queryParams: Record<string, string> = {}
 
   if (actingAsCompany) {
     try {
       const company = JSON.parse(actingAsCompany)
 
-      url = `/api/owners?companyId=${company.id}`
+      queryParams.companyId = company.id
     } catch (error) {
       console.error('Error parsing acting_as_company:', error)
     }
   }
 
-  const response = await api.get<Owner[]>(url)
+  if (params?.enabledStatus !== undefined && params.enabledStatus !== 'all') {
+    queryParams.enabled = String(params.enabledStatus)
+  }
+
+  const response = await api.get<Owner[]>('/api/owners', { params: queryParams })
 
   return response.data
 }
@@ -114,15 +122,19 @@ const deleteOwner = async (id: string): Promise<void> => {
   await api.delete(url)
 }
 
-export const useOwners = () => {
+export const useOwners = (params?: OwnersQueryParams) => {
   const { companyId, hasCompany, isImpersonating } = useAuth()
 
   const shouldFetch = hasCompany || isImpersonating
+  const statusKey = params?.enabledStatus === undefined ? 'all' : String(params.enabledStatus)
 
   return useQuery({
-    queryKey: ['owners', companyId],
-    queryFn: fetchOwners,
-    enabled: shouldFetch
+    queryKey: ['owners', companyId, statusKey],
+    queryFn: () => fetchOwners(params),
+    enabled: shouldFetch,
+    placeholderData: previousData => previousData,
+    staleTime: 5 * 60 * 1000,
+    retry: 2
   })
 }
 

@@ -111,6 +111,7 @@ export interface Company {
   commission_company: number
   hours_before_closing: number
   createdAt: string
+  enabled: boolean
   bankAccount: BankAccount
   users: CompanyAdmin[]
 }

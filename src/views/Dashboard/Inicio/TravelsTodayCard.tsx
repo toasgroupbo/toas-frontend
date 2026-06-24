@@ -37,14 +37,11 @@ const TravelsTodayCard = ({ data, isLoading }: TravelsTodayCardProps) => {
     chart: {
       sparkline: { enabled: true }
     },
-    colors: [
-      'var(--mui-palette-success-main)',
-      'var(--mui-palette-secondary-main)'
-    ],
+    colors: ['var(--mui-palette-success-main)', 'var(--mui-palette-secondary-main)'],
     stroke: { width: 0 },
     legend: { show: false },
     dataLabels: { enabled: false },
-    labels: ['Activos', 'Cerrados'],
+    labels: ['Activos', 'Cerrados hoy'],
     states: {
       hover: { filter: { type: 'none' } },
       active: { filter: { type: 'none' } }
@@ -91,7 +88,7 @@ const TravelsTodayCard = ({ data, isLoading }: TravelsTodayCardProps) => {
 
   const items = [
     { label: 'Activos', value: data?.actives ?? 0, color: 'success' as const },
-    { label: 'Cerrados', value: data?.closed ?? 0, color: 'secondary' as const }
+    { label: 'Cerrados hoy', value: data?.closed ?? 0, color: 'secondary' as const }
   ]
 
   return (
@@ -102,7 +99,7 @@ const TravelsTodayCard = ({ data, isLoading }: TravelsTodayCardProps) => {
             <i className='tabler-bus' style={{ fontSize: '1.25rem' }} />
           </CustomAvatar>
           <Typography variant='subtitle1' className='font-semibold'>
-            VIAJES HOY
+            VIAJES
           </Typography>
         </div>
 

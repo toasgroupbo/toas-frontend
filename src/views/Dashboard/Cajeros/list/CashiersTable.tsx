@@ -103,13 +103,18 @@ const CashiersTable = () => {
   const [currentPage, setCurrentPage] = useState(1)
   const [pageSize, setPageSize] = useState(10)
   const [searchQuery, setSearchQuery] = useState('')
+  const [enabledFilter, setEnabledFilter] = useState<string>('true')
   const [createDialogOpen, setCreateDialogOpen] = useState(false)
   const [editDialogOpen, setEditDialogOpen] = useState(false)
   const [passwordDialogOpen, setPasswordDialogOpen] = useState(false)
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
   const [selectedCashier, setSelectedCashier] = useState<Cashier | null>(null)
 
-  const { data: cashiers, isLoading, error } = useCashiers()
+  const enabledParam: boolean | 'all' = enabledFilter === 'all' ? 'all' : enabledFilter === 'true'
+
+  const queryParams = useMemo(() => ({ enabledStatus: enabledParam }), [enabledParam])
+
+  const { data: cashiers, isLoading, error } = useCashiers(queryParams)
   const createMutation = useCreateCashier()
   const updateMutation = useUpdateCashier()
   const deleteMutation = useDeleteCashier()
@@ -117,13 +122,7 @@ const CashiersTable = () => {
   const { showSuccess, showError } = useSnackbar()
   const { canCreate, canUpdate, canDelete } = usePermissions().getCRUDPermissions('CASHIER')
 
-  const [data, setData] = useState<Cashier[]>([])
-
-  useEffect(() => {
-    if (cashiers) {
-      setData(cashiers)
-    }
-  }, [cashiers])
+  const data = cashiers || []
 
   const handleCreateCashier = async (data: CreateCashierDto | UpdateCashierDto, officeId: number) => {
     try {
@@ -191,10 +190,10 @@ const CashiersTable = () => {
       await deleteMutation.mutateAsync(selectedCashier.id)
       setDeleteDialogOpen(false)
       setSelectedCashier(null)
-      showSuccess('Cajero eliminado correctamente')
+      showSuccess('Cajero deshabilitado correctamente')
     } catch (error: any) {
-      console.error('Error al eliminar cajero:', error)
-      showError(error?.response?.data?.message || 'Error al eliminar cajero')
+      console.error('Error al deshabilitar cajero:', error)
+      showError(error?.response?.data?.message || 'Error al deshabilitar cajero')
     }
   }
 
@@ -202,31 +201,43 @@ const CashiersTable = () => {
     () => [
       columnHelper.accessor('actions', {
         header: 'Acciones',
-        cell: ({ row }) => (
-          <div className='flex items-center gap-1'>
-            {canUpdate && (
-              <Tooltip title='Editar'>
-                <IconButton size='small' onClick={() => handleEditCashier(row.original)} color='primary'>
-                  <i className='tabler-edit' />
-                </IconButton>
-              </Tooltip>
-            )}
-            {canUpdate && (
-              <Tooltip title='Cambiar Contraseña'>
-                <IconButton size='small' onClick={() => handleChangePassword(row.original)} color='warning'>
-                  <i className='tabler-key' />
-                </IconButton>
-              </Tooltip>
-            )}
-            {canDelete && (
-              <Tooltip title='Eliminar'>
-                <IconButton size='small' onClick={() => handleDeleteCashier(row.original)} color='error'>
-                  <i className='tabler-trash' />
-                </IconButton>
-              </Tooltip>
-            )}
-          </div>
-        ),
+        cell: ({ row }) => {
+          const isDisabled = !row.original.enabled
+
+          if (isDisabled) {
+            return (
+              <Typography variant='caption' color='text.disabled' fontStyle='italic'>
+                Sin acciones
+              </Typography>
+            )
+          }
+
+          return (
+            <div className='flex items-center gap-1'>
+              {canUpdate && (
+                <Tooltip title='Editar'>
+                  <IconButton size='small' onClick={() => handleEditCashier(row.original)} color='primary'>
+                    <i className='tabler-edit' />
+                  </IconButton>
+                </Tooltip>
+              )}
+              {canUpdate && (
+                <Tooltip title='Cambiar Contraseña'>
+                  <IconButton size='small' onClick={() => handleChangePassword(row.original)} color='warning'>
+                    <i className='tabler-key' />
+                  </IconButton>
+                </Tooltip>
+              )}
+              {canDelete && (
+                <Tooltip title='Deshabilitar'>
+                  <IconButton size='small' onClick={() => handleDeleteCashier(row.original)} color='warning'>
+                    <i className='tabler-ban' />
+                  </IconButton>
+                </Tooltip>
+              )}
+            </div>
+          )
+        },
         enableSorting: false
       }),
       columnHelper.accessor('fullName', {
@@ -246,14 +257,14 @@ const CashiersTable = () => {
                 fontWeight: 'bold'
               }}
             >
-              {row.original.fullName.charAt(0).toUpperCase()}
+              {row.original.fullName?.charAt(0).toUpperCase() || '?'}
             </Box>
             <div className='flex flex-col'>
               <Typography className='font-medium' color='text.primary'>
-                {row.original.fullName}
+                {row.original.fullName || '-'}
               </Typography>
               <Typography variant='caption' color='text.secondary'>
-                {row.original.email}
+                {row.original.email || '-'}
               </Typography>
             </div>
           </div>
@@ -264,7 +275,7 @@ const CashiersTable = () => {
         cell: ({ row }) => (
           <div className='flex items-center gap-1'>
             <i className='tabler-id' style={{ fontSize: '16px', color: 'var(--mui-palette-text-secondary)' }} />
-            <Typography variant='body2'>{row.original.ci}</Typography>
+            <Typography variant='body2'>{row.original.ci || '-'}</Typography>
           </div>
         )
       }),
@@ -273,7 +284,7 @@ const CashiersTable = () => {
         cell: ({ row }) => (
           <div className='flex items-center gap-1'>
             <i className='tabler-phone' style={{ fontSize: '16px', color: 'var(--mui-palette-success-main)' }} />
-            <Typography variant='body2'>{row.original.phone}</Typography>
+            <Typography variant='body2'>{row.original.phone || '-'}</Typography>
           </div>
         )
       }),
@@ -302,15 +313,17 @@ const CashiersTable = () => {
                   {row.original.office.name}
                 </Typography>
               </div>
-              <div className='flex items-center gap-1 ml-5'>
-                <i
-                  className='tabler-map-pin'
-                  style={{ fontSize: '14px', color: 'var(--mui-palette-text-secondary)' }}
-                />
-                <Typography variant='caption' color='text.secondary'>
-                  {row.original.office.place.name}
-                </Typography>
-              </div>
+              {row.original.office.place && (
+                <div className='flex items-center gap-1 ml-5'>
+                  <i
+                    className='tabler-map-pin'
+                    style={{ fontSize: '14px', color: 'var(--mui-palette-text-secondary)' }}
+                  />
+                  <Typography variant='caption' color='text.secondary'>
+                    {row.original.office.place.name}
+                  </Typography>
+                </div>
+              )}
             </div>
           ) : (
             <Chip label='Sin Oficina' color='default' variant='outlined' size='small' />
@@ -390,6 +403,19 @@ const CashiersTable = () => {
               placeholder='Buscar cajeros...'
               className='max-sm:is-full min-w-[300px] flex-1 max-w-md'
             />
+            <CustomTextField
+              select
+              value={enabledFilter}
+              onChange={e => {
+                setEnabledFilter(e.target.value)
+                setCurrentPage(1)
+              }}
+              className='min-w-[150px]'
+              size='small'
+            >
+              <MenuItem value='true'>Habilitados</MenuItem>
+              <MenuItem value='false'>Deshabilitados</MenuItem>
+            </CustomTextField>
           </div>
 
           <div className='flex max-sm:flex-col items-start sm:items-center gap-4 max-sm:is-full'>

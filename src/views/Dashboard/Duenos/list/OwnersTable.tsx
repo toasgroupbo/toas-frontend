@@ -88,25 +88,24 @@ const OwnersTable = () => {
   const [currentPage, setCurrentPage] = useState(1)
   const [pageSize, setPageSize] = useState(10)
   const [searchQuery, setSearchQuery] = useState('')
+  const [enabledFilter, setEnabledFilter] = useState<string>('true')
   const [createDialogOpen, setCreateDialogOpen] = useState(false)
   const [updateDialogOpen, setUpdateDialogOpen] = useState(false)
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
   const [selectedOwner, setSelectedOwner] = useState<Owner | null>(null)
 
-  const { data: owners, isLoading, error } = useOwners()
+  const enabledParam: boolean | 'all' = enabledFilter === 'all' ? 'all' : enabledFilter === 'true'
+
+  const queryParams = useMemo(() => ({ enabledStatus: enabledParam }), [enabledParam])
+
+  const { data: owners, isLoading, error } = useOwners(queryParams)
   const createMutation = useCreateOwner()
   const updateMutation = useUpdateOwner()
   const deleteMutation = useDeleteOwner()
   const { showSuccess, showError } = useSnackbar()
   const { canCreate, canUpdate, canDelete } = usePermissions().getCRUDPermissions('OWNER')
 
-  const [data, setData] = useState<Owner[]>([])
-
-  useEffect(() => {
-    if (owners) {
-      setData(owners)
-    }
-  }, [owners])
+  const data = owners || []
 
   const handleCreateOwner = async (data: {
     name: string
@@ -190,10 +189,10 @@ const OwnersTable = () => {
       await deleteMutation.mutateAsync(selectedOwner.id)
       setDeleteDialogOpen(false)
       setSelectedOwner(null)
-      showSuccess('Dueño eliminado correctamente')
+      showSuccess('Dueño deshabilitado correctamente')
     } catch (error: any) {
-      console.error('Error al eliminar dueño:', error)
-      showError(error?.response?.data?.message || 'Error al eliminar dueño')
+      console.error('Error al deshabilitar dueño:', error)
+      showError(error?.response?.data?.message || 'Error al deshabilitar dueño')
     }
   }
 
@@ -201,38 +200,50 @@ const OwnersTable = () => {
     () => [
       columnHelper.accessor('actions', {
         header: 'Acciones',
-        cell: ({ row }) => (
-          <div className='flex items-center gap-2'>
-            {canUpdate && (
-              <Tooltip title='Editar'>
-                <IconButton
-                  size='small'
-                  onClick={() => handleEditOwner(row.original)}
-                  sx={{
-                    color: 'primary.main',
-                    '&:hover': { backgroundColor: 'primary.light', color: 'white' }
-                  }}
-                >
-                  <i className='tabler-edit' style={{ fontSize: '18px' }} />
-                </IconButton>
-              </Tooltip>
-            )}
-            {canDelete && (
-              <Tooltip title='Eliminar'>
-                <IconButton
-                  size='small'
-                  onClick={() => handleDeleteOwner(row.original)}
-                  sx={{
-                    color: 'error.main',
-                    '&:hover': { backgroundColor: 'error.light', color: 'white' }
-                  }}
-                >
-                  <i className='tabler-trash' style={{ fontSize: '18px' }} />
-                </IconButton>
-              </Tooltip>
-            )}
-          </div>
-        ),
+        cell: ({ row }) => {
+          const isDisabled = !row.original.enabled
+
+          if (isDisabled) {
+            return (
+              <Typography variant='caption' color='text.disabled' fontStyle='italic'>
+                Sin acciones
+              </Typography>
+            )
+          }
+
+          return (
+            <div className='flex items-center gap-2'>
+              {canUpdate && (
+                <Tooltip title='Editar'>
+                  <IconButton
+                    size='small'
+                    onClick={() => handleEditOwner(row.original)}
+                    sx={{
+                      color: 'primary.main',
+                      '&:hover': { backgroundColor: 'primary.light', color: 'white' }
+                    }}
+                  >
+                    <i className='tabler-edit' style={{ fontSize: '18px' }} />
+                  </IconButton>
+                </Tooltip>
+              )}
+              {canDelete && (
+                <Tooltip title='Deshabilitar'>
+                  <IconButton
+                    size='small'
+                    onClick={() => handleDeleteOwner(row.original)}
+                    sx={{
+                      color: 'warning.main',
+                      '&:hover': { backgroundColor: 'warning.light', color: 'white' }
+                    }}
+                  >
+                    <i className='tabler-ban' style={{ fontSize: '18px' }} />
+                  </IconButton>
+                </Tooltip>
+              )}
+            </div>
+          )
+        },
         enableSorting: false
       }),
       columnHelper.accessor('name', {
@@ -242,11 +253,11 @@ const OwnersTable = () => {
             <div className='flex items-center gap-1'>
               <i className='tabler-user' style={{ fontSize: '16px', color: 'var(--mui-palette-text-secondary)' }} />
               <Typography className='font-medium' color='text.primary' variant='body2'>
-                {row.original.name}
+                {row.original.name || '-'}
               </Typography>
             </div>
             <Typography variant='caption' color='text.secondary'>
-              CI: {row.original.ci}
+              CI: {row.original.ci || '-'}
             </Typography>
           </div>
         )
@@ -257,7 +268,7 @@ const OwnersTable = () => {
         cell: ({ row }) => (
           <div className='flex items-center gap-1'>
             <i className='tabler-phone' style={{ fontSize: '16px', color: 'var(--mui-palette-success-main)' }} />
-            <Typography variant='body2'>{row.original.phone}</Typography>
+            <Typography variant='body2'>{row.original.phone || '-'}</Typography>
           </div>
         )
       },
@@ -274,7 +285,13 @@ const OwnersTable = () => {
       columnHelper.accessor('bankAccount', {
         header: 'Banco',
         cell: ({ row }) => {
-          const banco = BANCOS_OPTIONS.find(b => b.value === row.original.bankAccount.bankCode)
+          const bankAccount = row.original.bankAccount
+
+          if (!bankAccount) {
+            return <Typography variant='body2'>Sin cuenta bancaria</Typography>
+          }
+
+          const banco = BANCOS_OPTIONS.find(b => b.value === bankAccount.bankCode)
 
           return (
             <div className='flex flex-col gap-1'>
@@ -284,14 +301,14 @@ const OwnersTable = () => {
                   style={{ fontSize: '16px', color: 'var(--mui-palette-primary-main)' }}
                 />
                 <Typography variant='body2' color='text.primary'>
-                  {banco?.label || row.original.bankAccount.bankCode}
+                  {banco?.label || bankAccount.bankCode || '-'}
                 </Typography>
               </div>
               <Typography variant='caption' color='text.secondary'>
-                {row.original.bankAccount.titularName}
+                {bankAccount.titularName || '-'}
               </Typography>
               <Typography variant='caption' color='text.secondary'>
-                Cta: {row.original.bankAccount.account}
+                Cta: {bankAccount.account || '-'}
               </Typography>
             </div>
           )
@@ -370,6 +387,19 @@ const OwnersTable = () => {
               placeholder='Buscar dueños...'
               className='max-sm:is-full min-w-[300px] flex-1 max-w-md'
             />
+            <CustomTextField
+              select
+              value={enabledFilter}
+              onChange={e => {
+                setEnabledFilter(e.target.value)
+                setCurrentPage(1)
+              }}
+              className='min-w-[150px]'
+              size='small'
+            >
+              <MenuItem value='true'>Habilitados</MenuItem>
+              <MenuItem value='false'>Deshabilitados</MenuItem>
+            </CustomTextField>
           </div>
 
           <div className='flex max-sm:flex-col items-start sm:items-center gap-4 max-sm:is-full'>

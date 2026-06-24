@@ -3,8 +3,16 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { api } from '@/libs/axios'
 import type { Company, CreateCompanyDto, UpdateCompanyDto } from '@/types/api/company'
 
-const fetchCompanies = async (): Promise<Company[]> => {
-  const response = await api.get<Company[]>('/api/company')
+type EnabledFilter = boolean | 'all'
+
+const fetchCompanies = async (enabledStatus?: EnabledFilter): Promise<Company[]> => {
+  const queryParams: Record<string, string> = {}
+
+  if (enabledStatus !== undefined && enabledStatus !== 'all') {
+    queryParams.enabled = String(enabledStatus)
+  }
+
+  const response = await api.get<Company[]>('/api/company', { params: queryParams })
 
   return response.data
 }
@@ -61,10 +69,17 @@ const deleteCompany = async (id: string): Promise<void> => {
   await api.delete(`/api/company/${id}`)
 }
 
-export const useCompanies = () => {
+export const useCompanies = (enabledStatus?: EnabledFilter, queryEnabled: boolean = true) => {
+  // Convertir a string para el queryKey
+  const statusKey = enabledStatus === undefined ? 'all' : String(enabledStatus)
+
   return useQuery({
-    queryKey: ['companies'],
-    queryFn: fetchCompanies
+    queryKey: ['companies', statusKey],
+    queryFn: () => fetchCompanies(enabledStatus),
+    enabled: queryEnabled,
+    placeholderData: previousData => previousData,
+    staleTime: 5 * 60 * 1000,
+    retry: 2
   })
 }
 

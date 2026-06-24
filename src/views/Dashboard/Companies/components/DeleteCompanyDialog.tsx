@@ -21,27 +21,27 @@ interface DeleteCompanyDialogProps {
 const DeleteCompanyDialog = ({ open, onClose, onConfirm, company, isLoading }: DeleteCompanyDialogProps) => {
   return (
     <Dialog open={open} onClose={onClose} maxWidth='sm' fullWidth>
-      <DialogTitle>¿Eliminar empresa permanentemente?</DialogTitle>
+      <DialogTitle>¿Deshabilitar empresa?</DialogTitle>
       <DialogContent>
         {company && (
           <>
             <Typography variant='body1' color='text.secondary' sx={{ mb: 2 }}>
-              Estás a punto de eliminar la empresa <strong>&quot;{company.name}&quot;</strong>.
+              Estás a punto de deshabilitar la empresa <strong>&quot;{company.name}&quot;</strong>.
             </Typography>
             <Box
               sx={{
-                bgcolor: 'error.lighter',
+                bgcolor: 'warning.lighter',
                 border: '1px solid',
-                borderColor: 'error.main',
+                borderColor: 'warning.main',
                 borderRadius: 1,
                 p: 2
               }}
             >
-              <Typography variant='body2' color='error.main' sx={{ fontWeight: 600 }}>
-                ⚠️ Esta acción no se puede deshacer
+              <Typography variant='body2' color='warning.main' sx={{ fontWeight: 600 }}>
+                La empresa quedará inactiva
               </Typography>
               <Typography variant='caption' color='text.secondary' sx={{ display: 'block', mt: 1 }}>
-                Se eliminarán todos los datos relacionados con esta empresa.
+                La empresa no podrá operar hasta que sea habilitada nuevamente.
               </Typography>
             </Box>
           </>
@@ -53,12 +53,12 @@ const DeleteCompanyDialog = ({ open, onClose, onConfirm, company, isLoading }: D
         </Button>
         <Button
           onClick={onConfirm}
-          color='error'
+          color='warning'
           variant='contained'
           disabled={isLoading}
-          startIcon={<i className='tabler-trash' />}
+          startIcon={<i className='tabler-ban' />}
         >
-          {isLoading ? 'Eliminando...' : 'Eliminar Empresa'}
+          {isLoading ? 'Deshabilitando...' : 'Deshabilitar Empresa'}
         </Button>
       </DialogActions>
     </Dialog>

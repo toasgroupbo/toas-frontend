@@ -12,21 +12,29 @@ const fetchCashierRoles = async (): Promise<CashierRole[]> => {
   return response.data
 }
 
-const fetchCashiers = async (): Promise<Cashier[]> => {
+interface CashiersQueryParams {
+  enabledStatus?: boolean | 'all'
+}
+
+const fetchCashiers = async (params?: CashiersQueryParams): Promise<Cashier[]> => {
   const actingAsCompany = localStorage.getItem('acting_as_company')
-  let url = '/api/cashiers'
+  const queryParams: Record<string, string> = {}
 
   if (actingAsCompany) {
     try {
       const company = JSON.parse(actingAsCompany)
 
-      url = `/api/cashiers?companyId=${company.id}`
+      queryParams.companyId = company.id
     } catch (error) {
       console.error('Error parsing acting_as_company:', error)
     }
   }
 
-  const response = await api.get<Cashier[]>(url)
+  if (params?.enabledStatus !== undefined && params.enabledStatus !== 'all') {
+    queryParams.enabled = String(params.enabledStatus)
+  }
+
+  const response = await api.get<Cashier[]>('/api/cashiers', { params: queryParams })
 
   return response.data
 }
@@ -147,15 +155,19 @@ export const useCashierRoles = () => {
   })
 }
 
-export const useCashiers = () => {
+export const useCashiers = (params?: CashiersQueryParams) => {
   const { companyId, hasCompany, isImpersonating } = useAuth()
 
   const shouldFetch = hasCompany || isImpersonating
+  const statusKey = params?.enabledStatus === undefined ? 'all' : String(params.enabledStatus)
 
   return useQuery({
-    queryKey: ['cashiers', companyId],
-    queryFn: fetchCashiers,
-    enabled: shouldFetch
+    queryKey: ['cashiers', companyId, statusKey],
+    queryFn: () => fetchCashiers(params),
+    enabled: shouldFetch,
+    placeholderData: previousData => previousData,
+    staleTime: 5 * 60 * 1000,
+    retry: 2
   })
 }
 

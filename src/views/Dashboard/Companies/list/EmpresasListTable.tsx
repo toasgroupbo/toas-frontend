@@ -91,13 +91,17 @@ const EmpresaListTable = () => {
   const [currentPage, setCurrentPage] = useState(1)
   const [pageSize, setPageSize] = useState(10)
   const [searchQuery, setSearchQuery] = useState('')
+  const [enabledFilter, setEnabledFilter] = useState<string>('true')
   const [createDialogOpen, setCreateDialogOpen] = useState(false)
   const [updateDialogOpen, setUpdateDialogOpen] = useState(false)
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
   const [actAsDialogOpen, setActAsDialogOpen] = useState(false)
   const [selectedCompany, setSelectedCompany] = useState<Company | null>(null)
 
-  const { data: companies, isLoading, error } = useCompanies()
+  const enabledParam: boolean | 'all' = enabledFilter === 'all' ? 'all' : enabledFilter === 'true'
+
+  const { data: companies, isLoading, error } = useCompanies(enabledParam)
+
   const createMutation = useCreateCompany()
   const updateMutation = useUpdateCompany()
   const deleteMutation = useDeleteCompany()
@@ -105,13 +109,7 @@ const EmpresaListTable = () => {
   const { canImpersonate, setActingAsCompany } = useAuth()
   const { canCreate, canUpdate, canDelete } = usePermissions().getCRUDPermissions('COMPANY')
 
-  const [data, setData] = useState<Company[]>([])
-
-  useEffect(() => {
-    if (companies) {
-      setData(companies)
-    }
-  }, [companies])
+  const data = companies || []
 
   const handleCreateCompany = async (data: CreateCompanyDto) => {
     try {
@@ -165,10 +163,10 @@ const EmpresaListTable = () => {
       await deleteMutation.mutateAsync(selectedCompany.id)
       setDeleteDialogOpen(false)
       setSelectedCompany(null)
-      showSuccess('Empresa eliminada correctamente')
+      showSuccess('Empresa deshabilitada correctamente')
     } catch (error: any) {
-      console.error('Error al eliminar empresa:', error)
-      showError(error?.response?.data?.message || 'Error al eliminar empresa')
+      console.error('Error al deshabilitar empresa:', error)
+      showError(error?.response?.data?.message || 'Error al deshabilitar empresa')
     }
   }
 
@@ -190,60 +188,76 @@ const EmpresaListTable = () => {
     () => [
       columnHelper.accessor('actions', {
         header: 'Acciones',
-        cell: ({ row }) => (
-          <div className='flex items-center gap-2'>
-            {canImpersonate && (
-              <Tooltip title='Actuar como empresa'>
-                <IconButton
-                  size='small'
-                  onClick={() => handleActAsCompany(row.original)}
-                  sx={{
-                    color: 'warning.main',
-                    '&:hover': { backgroundColor: 'warning.light', color: 'white' }
-                  }}
-                >
-                  <i className='tabler-switch-horizontal' />
-                </IconButton>
-              </Tooltip>
-            )}
-            {canUpdate && (
-              <Tooltip title='Editar'>
-                <IconButton
-                  size='small'
-                  onClick={() => handleEditCompany(row.original)}
-                  sx={{
-                    color: 'primary.main',
-                    '&:hover': { backgroundColor: 'primary.light', color: 'white' }
-                  }}
-                >
-                  <i className='tabler-edit' style={{ fontSize: '18px' }} />
-                </IconButton>
-              </Tooltip>
-            )}
-            {canDelete && (
-              <Tooltip title='Eliminar'>
-                <IconButton
-                  size='small'
-                  onClick={() => handleDeleteCompany(row.original)}
-                  sx={{
-                    color: 'error.main',
-                    '&:hover': { backgroundColor: 'error.light', color: 'white' }
-                  }}
-                >
-                  <i className='tabler-trash' style={{ fontSize: '18px' }} />
-                </IconButton>
-              </Tooltip>
-            )}
-          </div>
-        ),
+        cell: ({ row }) => {
+          const isDisabled = !row.original.enabled
+
+          if (isDisabled) {
+            return (
+              <Typography variant='caption' color='text.disabled' fontStyle='italic'>
+                Sin acciones
+              </Typography>
+            )
+          }
+
+          return (
+            <div className='flex items-center gap-2'>
+              {canImpersonate && (
+                <Tooltip title='Actuar como empresa'>
+                  <IconButton
+                    size='small'
+                    onClick={() => handleActAsCompany(row.original)}
+                    sx={{
+                      color: 'warning.main',
+                      '&:hover': { backgroundColor: 'warning.light', color: 'white' }
+                    }}
+                  >
+                    <i className='tabler-switch-horizontal' />
+                  </IconButton>
+                </Tooltip>
+              )}
+              {canUpdate && (
+                <Tooltip title='Editar'>
+                  <IconButton
+                    size='small'
+                    onClick={() => handleEditCompany(row.original)}
+                    sx={{
+                      color: 'primary.main',
+                      '&:hover': { backgroundColor: 'primary.light', color: 'white' }
+                    }}
+                  >
+                    <i className='tabler-edit' style={{ fontSize: '18px' }} />
+                  </IconButton>
+                </Tooltip>
+              )}
+              {canDelete && (
+                <Tooltip title='Deshabilitar'>
+                  <IconButton
+                    size='small'
+                    onClick={() => handleDeleteCompany(row.original)}
+                    sx={{
+                      color: 'warning.main',
+                      '&:hover': { backgroundColor: 'warning.light', color: 'white' }
+                    }}
+                  >
+                    <i className='tabler-ban' style={{ fontSize: '18px' }} />
+                  </IconButton>
+                </Tooltip>
+              )}
+            </div>
+          )
+        },
         enableSorting: false
       }),
       columnHelper.accessor('logo', {
         header: 'Logo',
         cell: ({ row }) => {
-          const logoUrl = row.original.logo.startsWith('http')
-            ? row.original.logo
-            : `${process.env.NEXT_PUBLIC_API_URL}${row.original.logo}`
+          const logo = row.original.logo
+
+          const logoUrl = logo
+            ? logo.startsWith('http')
+              ? logo
+              : `${process.env.NEXT_PUBLIC_API_URL}${logo}`
+            : '/images/placeholder-empresa.jpg'
 
           return (
             <Box
@@ -262,7 +276,7 @@ const EmpresaListTable = () => {
             >
               <img
                 src={logoUrl}
-                alt={row.original.name}
+                alt={row.original.name || 'Empresa'}
                 style={{
                   width: '100%',
                   height: '100%',
@@ -281,7 +295,7 @@ const EmpresaListTable = () => {
         header: 'Empresa',
         cell: ({ row }) => (
           <Typography className='font-medium' color='text.primary'>
-            {row.original.name}
+            {row.original.name || '-'}
           </Typography>
         )
       }),
@@ -302,14 +316,14 @@ const EmpresaListTable = () => {
                   style={{ fontSize: '16px', color: 'var(--mui-palette-primary-main)' }}
                 />
                 <Typography variant='body2' color='text.primary'>
-                  {banco?.label || row.original.bankAccount.bankCode}
+                  {banco?.label || row.original.bankAccount.bankCode || '-'}
                 </Typography>
               </div>
               <Typography variant='caption' color='text.secondary'>
-                {row.original.bankAccount.titularName}
+                {row.original.bankAccount.titularName || '-'}
               </Typography>
               <Typography variant='caption' color='text.secondary'>
-                Cta: {row.original.bankAccount.account}
+                Cta: {row.original.bankAccount.account || '-'}
               </Typography>
             </div>
           )
@@ -319,7 +333,7 @@ const EmpresaListTable = () => {
         header: 'Horas Cancelar',
         cell: ({ row }) => (
           <Chip
-            label={`${row.original.hours_before_closing}h`}
+            label={`${row.original.hours_before_closing ?? 0}h`}
             color='error'
             variant='tonal'
             size='small'
@@ -331,14 +345,14 @@ const EmpresaListTable = () => {
       columnHelper.accessor('commission_app', {
         header: 'Comisión App',
         cell: ({ row }) => (
-          <Chip label={`${row.original.commission_app}%`} color='success' variant='tonal' size='small' />
+          <Chip label={`${row.original.commission_app ?? 0}%`} color='success' variant='tonal' size='small' />
         ),
         size: 100
       }),
       columnHelper.accessor('commission_company', {
         header: 'Comisión Empresa',
         cell: ({ row }) => (
-          <Chip label={`Bs. ${row.original.commission_company}`} color='info' variant='tonal' size='small' />
+          <Chip label={`Bs. ${row.original.commission_company ?? 0}`} color='info' variant='tonal' size='small' />
         ),
         size: 120
       }),
@@ -356,14 +370,14 @@ const EmpresaListTable = () => {
               <div className='flex items-center gap-1'>
                 <i className='tabler-user' style={{ fontSize: '16px', color: 'var(--mui-palette-text-secondary)' }} />
                 <Typography className='font-medium' color='text.primary' variant='body2'>
-                  {adminUser.fullName}
+                  {adminUser.fullName || '-'}
                 </Typography>
               </div>
               <Typography variant='caption' color='text.secondary'>
-                CI: {adminUser.ci}
+                CI: {adminUser.ci || '-'}
               </Typography>
               <Typography variant='caption' color='text.secondary'>
-                {adminUser.email}
+                {adminUser.email || '-'}
               </Typography>
             </div>
           )
@@ -460,6 +474,19 @@ const EmpresaListTable = () => {
               placeholder='Buscar empresas...'
               className='max-sm:is-full min-w-[300px] flex-1 max-w-md'
             />
+            <CustomTextField
+              select
+              value={enabledFilter}
+              onChange={e => {
+                setEnabledFilter(e.target.value)
+                setCurrentPage(1)
+              }}
+              className='min-w-[150px]'
+              size='small'
+            >
+              <MenuItem value='true'>Habilitadas</MenuItem>
+              <MenuItem value='false'>Deshabilitadas</MenuItem>
+            </CustomTextField>
           </div>
 
           <div className='flex max-sm:flex-col items-start sm:items-center gap-4 max-sm:is-full'>

@@ -38,6 +38,7 @@ export interface Cashier {
   ci: string
   phone: string
   createdAt: string
+  enabled: boolean
   rol: CashierRole | null
   company: Company | null
   office: CashierOffice | null

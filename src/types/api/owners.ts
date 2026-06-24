@@ -34,6 +34,7 @@ export interface Owner {
   name: string
   ci: string
   phone: string
+  enabled: boolean
   bankAccount: BankAccount
   buses: any[]
   companies: OwnerCompany[]
