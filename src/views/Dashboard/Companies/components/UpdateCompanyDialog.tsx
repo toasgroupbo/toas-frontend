@@ -441,9 +441,9 @@ const UpdateCompanyDialog = ({ open, onClose, onSubmit, isLoading, company }: Up
                     label='Comisión Empresa (Bs.) *'
                     {...field}
                     onChange={e => {
-                      const value = e.target.value.replace(/[^0-9.]/g, '')
+                      const value = e.target.value.replace(/[^0-9.]/g, '').replace(/(\..*)\./g, '$1')
 
-                      field.onChange(value === '' ? '' : Number(value))
+                      field.onChange(value)
                     }}
                     error={!!errors.commission_company}
                     helperText={errors.commission_company?.message}
