@@ -303,10 +303,17 @@ const CreateCompanyDialog = ({ open, onClose, onSubmit, isLoading }: CreateCompa
                     type='text'
                     label='Comisión Empresa (Bs.) *'
                     {...field}
+                    value={field.value ?? ''}
                     onChange={e => {
                       const value = e.target.value.replace(/[^0-9.]/g, '').replace(/(\..*)\./g, '$1')
 
-                      field.onChange(value)
+                      field.onChange(value === '' ? '' : value)
+                    }}
+                    onBlur={e => {
+                      const value = e.target.value
+
+                      field.onChange(value === '' ? 0 : Number(value))
+                      field.onBlur()
                     }}
                     error={!!errors.commission_company}
                     helperText={errors.commission_company?.message}
