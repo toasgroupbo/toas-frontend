@@ -103,12 +103,11 @@ const LoginV1 = ({ mode }: { mode: SystemMode }) => {
           objectFit: 'cover'
         }}
       >
-        <source src="/videos/videofondo.mp4" type="video/mp4" />
-        
-        <source src="/videos/background-login.webm" type="video/webm" />
+        <source src='/videos/videofondo.mp4' type='video/mp4' />
+
+        <source src='/videos/background-login.webm' type='video/webm' />
       </video>
 
-     
       <div
         style={{
           position: 'absolute',
@@ -116,7 +115,7 @@ const LoginV1 = ({ mode }: { mode: SystemMode }) => {
           left: 0,
           width: '100%',
           height: '100%',
-       
+
           zIndex: 0
         }}
       />
@@ -137,7 +136,7 @@ const LoginV1 = ({ mode }: { mode: SystemMode }) => {
               </Link>
 
               <div className='flex flex-col gap-1 mbe-6'>
-                <Typography variant='h4'>{`¡Bienvenido! 👋🏻`}</Typography>
+                <Typography variant='h4'>{`¡Bienvenido ! 👋🏻`}</Typography>
                 <Typography>Por favor inicia sesión en tu cuenta</Typography>
               </div>
 
