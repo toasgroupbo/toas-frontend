@@ -32,7 +32,6 @@ import CustomTextField from '@core/components/mui/TextField'
 import tableStyles from '@core/styles/table.module.css'
 import { useTicketsByTravelAndCompany } from '@/hooks/useTickets'
 import type { Ticket } from '@/types/api/tickets'
-import DebouncedInput from '@/views/Dashboard/Tickets/sold/components/DebouncedInput'
 import TicketDetailDialog from '@/views/Dashboard/Tickets/sold/components/TicketDetailDialog'
 import { getStatusColor, getStatusLabel } from '@/views/Dashboard/Tickets/sold/utils/ticketStatus'
 import { formatDate, formatTime } from '@/views/Dashboard/Tickets/sale/utils/dateFormatters'
@@ -322,50 +321,26 @@ const TicketsTable = ({ initialTravelId, showCancelButton = false }: TicketsTabl
               </Typography>
             </div>
           </Box>
+          {(selectedTravelId || initialTravelId) && (
+            <CustomTextField
+              select
+              value={statusFilter}
+              onChange={e => {
+                setStatusFilter(e.target.value)
+                setCurrentPage(1)
+              }}
+              label='Filtrar por Estado'
+              size='small'
+              sx={{ minWidth: 150 }}
+            >
+              <MenuItem value='all'>Todos</MenuItem>
+              <MenuItem value='sold'>Vendido</MenuItem>
+              <MenuItem value='cancelled'>Cancelado</MenuItem>
+            </CustomTextField>
+          )}
         </Box>
 
         <Box sx={{ padding: '0 20px', display: 'flex', flexDirection: 'column', gap: 2 }}>
-          <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap', alignItems: 'flex-start' }}>
-            {(selectedTravelId || initialTravelId) && (
-              <>
-                <CustomTextField
-                  select
-                  value={statusFilter}
-                  onChange={e => {
-                    setStatusFilter(e.target.value)
-                    setCurrentPage(1)
-                  }}
-                  label='Filtrar por Estado'
-                  sx={{ minWidth: 180 }}
-                  InputProps={{
-                    startAdornment: (
-                      <Box sx={{ mr: 1, display: 'flex', alignItems: 'center' }}>
-                        <i className='tabler-filter' />
-                      </Box>
-                    )
-                  }}
-                >
-                  <MenuItem value='all'>Todos</MenuItem>
-                  <MenuItem value='sold'>Vendido</MenuItem>
-                  <MenuItem value='cancelled'>Cancelado</MenuItem>
-                </CustomTextField>
-                <DebouncedInput
-                  value={searchQuery ?? ''}
-                  onChange={value => setSearchQuery(String(value))}
-                  placeholder='Buscar tickets...'
-                  sx={{ flexGrow: 1 }}
-                  InputProps={{
-                    startAdornment: (
-                      <Box sx={{ mr: 1, display: 'flex', alignItems: 'center' }}>
-                        <i className='tabler-search' />
-                      </Box>
-                    )
-                  }}
-                />
-              </>
-            )}
-          </Box>
-
           {(selectedTravelId || initialTravelId) && Array.isArray(data) && data.length > 0 && (
             <Box
               sx={{

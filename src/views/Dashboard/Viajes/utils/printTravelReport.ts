@@ -117,7 +117,7 @@ export const generateTravelReportHTML = ({ travel, tickets = [], companyName, ca
   // Generate passengers HTML from tickets
   const allPassengers: { seatNumber: string; deck: number; name: string; ci: string }[] = []
 
-  tickets.forEach(ticket => {
+  tickets.filter(ticket => ticket.status !== 'cancelled').forEach(ticket => {
     const seats = ticket.travelSeats?.length > 0 ? ticket.travelSeats : ticket.seats
 
     seats?.forEach(seat => {
