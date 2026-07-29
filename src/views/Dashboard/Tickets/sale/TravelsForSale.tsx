@@ -18,7 +18,7 @@ import Popover from '@mui/material/Popover'
 import { Pagination } from '@mui/material'
 
 import CustomTextField from '@core/components/mui/TextField'
-import { useCashierTravels, useCloseTravel, useCashierRoutes } from '@/hooks/useCashierTravels'
+import { useCashierTravels, useCloseTravel, useCashierRoutes, useCashierTravelById } from '@/hooks/useCashierTravels'
 import type { Travel } from '@/types/api/travels'
 import TicketsTable from '../sold/TicketsTable'
 import SellTicketDialog from './components/SellTicketDialog'
@@ -27,6 +27,8 @@ import type { SeatAssignment } from './components/AssignPassengersDialog'
 import SaleSuccessDialog from './components/SaleSuccessDialog'
 import BusImagesDialog from './components/BusImagesDialog'
 import CloseTravelDialog from './components/CloseTravelDialog'
+import TravelDetailDialog from '@/views/Dashboard/Viajes/components/TravelDetailDialog'
+import TicketDetailDialog from '@/views/Dashboard/Tickets/sold/components/TicketDetailDialog'
 import { useCreateTicket, useConfirmTicket, useCancelTicket } from '@/hooks/useTickets'
 import { useAssignPassengers } from '@/hooks/usePassengers'
 import type { CreateTicketDto, Ticket } from '@/types/api/tickets'
@@ -491,6 +493,9 @@ const TravelsForSale = () => {
   const [pendingPaymentMethod, setPendingPaymentMethod] = useState<'cash' | 'qr'>('cash')
   const [isConfirmingPayment, setIsConfirmingPayment] = useState(false)
   const [isCancellingPayment, setIsCancellingPayment] = useState(false)
+  const [openReportDialog, setOpenReportDialog] = useState(false)
+  const [closedTravelId, setClosedTravelId] = useState<number | null>(null)
+  const [openSoldTicketDetail, setOpenSoldTicketDetail] = useState(false)
 
   const [saleDetails, setSaleDetails] = useState<{
     ticket: Ticket | null
@@ -579,6 +584,8 @@ const TravelsForSale = () => {
   const cancelTicketMutation = useCancelTicket()
   const assignPassengersMutation = useAssignPassengers()
   const closeTravelMutation = useCloseTravel()
+
+  const { data: closedTravel } = useCashierTravelById(closedTravelId)
 
   // Process travels from server (already paginated)
   const activeTravels = useMemo(() => {
@@ -737,16 +744,9 @@ const TravelsForSale = () => {
     }
   }
 
-  const handleCloseTravel = async () => {
-    if (!selectedTravel) return
-
-    try {
-      await closeTravelMutation.mutateAsync(selectedTravel.id)
-      setOpenConfirmCloseDialog(false)
-      setSelectedTravel(undefined)
-    } catch (error) {
-      console.error('Error closing travel:', error)
-    }
+  const handleCloseTravelSuccess = (travelId: number) => {
+    setClosedTravelId(travelId)
+    setOpenReportDialog(true)
   }
 
   if (showTicketsList) {
@@ -1114,15 +1114,9 @@ const TravelsForSale = () => {
           setOpenSuccessDialog(false)
           setSaleDetails({ ticket: null, travel: null })
         }}
-        onViewTickets={() => {
+        onViewTicketDetail={() => {
           setOpenSuccessDialog(false)
-
-          if (saleDetails.travel?.id) {
-            setSelectedTravelForTickets(saleDetails.travel.id)
-          }
-
-          setSaleDetails({ ticket: null, travel: null })
-          setShowTicketsList(true)
+          setOpenSoldTicketDetail(true)
         }}
       />
 
@@ -1142,8 +1136,27 @@ const TravelsForSale = () => {
           setSelectedTravel(undefined)
         }}
         selectedTravel={selectedTravel}
-        onConfirmClose={handleCloseTravel}
+        onCloseSuccess={handleCloseTravelSuccess}
         isLoading={closeTravelMutation.isPending}
+      />
+
+      <TravelDetailDialog
+        open={openReportDialog}
+        onClose={() => {
+          setOpenReportDialog(false)
+          setClosedTravelId(null)
+        }}
+        travel={closedTravel || null}
+        isCashier={true}
+      />
+
+      <TicketDetailDialog
+        open={openSoldTicketDetail}
+        onClose={() => {
+          setOpenSoldTicketDetail(false)
+          setSaleDetails({ ticket: null, travel: null })
+        }}
+        ticket={saleDetails.ticket ? { ...saleDetails.ticket, travel: saleDetails.travel as any } : null}
       />
     </Box>
   )

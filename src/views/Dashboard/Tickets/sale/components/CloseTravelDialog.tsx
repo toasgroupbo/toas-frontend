@@ -37,11 +37,11 @@ interface CloseTravelDialogProps {
   open: boolean
   onClose: () => void
   selectedTravel: Travel | undefined
-  onConfirmClose: () => Promise<void>
+  onCloseSuccess?: (travelId: number) => void
   isLoading: boolean
 }
 
-const CloseTravelDialog = ({ open, onClose, selectedTravel, onConfirmClose, isLoading }: CloseTravelDialogProps) => {
+const CloseTravelDialog = ({ open, onClose, selectedTravel, onCloseSuccess, isLoading }: CloseTravelDialogProps) => {
   const [activeTab, setActiveTab] = useState<'driver' | 'assistant'>('driver')
   const [searchCI, setSearchCI] = useState('')
   const [drivers, setDrivers] = useState<StaffMember[]>([])
@@ -241,6 +241,7 @@ const CloseTravelDialog = ({ open, onClose, selectedTravel, onConfirmClose, isLo
       showSuccess('Viaje cerrado exitosamente')
       resetForm()
       onClose()
+      onCloseSuccess?.(selectedTravel.id)
     } catch (error: any) {
       showError(error?.response?.data?.message || 'Error al cerrar el viaje')
     }

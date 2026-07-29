@@ -136,8 +136,9 @@ const ViajesOwnerListTable = () => {
   const travels = travelsResponse?.data || []
   const meta = travelsResponse?.meta
 
-  const amounts = travelsResponse?.amounts || { cash: 0, qr: 0, app: 0 }
+  const amounts = (travelsResponse?.amounts || { cash: 0, qr: 0, app: 0, total: 0 }) as { cash: number; qr: number; app: number; total: number }
   const totalQr = amounts.qr + amounts.app
+  const totalRealizado = amounts.total
 
   const formatDateTime = (dateString: string) => {
     const date = new Date(dateString)
@@ -570,24 +571,45 @@ const ViajesOwnerListTable = () => {
         </div>
 
         <div className='flex flex-wrap justify-between gap-4 px-6 pb-6'>
-          <Box
-            sx={{
-              bgcolor: 'info.lighter',
-              px: 3,
-              py: 1.5,
-              borderRadius: 2,
-              border: '1px solid',
-              borderColor: 'info.main',
-              minWidth: '180px',
-              textAlign: 'center'
-            }}
-          >
-            <Typography variant='caption' color='info.main' fontWeight='medium'>
-              Total Depósito QR
-            </Typography>
-            <Typography variant='h6' color='info.dark' fontWeight='bold'>
-              {formatCurrency(totalQr)}
-            </Typography>
+          <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
+            <Box
+              sx={{
+                bgcolor: 'info.lighter',
+                px: 3,
+                py: 1.5,
+                borderRadius: 2,
+                border: '1px solid',
+                borderColor: 'info.main',
+                minWidth: '180px',
+                textAlign: 'center'
+              }}
+            >
+              <Typography variant='caption' color='info.main' fontWeight='medium'>
+                Total Depósito QR
+              </Typography>
+              <Typography variant='h6' color='info.dark' fontWeight='bold'>
+                {formatCurrency(totalQr)}
+              </Typography>
+            </Box>
+            <Box
+              sx={{
+                bgcolor: 'success.lighter',
+                px: 3,
+                py: 1.5,
+                borderRadius: 2,
+                border: '1px solid',
+                borderColor: 'success.main',
+                minWidth: '180px',
+                textAlign: 'center'
+              }}
+            >
+              <Typography variant='caption' color='success.main' fontWeight='medium'>
+                Total Realizado
+              </Typography>
+              <Typography variant='h6' color='success.dark' fontWeight='bold'>
+                {formatCurrency(totalRealizado)}
+              </Typography>
+            </Box>
           </Box>
 
           <div className='flex max-sm:flex-col items-start sm:items-center gap-4 max-sm:is-full'>

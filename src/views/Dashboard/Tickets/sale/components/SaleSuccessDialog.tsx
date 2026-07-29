@@ -22,7 +22,7 @@ interface SaleSuccessDialogProps {
     travel: Travel | null
   }
   onContinueSelling: () => void
-  onViewTickets: () => void
+  onViewTicketDetail: () => void
 }
 
 const SaleSuccessDialog = ({
@@ -30,7 +30,7 @@ const SaleSuccessDialog = ({
   onClose,
   saleDetails,
   onContinueSelling,
-  onViewTickets
+  onViewTicketDetail
 }: SaleSuccessDialogProps) => {
   const theme = useTheme()
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'))
@@ -143,14 +143,14 @@ const SaleSuccessDialog = ({
         }}
       >
         <Button
-          onClick={onViewTickets}
+          onClick={onViewTicketDetail}
           variant='contained'
           color='primary'
           fullWidth={isMobile}
           sx={{ flex: { sm: 1 }, order: { xs: 1, sm: 2 } }}
-          startIcon={<i className='tabler-list' />}
+          startIcon={<i className='tabler-ticket' />}
         >
-          Ver tickets
+          Detalle de Ticket
         </Button>
         <Button
           onClick={onContinueSelling}

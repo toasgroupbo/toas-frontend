@@ -447,9 +447,14 @@ const AssignPassengersDialog = ({
       }
 
       setQrStatus('waiting')
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error generating QR:', error)
       setQrStatus('idle')
+
+      // Si el ticket expiró o hay error del servidor, marcar como expirado
+      if (error?.response?.status === 400 || error?.response?.status === 404) {
+        setIsExpired(true)
+      }
     }
   }
 
@@ -485,7 +490,18 @@ const AssignPassengersDialog = ({
 
   return (
     <>
-      <Dialog open={open} onClose={isProcessing ? undefined : onClose} maxWidth='md' fullWidth fullScreen={isMobile}>
+      <Dialog
+        open={open}
+        onClose={(_, reason) => {
+          if (reason === 'backdropClick' || reason === 'escapeKeyDown') {
+            return
+          }
+        }}
+        disableEscapeKeyDown
+        maxWidth='md'
+        fullWidth
+        fullScreen={isMobile}
+      >
         <DialogTitle>
           <Box display='flex' flexDirection='column' gap={1}>
             <Box display='flex' alignItems='center' justifyContent='space-between'>

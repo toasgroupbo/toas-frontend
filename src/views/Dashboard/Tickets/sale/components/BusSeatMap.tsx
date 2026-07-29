@@ -72,7 +72,7 @@ const BusSeatMap = ({ seats, deck, deckPrice, selectedSeats, onSeatToggle, total
       return 'success.light'
     }
 
-    if (status === 'reserved' || status === 'reservado') {
+    if (status === 'reserved' || status === 'reservado' || status === 'pending_payment') {
       return 'warning.light'
     }
 
@@ -96,7 +96,7 @@ const BusSeatMap = ({ seats, deck, deckPrice, selectedSeats, onSeatToggle, total
       return 'success.main'
     }
 
-    if (status === 'reserved' || status === 'reservado') {
+    if (status === 'reserved' || status === 'reservado' || status === 'pending_payment') {
       return 'warning.main'
     }
 
@@ -116,7 +116,7 @@ const BusSeatMap = ({ seats, deck, deckPrice, selectedSeats, onSeatToggle, total
       return '#2e7d32'
     }
 
-    if (status === 'reserved' || status === 'reservado') {
+    if (status === 'reserved' || status === 'reservado' || status === 'pending_payment') {
       return '#ed6c02'
     }
 
@@ -134,7 +134,7 @@ const BusSeatMap = ({ seats, deck, deckPrice, selectedSeats, onSeatToggle, total
       return 'Disponible'
     }
 
-    if (status === 'reserved' || status === 'reservado') {
+    if (status === 'reserved' || status === 'reservado' || status === 'pending_payment') {
       return 'Reservado'
     }
 

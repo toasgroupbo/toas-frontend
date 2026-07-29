@@ -237,7 +237,7 @@ const fetchTravelsForAdmin = async (filters?: TravelFilters): Promise<TravelsRes
 
 const fetchTravelsForOwner = async (
   filters?: TravelFilters
-): Promise<{ data: Travel[]; meta: any; amounts: { cash: number; qr: number; app: number } }> => {
+): Promise<{ data: Travel[]; meta: any; amounts: { cash: number; qr: number; app: number; total: number } }> => {
   const params: Record<string, any> = {}
 
   if (filters?.page) {
@@ -272,7 +272,7 @@ const fetchTravelsForOwner = async (
     params.isPaid = filters.isPaid
   }
 
-  const response = await api.get<{ data: Travel[]; meta: any; amounts: { cash: number; qr: number; app: number } }>(
+  const response = await api.get<{ data: Travel[]; meta: any; amounts: { cash: number; qr: number; app: number; total: number } }>(
     '/api/travels/for-cashier/owner/all',
     { params }
   )

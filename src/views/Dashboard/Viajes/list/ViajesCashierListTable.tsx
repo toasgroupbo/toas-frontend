@@ -344,7 +344,7 @@ const ViajesCashierListTable = () => {
 
           return (
             <div className='flex items-center gap-1'>
-              <Tooltip title='Ver Detalles / Imprimir'>
+              <Tooltip title='Reporte de viaje'>
                 <IconButton size='small' onClick={() => handleOpenDetailDialog(row.original)} color='primary'>
                   <i className='tabler-file-description' style={{ fontSize: '18px' }} />
                 </IconButton>
