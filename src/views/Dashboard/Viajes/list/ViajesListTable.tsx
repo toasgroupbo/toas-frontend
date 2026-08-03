@@ -616,7 +616,6 @@ const ViajesListTable = () => {
               <MenuItem value='all'>Todos</MenuItem>
               <MenuItem value='active'>Activo</MenuItem>
               <MenuItem value='closed'>Cerrado</MenuItem>
-              <MenuItem value='cancelled'>Cancelado</MenuItem>
             </CustomTextField>
           </div>
 

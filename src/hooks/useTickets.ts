@@ -52,6 +52,12 @@ const fetchTicketById = async (id: number): Promise<Ticket> => {
   return response.data
 }
 
+const fetchTicketByIdForCashier = async (id: number): Promise<Ticket> => {
+  const response = await api.get<Ticket>(`/api/tickets/for-cashier/ticket/${id}`)
+
+  return response.data
+}
+
 const createTicket = async (data: CreateTicketDto): Promise<Ticket> => {
   const response = await api.post<Ticket>('/api/tickets/for-cashier', data)
 
@@ -107,6 +113,14 @@ export const useTicketById = (id: number | undefined) => {
   return useQuery({
     queryKey: ['ticket', id],
     queryFn: () => fetchTicketById(id!),
+    enabled: !!id
+  })
+}
+
+export const useTicketByIdForCashier = (id: number | undefined) => {
+  return useQuery({
+    queryKey: ['ticket-cashier', id],
+    queryFn: () => fetchTicketByIdForCashier(id!),
     enabled: !!id
   })
 }

@@ -29,7 +29,7 @@ import BusImagesDialog from './components/BusImagesDialog'
 import CloseTravelDialog from './components/CloseTravelDialog'
 import TravelDetailDialog from '@/views/Dashboard/Viajes/components/TravelDetailDialog'
 import TicketDetailDialog from '@/views/Dashboard/Tickets/sold/components/TicketDetailDialog'
-import { useCreateTicket, useConfirmTicket, useCancelTicket } from '@/hooks/useTickets'
+import { useCreateTicket, useConfirmTicket, useCancelTicket, useTicketByIdForCashier } from '@/hooks/useTickets'
 import { useAssignPassengers } from '@/hooks/usePassengers'
 import type { CreateTicketDto, Ticket } from '@/types/api/tickets'
 import { formatDateHeader, formatTime } from './utils/dateFormatters'
@@ -496,6 +496,7 @@ const TravelsForSale = () => {
   const [openReportDialog, setOpenReportDialog] = useState(false)
   const [closedTravelId, setClosedTravelId] = useState<number | null>(null)
   const [openSoldTicketDetail, setOpenSoldTicketDetail] = useState(false)
+  const [soldTicketId, setSoldTicketId] = useState<number | null>(null)
 
   const [saleDetails, setSaleDetails] = useState<{
     ticket: Ticket | null
@@ -586,6 +587,7 @@ const TravelsForSale = () => {
   const closeTravelMutation = useCloseTravel()
 
   const { data: closedTravel } = useCashierTravelById(closedTravelId)
+  const { data: soldTicketData } = useTicketByIdForCashier(soldTicketId ?? undefined)
 
   // Process travels from server (already paginated)
   const activeTravels = useMemo(() => {
@@ -684,6 +686,7 @@ const TravelsForSale = () => {
       setIsConfirmingPayment(true)
       await confirmTicketMutation.mutateAsync(pendingTicket.id)
 
+      setSoldTicketId(pendingTicket.id)
       setSaleDetails({
         ticket: pendingTicket,
         travel: selectedTravel
@@ -722,6 +725,7 @@ const TravelsForSale = () => {
   const handlePaymentSuccess = () => {
     if (!pendingTicket || !selectedTravel) return
 
+    setSoldTicketId(pendingTicket.id)
     setSaleDetails({
       ticket: pendingTicket,
       travel: selectedTravel
@@ -1112,6 +1116,7 @@ const TravelsForSale = () => {
         saleDetails={saleDetails}
         onContinueSelling={() => {
           setOpenSuccessDialog(false)
+          setSoldTicketId(null)
           setSaleDetails({ ticket: null, travel: null })
         }}
         onViewTicketDetail={() => {
@@ -1154,9 +1159,10 @@ const TravelsForSale = () => {
         open={openSoldTicketDetail}
         onClose={() => {
           setOpenSoldTicketDetail(false)
+          setSoldTicketId(null)
           setSaleDetails({ ticket: null, travel: null })
         }}
-        ticket={saleDetails.ticket ? { ...saleDetails.ticket, travel: saleDetails.travel as any } : null}
+        ticket={soldTicketData || null}
       />
     </Box>
   )
