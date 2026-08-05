@@ -265,7 +265,7 @@ const UpcomingDeparturesTable = ({
   return (
     <Card>
       <CardHeader
-        title='ULTIMAS 20 SALIDAS'
+        title='ULTIMAS 20 SALIDAS.'
         action={
           <Box className='flex items-center gap-4'>
             <ToggleButtonGroup
