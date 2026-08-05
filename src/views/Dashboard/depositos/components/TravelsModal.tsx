@@ -120,8 +120,8 @@ const TravelsModal = ({ open, onClose, company }: TravelsModalProps) => {
   const [startDate, setStartDate] = useState<string>('')
   const [endDate, setEndDate] = useState<string>('')
   const [isPaidFilter, setIsPaidFilter] = useState<string>('pending')
-  const [originPlaceId, setOriginPlaceId] = useState<string>('')
-  const [destinationPlaceId, setDestinationPlaceId] = useState<string>('')
+  const [originPlaceId, setOriginPlaceId] = useState<string>('all')
+  const [destinationPlaceId, setDestinationPlaceId] = useState<string>('all')
   const [selectedTravel, setSelectedTravel] = useState<Travel | null>(null)
   const [transactionDialogOpen, setTransactionDialogOpen] = useState(false)
   const [paymentDetailsDialogOpen, setPaymentDetailsDialogOpen] = useState(false)
@@ -150,8 +150,8 @@ const TravelsModal = ({ open, onClose, company }: TravelsModalProps) => {
       isPaid: isPaidFilter === 'all' ? undefined : isPaidFilter === 'paid',
       startDate: startDate || undefined,
       endDate: endDate || undefined,
-      origin_placeId: originPlaceId ? Number(originPlaceId) : undefined,
-      destination_placeId: destinationPlaceId ? Number(destinationPlaceId) : undefined,
+      origin_placeId: originPlaceId && originPlaceId !== 'all' ? Number(originPlaceId) : undefined,
+      destination_placeId: destinationPlaceId && destinationPlaceId !== 'all' ? Number(destinationPlaceId) : undefined,
       page: currentPage,
       limit: pageSize
     }
@@ -401,8 +401,8 @@ const TravelsModal = ({ open, onClose, company }: TravelsModalProps) => {
                   value={originPlaceId}
                   onChange={e => setOriginPlaceId(e.target.value)}
                 >
-                  <MenuItem value=''>Todos</MenuItem>
-                  {places?.map(place => (
+                  <MenuItem value='all'>Todos</MenuItem>
+                  {places?.slice().sort((a, b) => a.name.localeCompare(b.name)).map(place => (
                     <MenuItem key={place.id} value={place.id}>
                       {place.name}
                     </MenuItem>
@@ -418,8 +418,8 @@ const TravelsModal = ({ open, onClose, company }: TravelsModalProps) => {
                   value={destinationPlaceId}
                   onChange={e => setDestinationPlaceId(e.target.value)}
                 >
-                  <MenuItem value=''>Todos</MenuItem>
-                  {places?.map(place => (
+                  <MenuItem value='all'>Todos</MenuItem>
+                  {places?.slice().sort((a, b) => a.name.localeCompare(b.name)).map(place => (
                     <MenuItem key={place.id} value={place.id}>
                       {place.name}
                     </MenuItem>

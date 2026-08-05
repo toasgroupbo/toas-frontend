@@ -45,7 +45,10 @@ export const useDashboard = () => {
       const data = await fetchAdminDashboard()
 
       return {
-        ...data,
+        summary: data.summary,
+        travels_today: data.travels_today,
+        depositos: (data as any).deposits || data.depositos,
+        travels: data.travels,
         isCompanyMode: false
       }
     },

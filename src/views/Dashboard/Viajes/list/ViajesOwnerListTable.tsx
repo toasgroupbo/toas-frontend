@@ -45,8 +45,8 @@ const ViajesOwnerListTable = () => {
   const [endDate, setEndDate] = useState<string>('')
   const [startDateInput, setStartDateInput] = useState<string>('')
   const [endDateInput, setEndDateInput] = useState<string>('')
-  const [originPlaceId, setOriginPlaceId] = useState<string>('')
-  const [destinationPlaceId, setDestinationPlaceId] = useState<string>('')
+  const [originPlaceId, setOriginPlaceId] = useState<string>('all')
+  const [destinationPlaceId, setDestinationPlaceId] = useState<string>('all')
   const [selectedTravel, setSelectedTravel] = useState<TravelWithActionsType | null>(null)
   const [transactionModalOpen, setTransactionModalOpen] = useState(false)
   const [currentPage, setCurrentPage] = useState(1)
@@ -86,7 +86,7 @@ const ViajesOwnerListTable = () => {
       const originPlace = route.officeOrigin.place
       const destPlace = route.officeDestination.place
 
-      if (destinationPlaceId && destPlace.id !== Number(destinationPlaceId)) {
+      if (destinationPlaceId && destinationPlaceId !== 'all' && destPlace.id !== Number(destinationPlaceId)) {
         return
       }
 
@@ -95,7 +95,7 @@ const ViajesOwnerListTable = () => {
       }
     })
 
-    return Array.from(originsMap.values())
+    return Array.from(originsMap.values()).sort((a, b) => a.name.localeCompare(b.name))
   }, [ownerRoutes, destinationPlaceId])
 
   const uniqueDestinations = useMemo(() => {
@@ -106,7 +106,7 @@ const ViajesOwnerListTable = () => {
       const originPlace = route.officeOrigin.place
       const destPlace = route.officeDestination.place
 
-      if (originPlaceId && originPlace.id !== Number(originPlaceId)) {
+      if (originPlaceId && originPlaceId !== 'all' && originPlace.id !== Number(originPlaceId)) {
         return
       }
 
@@ -115,7 +115,7 @@ const ViajesOwnerListTable = () => {
       }
     })
 
-    return Array.from(destinationsMap.values())
+    return Array.from(destinationsMap.values()).sort((a, b) => a.name.localeCompare(b.name))
   }, [ownerRoutes, originPlaceId])
 
   const apiFilters = useMemo((): TravelFilters => {
@@ -123,8 +123,8 @@ const ViajesOwnerListTable = () => {
       status: statusFilter !== 'all' ? (statusFilter as 'active' | 'closed') : undefined,
       startDate: startDate || undefined,
       endDate: endDate || undefined,
-      origin_placeId: originPlaceId ? Number(originPlaceId) : undefined,
-      destination_placeId: destinationPlaceId ? Number(destinationPlaceId) : undefined,
+      origin_placeId: originPlaceId && originPlaceId !== 'all' ? Number(originPlaceId) : undefined,
+      destination_placeId: destinationPlaceId && destinationPlaceId !== 'all' ? Number(destinationPlaceId) : undefined,
       isPaid: isPaidFilter === 'all' ? undefined : isPaidFilter === 'paid',
       page: currentPage,
       limit: pageSize
@@ -485,7 +485,7 @@ const ViajesOwnerListTable = () => {
             size='small'
             sx={{ minWidth: 180 }}
           >
-            <MenuItem value=''>Todos</MenuItem>
+            <MenuItem value='all'>Todos</MenuItem>
             {uniqueOrigins.map(place => (
               <MenuItem key={place.id} value={place.id.toString()}>
                 {place.name}
@@ -506,7 +506,7 @@ const ViajesOwnerListTable = () => {
             size='small'
             sx={{ minWidth: 180 }}
           >
-            <MenuItem value=''>Todos</MenuItem>
+            <MenuItem value='all'>Todos</MenuItem>
             {uniqueDestinations.map(place => (
               <MenuItem key={place.id} value={place.id.toString()}>
                 {place.name}

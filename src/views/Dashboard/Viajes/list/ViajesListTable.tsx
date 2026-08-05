@@ -31,6 +31,7 @@ import { Pagination } from '@mui/material'
 import CustomTextField from '@core/components/mui/TextField'
 import tableStyles from '@core/styles/table.module.css'
 import { useTravelsForAdmin, type TravelFilters } from '@/hooks/useTravels'
+import { useRoutes } from '@/hooks/useRoutes'
 import type { Travel } from '@/types/api/travels'
 import AdminTicketsTable from '../components/AdminTicketsTable'
 import TravelDetailDialog from '../components/TravelDetailDialog'
@@ -85,8 +86,8 @@ const ViajesListTable = () => {
   const [endDate, setEndDate] = useState<string>('')
   const [startDateInput, setStartDateInput] = useState<string>(getTodayDate())
   const [endDateInput, setEndDateInput] = useState<string>('')
-  const [originPlaceId, setOriginPlaceId] = useState<string>('')
-  const [destinationPlaceId, setDestinationPlaceId] = useState<string>('')
+  const [originPlaceId, setOriginPlaceId] = useState<string>('all')
+  const [destinationPlaceId, setDestinationPlaceId] = useState<string>('all')
   const [ticketsDialogOpen, setTicketsDialogOpen] = useState(false)
   const [selectedTravel, setSelectedTravel] = useState<Travel | null>(null)
   const [reportDialogOpen, setReportDialogOpen] = useState(false)
@@ -149,12 +150,13 @@ const ViajesListTable = () => {
       status: statusFilter !== 'all' ? (statusFilter as 'active' | 'closed' | 'cancelled') : undefined,
       startDate: startDate || undefined,
       endDate: endDate || undefined,
-      origin_placeId: originPlaceId ? Number(originPlaceId) : undefined,
-      destination_placeId: destinationPlaceId ? Number(destinationPlaceId) : undefined
+      origin_placeId: originPlaceId && originPlaceId !== 'all' ? Number(originPlaceId) : undefined,
+      destination_placeId: destinationPlaceId && destinationPlaceId !== 'all' ? Number(destinationPlaceId) : undefined
     }
   }, [currentPage, pageSize, statusFilter, startDate, endDate, originPlaceId, destinationPlaceId])
 
   const { data: travelsResponse, isLoading, error } = useTravelsForAdmin(apiFilters)
+  const { data: routes } = useRoutes()
 
   const travels = useMemo(() => travelsResponse?.data || [], [travelsResponse?.data])
   const meta = travelsResponse?.meta
@@ -167,34 +169,44 @@ const ViajesListTable = () => {
   const totalGeneral = totalCash + totalQr + totalApp
 
   const uniqueOrigins = useMemo(() => {
-    if (!travels) return []
+    if (!routes || routes.length === 0) return []
     const originsMap = new Map<number, { id: number; name: string }>()
 
-    travels.forEach(travel => {
-      const place = travel.route?.officeOrigin?.place
+    routes.forEach((route: any) => {
+      const originPlace = route.officeOrigin?.place
+      const destPlace = route.officeDestination?.place
 
-      if (place && !originsMap.has(place.id)) {
-        originsMap.set(place.id, { id: place.id, name: place.name })
+      if (destinationPlaceId && destinationPlaceId !== 'all' && destPlace?.id !== Number(destinationPlaceId)) {
+        return
+      }
+
+      if (originPlace && !originsMap.has(originPlace.id)) {
+        originsMap.set(originPlace.id, { id: originPlace.id, name: originPlace.name })
       }
     })
 
-    return Array.from(originsMap.values())
-  }, [travels])
+    return Array.from(originsMap.values()).sort((a, b) => a.name.localeCompare(b.name))
+  }, [routes, destinationPlaceId])
 
   const uniqueDestinations = useMemo(() => {
-    if (!travels) return []
+    if (!routes || routes.length === 0) return []
     const destinationsMap = new Map<number, { id: number; name: string }>()
 
-    travels.forEach(travel => {
-      const place = travel.route?.officeDestination?.place
+    routes.forEach((route: any) => {
+      const originPlace = route.officeOrigin?.place
+      const destPlace = route.officeDestination?.place
 
-      if (place && !destinationsMap.has(place.id)) {
-        destinationsMap.set(place.id, { id: place.id, name: place.name })
+      if (originPlaceId && originPlaceId !== 'all' && originPlace?.id !== Number(originPlaceId)) {
+        return
+      }
+
+      if (destPlace && !destinationsMap.has(destPlace.id)) {
+        destinationsMap.set(destPlace.id, { id: destPlace.id, name: destPlace.name })
       }
     })
 
-    return Array.from(destinationsMap.values())
-  }, [travels])
+    return Array.from(destinationsMap.values()).sort((a, b) => a.name.localeCompare(b.name))
+  }, [routes, originPlaceId])
 
   const formatDateTime = (dateString: string) => {
     const date = new Date(dateString)
@@ -548,7 +560,7 @@ const ViajesListTable = () => {
               size='small'
               sx={{ minWidth: 150 }}
             >
-              <MenuItem value=''>Todos</MenuItem>
+              <MenuItem value='all'>Todos</MenuItem>
               {uniqueOrigins.map(place => (
                 <MenuItem key={place.id} value={place.id.toString()}>
                   {place.name}
@@ -572,7 +584,7 @@ const ViajesListTable = () => {
               size='small'
               sx={{ minWidth: 150 }}
             >
-              <MenuItem value=''>Todos</MenuItem>
+              <MenuItem value='all'>Todos</MenuItem>
               {uniqueDestinations.map(place => (
                 <MenuItem key={place.id} value={place.id.toString()}>
                   {place.name}

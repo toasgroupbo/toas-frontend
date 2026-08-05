@@ -60,7 +60,7 @@ const CreateCompanyDialog = ({ open, onClose, onSubmit, isLoading }: CreateCompa
       name: '',
       logo: '',
       commission_app: 10,
-      commission_company: 10,
+      commission_company: 1,
       hours_before_closing: 3,
       bankAccount: {
         bankCode: '',
