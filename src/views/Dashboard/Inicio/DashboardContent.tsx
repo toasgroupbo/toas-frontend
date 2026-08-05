@@ -1,11 +1,13 @@
 'use client'
 
+import { useState } from 'react'
+
 // MUI Imports
 import Grid from '@mui/material/Grid2'
 import Alert from '@mui/material/Alert'
 
 // Hooks
-import { useDashboard } from '@/hooks/useDashboard'
+import { useDashboard, type TravelStatusFilter } from '@/hooks/useDashboard'
 
 // Components
 import SummaryCards from './SummaryCards'
@@ -14,7 +16,8 @@ import DepositsCard from './DepositsCard'
 import UpcomingDeparturesTable from './UpcomingDeparturesTable'
 
 const DashboardContent = () => {
-  const { data, isLoading, error } = useDashboard()
+  const [statusFilter, setStatusFilter] = useState<TravelStatusFilter>('active')
+  const { data, isLoading, error } = useDashboard(statusFilter)
 
   if (error) {
     return (
@@ -33,7 +36,12 @@ const DashboardContent = () => {
 
       {/* Upcoming Departures Table */}
       <Grid size={{ xs: 12 }}>
-        <UpcomingDeparturesTable data={data?.travels} isLoading={isLoading} />
+        <UpcomingDeparturesTable
+          data={data?.travels}
+          isLoading={isLoading}
+          statusFilter={statusFilter}
+          onStatusFilterChange={setStatusFilter}
+        />
       </Grid>
     </Grid>
   )
@@ -41,6 +49,6 @@ const DashboardContent = () => {
 
 // Export individual cards for use in page layout
 export { TravelsTodayCard, DepositsCard }
-export { useDashboard }
+export { useDashboard, type TravelStatusFilter }
 
 export default DashboardContent

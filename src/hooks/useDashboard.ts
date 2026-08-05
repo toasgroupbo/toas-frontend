@@ -4,32 +4,36 @@ import { api } from '@/libs/axios'
 import { useAuth } from '@/contexts/AuthContext'
 import type { DashboardData, CompanyDashboardData, UnifiedDashboardData } from '@/types/api/dashboard'
 
-const fetchAdminDashboard = async (): Promise<DashboardData> => {
-  const response = await api.get<DashboardData>('/api/dashboards/admin')
+export type TravelStatusFilter = 'active' | 'closed'
 
-  return response.data
-}
-
-const fetchCompanyDashboard = async (companyId: number): Promise<CompanyDashboardData> => {
-  const response = await api.get<CompanyDashboardData>('/api/dashboards/company', {
-    params: { companyId }
+const fetchAdminDashboard = async (status?: TravelStatusFilter): Promise<DashboardData> => {
+  const response = await api.get<DashboardData>('/api/dashboards/admin', {
+    params: { status }
   })
 
   return response.data
 }
 
-export const useDashboard = () => {
-  const { isSuperAdmin, isImpersonating, actingAsCompany, isCompanyAdmin, user } = useAuth()
+const fetchCompanyDashboard = async (status?: TravelStatusFilter): Promise<CompanyDashboardData> => {
+  const response = await api.get<CompanyDashboardData>('/api/dashboards/company', {
+    params: { status }
+  })
+
+  return response.data
+}
+
+export const useDashboard = (status: TravelStatusFilter = 'active') => {
+  const { isImpersonating, actingAsCompany, isCompanyAdmin, user } = useAuth()
 
   // Determine if we should use company dashboard
   const isCompanyMode = isImpersonating || isCompanyAdmin
   const companyId = actingAsCompany?.id ?? user?.company?.id ?? user?.companyId
 
   return useQuery({
-    queryKey: isCompanyMode ? ['dashboard', 'company', companyId] : ['dashboard', 'admin'],
+    queryKey: isCompanyMode ? ['dashboard', 'company', companyId, status] : ['dashboard', 'admin', status],
     queryFn: async (): Promise<UnifiedDashboardData> => {
       if (isCompanyMode && companyId) {
-        const data = await fetchCompanyDashboard(Number(companyId))
+        const data = await fetchCompanyDashboard(status)
 
         // Transform company dashboard to unified format
         return {
@@ -42,7 +46,7 @@ export const useDashboard = () => {
         }
       }
 
-      const data = await fetchAdminDashboard()
+      const data = await fetchAdminDashboard(status)
 
       return {
         summary: data.summary,

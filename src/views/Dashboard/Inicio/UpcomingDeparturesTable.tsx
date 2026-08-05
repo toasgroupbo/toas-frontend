@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useMemo } from 'react'
+import { useMemo } from 'react'
 
 import Card from '@mui/material/Card'
 import CardHeader from '@mui/material/CardHeader'
@@ -13,12 +13,13 @@ import Tooltip from '@mui/material/Tooltip'
 import { DataGrid, type GridColDef, type GridRenderCellParams } from '@mui/x-data-grid'
 
 import { useAuth } from '@/contexts/AuthContext'
-
-type StatusFilter = 'all' | 'active' | 'closed' | 'cancelled'
+import type { TravelStatusFilter } from '@/hooks/useDashboard'
 
 interface UpcomingDeparturesTableProps {
   data?: any[]
   isLoading?: boolean
+  statusFilter: TravelStatusFilter
+  onStatusFilterChange: (filter: TravelStatusFilter) => void
 }
 
 const formatDateToBolivia = (dateString: string): string => {
@@ -76,33 +77,33 @@ const getStatusConfig = (status: string) => {
   }
 }
 
-const UpcomingDeparturesTable = ({ data, isLoading }: UpcomingDeparturesTableProps) => {
-  const [statusFilter, setStatusFilter] = useState<StatusFilter>('all')
+const UpcomingDeparturesTable = ({
+  data,
+  isLoading,
+  statusFilter,
+  onStatusFilterChange
+}: UpcomingDeparturesTableProps) => {
   const { isCompanyAdmin, isImpersonating } = useAuth()
 
   // Determinar si mostrar dueño en lugar de empresa
   const showOwnerInsteadOfCompany = isCompanyAdmin || isImpersonating
 
-  const handleFilterChange = (_: React.MouseEvent<HTMLElement>, newFilter: StatusFilter | null) => {
+  const handleFilterChange = (_: React.MouseEvent<HTMLElement>, newFilter: TravelStatusFilter | null) => {
     if (newFilter !== null) {
-      setStatusFilter(newFilter)
+      onStatusFilterChange(newFilter)
     }
   }
 
-  const filteredData = useMemo(() => {
+  const sortedData = useMemo(() => {
     if (!data) return []
 
-    const sorted = [...data].sort((a, b) => {
+    return [...data].sort((a, b) => {
       const dateA = new Date(a.departure_time)
       const dateB = new Date(b.departure_time)
 
       return dateA.getTime() - dateB.getTime()
     })
-
-    if (statusFilter === 'all') return sorted
-
-    return sorted.filter(travel => travel.travel_status === statusFilter)
-  }, [data, statusFilter])
+  }, [data])
 
   const columns: GridColDef[] = [
     {
@@ -274,7 +275,6 @@ const UpcomingDeparturesTable = ({ data, isLoading }: UpcomingDeparturesTablePro
               size='small'
               aria-label='filtro de estado'
             >
-              <ToggleButton value='all'>TODAS</ToggleButton>
               <ToggleButton value='active'>ACTIVOS</ToggleButton>
               <ToggleButton value='closed'>CERRADOS</ToggleButton>
             </ToggleButtonGroup>
@@ -284,7 +284,7 @@ const UpcomingDeparturesTable = ({ data, isLoading }: UpcomingDeparturesTablePro
 
       <Box sx={{ width: '100%' }}>
         <DataGrid
-          rows={filteredData}
+          rows={sortedData}
           columns={columns}
           loading={isLoading}
           autoHeight
