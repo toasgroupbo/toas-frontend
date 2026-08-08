@@ -84,6 +84,7 @@ const DepositsCard = ({ data, isLoading }: DepositsCardProps) => {
             <Skeleton variant='circular' width={140} height={140} />
           ) : (
             <AppReactApexCharts
+              key={`deposits-chart-${pendingCount}`}
               type='radialBar'
               height={150}
               width={150}

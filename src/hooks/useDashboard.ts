@@ -14,9 +14,9 @@ const fetchAdminDashboard = async (status?: TravelStatusFilter): Promise<Dashboa
   return response.data
 }
 
-const fetchCompanyDashboard = async (status?: TravelStatusFilter): Promise<CompanyDashboardData> => {
+const fetchCompanyDashboard = async (companyId: number | string, status?: TravelStatusFilter): Promise<CompanyDashboardData> => {
   const response = await api.get<CompanyDashboardData>('/api/dashboards/company', {
-    params: { status }
+    params: { companyId, status }
   })
 
   return response.data
@@ -33,7 +33,7 @@ export const useDashboard = (status: TravelStatusFilter = 'active') => {
     queryKey: isCompanyMode ? ['dashboard', 'company', companyId, status] : ['dashboard', 'admin', status],
     queryFn: async (): Promise<UnifiedDashboardData> => {
       if (isCompanyMode && companyId) {
-        const data = await fetchCompanyDashboard(status)
+        const data = await fetchCompanyDashboard(companyId, status)
 
         // Transform company dashboard to unified format
         return {
