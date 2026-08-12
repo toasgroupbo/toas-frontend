@@ -3,7 +3,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 
 import { api } from '@/libs/axios'
-import type { Ticket, CreateTicketDto, TicketsResponse } from '@/types/api/tickets'
+import type { Ticket, CreateTicketDto } from '@/types/api/tickets'
 import { useAuth } from '@/contexts/AuthContext'
 
 export interface CashierSummary {
@@ -40,6 +40,16 @@ export interface TravelTicketsResponse {
   }
 }
 
+export interface TicketDetailResponse {
+  ticket: Ticket
+  cashiers: CashierSummary[]
+  currentCashier?: CurrentCashierResponse
+  totals: {
+    totalCash: string
+    totalQr: string
+  }
+}
+
 const fetchTickets = async (): Promise<Ticket[]> => {
   const response = await api.get<Ticket[]>('/api/tickets')
 
@@ -52,8 +62,15 @@ const fetchTicketById = async (id: number): Promise<Ticket> => {
   return response.data
 }
 
-const fetchTicketByIdForCashier = async (id: number): Promise<Ticket> => {
-  const response = await api.get<Ticket>(`/api/tickets/for-cashier/ticket/${id}`)
+const fetchTicketByIdForCashier = async (id: number): Promise<TicketDetailResponse> => {
+  const response = await api.get<TicketDetailResponse>(`/api/tickets/for-cashier/ticket/${id}`)
+
+  return response.data
+}
+
+const fetchTicketByIdForAdmin = async (id: number, companyId?: number | string): Promise<TicketDetailResponse> => {
+  const params = companyId ? { companyId } : {}
+  const response = await api.get<TicketDetailResponse>(`/api/tickets/ticket/${id}`, { params })
 
   return response.data
 }
@@ -118,9 +135,21 @@ export const useTicketById = (id: number | undefined) => {
 }
 
 export const useTicketByIdForCashier = (id: number | undefined) => {
-  return useQuery({
+  return useQuery<TicketDetailResponse>({
     queryKey: ['ticket-cashier', id],
     queryFn: () => fetchTicketByIdForCashier(id!),
+    enabled: !!id
+  })
+}
+
+export const useTicketByIdForAdmin = (id: number | undefined) => {
+  const { actingAsCompany, user } = useAuth()
+  const rawCompanyId = actingAsCompany?.id ?? user?.company?.id ?? user?.companyId
+  const companyId = rawCompanyId ?? undefined
+
+  return useQuery<TicketDetailResponse>({
+    queryKey: ['ticket-admin', id, companyId],
+    queryFn: () => fetchTicketByIdForAdmin(id!, companyId as number | string | undefined),
     enabled: !!id
   })
 }

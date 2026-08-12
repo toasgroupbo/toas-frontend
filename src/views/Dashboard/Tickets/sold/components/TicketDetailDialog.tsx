@@ -15,8 +15,10 @@ import TableCell from '@mui/material/TableCell'
 import TableRow from '@mui/material/TableRow'
 import Divider from '@mui/material/Divider'
 import Grid from '@mui/material/Grid'
+import CircularProgress from '@mui/material/CircularProgress'
 
 import type { Ticket } from '@/types/api/tickets'
+import { useTicketByIdForCashier, useTicketByIdForAdmin } from '@/hooks/useTickets'
 import { getStatusColor, getStatusLabel } from '../utils/ticketStatus'
 import { formatDate, formatTime } from '../../sale/utils/dateFormatters'
 import { printTicketReceipt } from '../utils/printReceipt'
@@ -25,9 +27,20 @@ interface TicketDetailDialogProps {
   open: boolean
   onClose: () => void
   ticket: Ticket | null
+  isCashierMode?: boolean
 }
 
-const TicketDetailDialog = ({ open, onClose, ticket }: TicketDetailDialogProps) => {
+const TicketDetailDialog = ({ open, onClose, ticket: initialTicket, isCashierMode = true }: TicketDetailDialogProps) => {
+  // Usar el hook correspondiente según el modo
+  const cashierQuery = useTicketByIdForCashier(open && isCashierMode ? initialTicket?.id : undefined)
+  const adminQuery = useTicketByIdForAdmin(open && !isCashierMode ? initialTicket?.id : undefined)
+
+  const ticketResponse = isCashierMode ? cashierQuery.data : adminQuery.data
+  const isLoading = isCashierMode ? cashierQuery.isLoading : adminQuery.isLoading
+
+  // Usar los datos del API si están disponibles, sino usar los datos iniciales
+  const ticket = ticketResponse?.ticket || initialTicket
+
   if (!ticket) return null
 
   const isCancelled = ticket.status === 'cancelled' || ticket.status === 'cancelado'
@@ -83,7 +96,13 @@ const TicketDetailDialog = ({ open, onClose, ticket }: TicketDetailDialogProps) 
         </Box>
       </DialogTitle>
       <DialogContent dividers>
-        {/* Información del Viaje */}
+        {isLoading ? (
+          <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: 300 }}>
+            <CircularProgress />
+          </Box>
+        ) : (
+          <>
+            {/* Información del Viaje */}
         <Box sx={{ mb: 3, p: 2, bgcolor: 'primary.lighter', borderRadius: 2 }}>
           <Grid container spacing={2}>
             <Grid item xs={12}>
@@ -460,7 +479,9 @@ const TicketDetailDialog = ({ open, onClose, ticket }: TicketDetailDialogProps) 
               Bs. {parseFloat(ticket.total_price).toFixed(2)}
             </Typography>
           </Box>
-        </Box>
+          </Box>
+          </>
+        )}
       </DialogContent>
       <DialogActions sx={{ px: 3, py: 2, gap: 2 }}>
         {!isCancelled && (

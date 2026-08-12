@@ -31,7 +31,10 @@ import { Pagination } from '@mui/material'
 import CustomTextField from '@core/components/mui/TextField'
 import tableStyles from '@core/styles/table.module.css'
 import { useTicketsByTravelAndCompany } from '@/hooks/useTickets'
+import { useAuth } from '@/contexts/AuthContext'
+import { api } from '@/libs/axios'
 import type { Ticket } from '@/types/api/tickets'
+import type { TicketDetailResponse } from '@/hooks/useTickets'
 import TicketDetailDialog from '@/views/Dashboard/Tickets/sold/components/TicketDetailDialog'
 import { getStatusColor, getStatusLabel } from '@/views/Dashboard/Tickets/sold/utils/ticketStatus'
 import { formatDate, formatTime } from '@/views/Dashboard/Tickets/sale/utils/dateFormatters'
@@ -64,8 +67,27 @@ const TicketsTable = ({ initialTravelId, showCancelButton = false }: TicketsTabl
   const [openDetailDialog, setOpenDetailDialog] = useState(false)
   const [selectedTicket, setSelectedTicket] = useState<Ticket | null>(null)
   const [statusFilter, setStatusFilter] = useState<string>('all')
+  const [isPrinting, setIsPrinting] = useState(false)
+
+  const { actingAsCompany, user } = useAuth()
+  const companyId = actingAsCompany?.id ?? user?.company?.id ?? user?.companyId
 
   const { data: apiResponse, isLoading, error } = useTicketsByTravelAndCompany(selectedTravelId)
+
+  const handlePrintTicket = async (ticketId: number) => {
+    setIsPrinting(true)
+
+    try {
+      const params = companyId ? { companyId } : {}
+      const response = await api.get<TicketDetailResponse>(`/api/tickets/ticket/${ticketId}`, { params })
+
+      printTicketReceipt(response.data.ticket)
+    } catch (error) {
+      console.error('Error fetching ticket for print:', error)
+    } finally {
+      setIsPrinting(false)
+    }
+  }
 
   const [data, setData] = useState<Ticket[]>([])
 
@@ -132,9 +154,10 @@ const TicketsTable = ({ initialTravelId, showCancelButton = false }: TicketsTabl
                 size='small'
                 onClick={e => {
                   e.stopPropagation()
-                  printTicketReceipt(row.original)
+                  handlePrintTicket(row.original.id)
                 }}
                 color='primary'
+                disabled={isPrinting}
               >
                 <i className='tabler-printer' style={{ fontSize: '18px' }} />
               </IconButton>
@@ -496,6 +519,7 @@ const TicketsTable = ({ initialTravelId, showCancelButton = false }: TicketsTabl
           setSelectedTicket(null)
         }}
         ticket={selectedTicket}
+        isCashierMode={false}
       />
     </Box>
   )

@@ -1162,7 +1162,7 @@ const TravelsForSale = () => {
           setSoldTicketId(null)
           setSaleDetails({ ticket: null, travel: null })
         }}
-        ticket={soldTicketData || null}
+        ticket={soldTicketData?.ticket || null}
       />
     </Box>
   )
