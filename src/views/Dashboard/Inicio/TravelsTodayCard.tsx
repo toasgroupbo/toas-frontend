@@ -108,7 +108,14 @@ const TravelsTodayCard = ({ data, isLoading }: TravelsTodayCardProps) => {
           {isLoading ? (
             <Skeleton variant='circular' width={140} height={140} />
           ) : hasData ? (
-            <AppReactApexCharts type='donut' height={150} width={150} series={chartSeries} options={chartOptions} />
+            <AppReactApexCharts
+              key={`travels-chart-${data?.total ?? 0}-${data?.actives ?? 0}-${data?.closed ?? 0}`}
+              type='donut'
+              height={150}
+              width={150}
+              series={chartSeries}
+              options={chartOptions}
+            />
           ) : (
             <div className='flex flex-col items-center justify-center h-[150px]'>
               <Typography variant='h3' className='font-bold'>

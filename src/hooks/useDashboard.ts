@@ -56,7 +56,8 @@ export const useDashboard = (status: TravelStatusFilter = 'active') => {
         isCompanyMode: false
       }
     },
-    staleTime: 30000,
+    staleTime: 0,
+    refetchOnMount: 'always',
     retry: 2,
     enabled: !isCompanyMode || !!companyId
   })

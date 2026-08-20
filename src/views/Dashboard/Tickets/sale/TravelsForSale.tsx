@@ -578,7 +578,7 @@ const TravelsForSale = () => {
     }
   }, [departureTimeFilter, destinationPlaceIdFilter, currentPage, pageSize])
 
-  const { data: travels, isLoading, error, meta } = useCashierTravels(filters)
+  const { data: travels, isLoading, error, meta, refetch, isFetching } = useCashierTravels(filters)
 
   const createTicketMutation = useCreateTicket()
   const confirmTicketMutation = useConfirmTicket()
@@ -915,6 +915,27 @@ const TravelsForSale = () => {
                 </MenuItem>
               )}
             </CustomTextField>
+
+            {/* Botón Actualizar */}
+            <Button
+              variant='outlined'
+              color='primary'
+              onClick={() => refetch()}
+              disabled={isFetching}
+              startIcon={
+                isFetching ? (
+                  <CircularProgress size={16} color='inherit' />
+                ) : (
+                  <i className='tabler-refresh' />
+                )
+              }
+              sx={{
+                minWidth: { xs: '100%', sm: 'auto' },
+                whiteSpace: 'nowrap'
+              }}
+            >
+              {isFetching ? 'Actualizando...' : 'Actualizar tabla'}
+            </Button>
           </Box>
         </Box>
 

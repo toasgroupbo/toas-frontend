@@ -195,7 +195,9 @@ export const useTicketsByTravel = (travelId: number | null) => {
   return useQuery<TravelTicketsResponse>({
     queryKey: ['tickets-by-travel', travelId],
     queryFn: () => fetchTicketsByTravel(travelId!),
-    enabled: !!travelId
+    enabled: !!travelId,
+    staleTime: 0,
+    refetchOnMount: 'always'
   })
 }
 
@@ -206,6 +208,8 @@ export const useTicketsByTravelAndCompany = (travelId: number | null) => {
   return useQuery<TravelTicketsResponse>({
     queryKey: ['tickets-by-travel-company', travelId],
     queryFn: () => fetchTicketsByTravelAndCompany(travelId!),
-    enabled: shouldFetch
+    enabled: shouldFetch,
+    staleTime: 0,
+    refetchOnMount: 'always'
   })
 }
