@@ -11,6 +11,7 @@ import CircularProgress from '@mui/material/CircularProgress'
 import Alert from '@mui/material/Alert'
 import IconButton from '@mui/material/IconButton'
 import Tooltip from '@mui/material/Tooltip'
+import Button from '@mui/material/Button'
 import classnames from 'classnames'
 import {
   createColumnHelper,
@@ -131,7 +132,7 @@ const ViajesOwnerListTable = () => {
     }
   }, [statusFilter, startDate, endDate, originPlaceId, destinationPlaceId, isPaidFilter, currentPage, pageSize])
 
-  const { data: travelsResponse, isLoading, error } = useTravelsForOwner(apiFilters)
+  const { data: travelsResponse, isLoading, error, refetch, isFetching } = useTravelsForOwner(apiFilters)
 
   const travels = travelsResponse?.data || []
   const meta = travelsResponse?.meta
@@ -568,6 +569,23 @@ const ViajesOwnerListTable = () => {
             <MenuItem value='paid'>Pagado</MenuItem>
             <MenuItem value='pending'>Pendiente</MenuItem>
           </CustomTextField>
+
+          <Button
+            variant='outlined'
+            color='primary'
+            onClick={() => refetch()}
+            disabled={isFetching}
+            startIcon={
+              isFetching ? (
+                <CircularProgress size={16} color='inherit' />
+              ) : (
+                <i className='tabler-refresh' />
+              )
+            }
+            sx={{ whiteSpace: 'nowrap' }}
+          >
+            {isFetching ? 'Actualizando...' : 'Actualizar'}
+          </Button>
         </div>
 
         <div className='flex flex-wrap justify-between gap-4 px-6 pb-6'>

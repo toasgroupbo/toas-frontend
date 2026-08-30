@@ -714,6 +714,7 @@ const TravelsForSale = () => {
       setOpenAssignDialog(false)
       setPendingTicket(null)
       setSelectedTravel(undefined)
+      refetch()
     } catch (error) {
       console.error('Error cancelling payment:', error)
     } finally {
@@ -745,6 +746,7 @@ const TravelsForSale = () => {
     } else {
       setOpenAssignDialog(false)
       setSelectedTravel(undefined)
+      refetch()
     }
   }
 
@@ -763,6 +765,7 @@ const TravelsForSale = () => {
             onClick={() => {
               setShowTicketsList(false)
               setSelectedTravelForTickets(null)
+              refetch()
             }}
           >
             Volver a Venta
@@ -922,19 +925,13 @@ const TravelsForSale = () => {
               color='primary'
               onClick={() => refetch()}
               disabled={isFetching}
-              startIcon={
-                isFetching ? (
-                  <CircularProgress size={16} color='inherit' />
-                ) : (
-                  <i className='tabler-refresh' />
-                )
-              }
+              startIcon={isFetching ? <CircularProgress size={16} color='inherit' /> : <i className='tabler-refresh' />}
               sx={{
                 minWidth: { xs: '100%', sm: 'auto' },
                 whiteSpace: 'nowrap'
               }}
             >
-              {isFetching ? 'Actualizando...' : 'Actualizar tabla'}
+              {isFetching ? 'Actualizando...' : 'Actualizar'}
             </Button>
           </Box>
         </Box>
@@ -1066,8 +1063,8 @@ const TravelsForSale = () => {
                 color='text.secondary'
                 sx={{ fontSize: { xs: '0.75rem', md: '0.875rem' }, textAlign: { xs: 'center', sm: 'left' } }}
               >
-                Mostrando {(currentPage - 1) * pageSize + 1} a {Math.min(currentPage * pageSize, totalRecords)}{' '}
-                de {totalRecords}
+                Mostrando {(currentPage - 1) * pageSize + 1} a {Math.min(currentPage * pageSize, totalRecords)} de{' '}
+                {totalRecords}
               </Typography>
               <Box
                 sx={{
@@ -1110,6 +1107,7 @@ const TravelsForSale = () => {
         onClose={() => {
           setOpenSellDialog(false)
           setSelectedTravel(undefined)
+          refetch()
         }}
         onSubmit={handleCreateTicket}
         isLoading={createTicketMutation.isPending}
@@ -1133,16 +1131,21 @@ const TravelsForSale = () => {
 
       <SaleSuccessDialog
         open={openSuccessDialog}
-        onClose={() => setOpenSuccessDialog(false)}
+        onClose={() => {
+          setOpenSuccessDialog(false)
+          refetch()
+        }}
         saleDetails={saleDetails}
         onContinueSelling={() => {
           setOpenSuccessDialog(false)
           setSoldTicketId(null)
           setSaleDetails({ ticket: null, travel: null })
+          refetch()
         }}
         onViewTicketDetail={() => {
           setOpenSuccessDialog(false)
           setOpenSoldTicketDetail(true)
+          refetch()
         }}
       />
 
@@ -1160,6 +1163,7 @@ const TravelsForSale = () => {
         onClose={() => {
           setOpenConfirmCloseDialog(false)
           setSelectedTravel(undefined)
+          refetch()
         }}
         selectedTravel={selectedTravel}
         onCloseSuccess={handleCloseTravelSuccess}

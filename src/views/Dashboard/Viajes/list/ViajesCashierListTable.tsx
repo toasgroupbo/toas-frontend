@@ -206,7 +206,7 @@ const ViajesCashierListTable = () => {
     }
   }, [currentPage, pageSize, statusFilter, startDate, endDate, originPlaceId, destinationPlaceId])
 
-  const { data: travelsResponse, isLoading, error } = useTravelsForCashier(apiFilters)
+  const { data: travelsResponse, isLoading, error, refetch, isFetching } = useTravelsForCashier(apiFilters)
 
   const travels = useMemo(() => travelsResponse?.data || [], [travelsResponse?.data])
   const meta = travelsResponse?.meta
@@ -232,6 +232,7 @@ const ViajesCashierListTable = () => {
 
   const handleCloseCreateDialog = () => {
     setCreateDialogOpen(false)
+    refetch()
   }
 
   const handleSubmitCreate = async (data: any) => {
@@ -282,6 +283,7 @@ const ViajesCashierListTable = () => {
   const handleCloseDetailDialog = () => {
     setDetailDialogOpen(false)
     setDetailTravel(null)
+    refetch()
   }
 
   const handleViewTickets = useCallback(
@@ -724,6 +726,23 @@ const ViajesCashierListTable = () => {
               <MenuItem value='active'>Activo</MenuItem>
               <MenuItem value='closed'>Cerrado</MenuItem>
             </CustomTextField>
+
+            <Button
+              variant='outlined'
+              color='primary'
+              onClick={() => refetch()}
+              disabled={isFetching}
+              startIcon={
+                isFetching ? (
+                  <CircularProgress size={16} color='inherit' />
+                ) : (
+                  <i className='tabler-refresh' />
+                )
+              }
+              sx={{ whiteSpace: 'nowrap' }}
+            >
+              {isFetching ? 'Actualizando...' : 'Actualizar'}
+            </Button>
           </div>
 
           <Box

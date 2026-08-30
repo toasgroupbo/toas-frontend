@@ -15,6 +15,7 @@ import Tooltip from '@mui/material/Tooltip'
 import Dialog from '@mui/material/Dialog'
 import DialogTitle from '@mui/material/DialogTitle'
 import DialogContent from '@mui/material/DialogContent'
+import Button from '@mui/material/Button'
 import type { TextFieldProps } from '@mui/material/TextField'
 import classnames from 'classnames'
 import { rankItem } from '@tanstack/match-sorter-utils'
@@ -155,7 +156,7 @@ const ViajesListTable = () => {
     }
   }, [currentPage, pageSize, statusFilter, startDate, endDate, originPlaceId, destinationPlaceId])
 
-  const { data: travelsResponse, isLoading, error } = useTravelsForAdmin(apiFilters)
+  const { data: travelsResponse, isLoading, error, refetch, isFetching } = useTravelsForAdmin(apiFilters)
   const { data: routes } = useRoutes()
 
   const travels = useMemo(() => travelsResponse?.data || [], [travelsResponse?.data])
@@ -258,6 +259,7 @@ const ViajesListTable = () => {
   const handleCloseTicketsDialog = () => {
     setTicketsDialogOpen(false)
     setSelectedTravel(null)
+    refetch()
   }
 
   const handleViewReport = (travel: Travel) => {
@@ -268,6 +270,7 @@ const ViajesListTable = () => {
   const handleCloseReportDialog = () => {
     setReportDialogOpen(false)
     setReportTravel(null)
+    refetch()
   }
 
   const columns = useMemo<ColumnDef<Travel, any>[]>(
@@ -629,6 +632,23 @@ const ViajesListTable = () => {
               <MenuItem value='active'>Activo</MenuItem>
               <MenuItem value='closed'>Cerrado</MenuItem>
             </CustomTextField>
+
+            <Button
+              variant='outlined'
+              color='primary'
+              onClick={() => refetch()}
+              disabled={isFetching}
+              startIcon={
+                isFetching ? (
+                  <CircularProgress size={16} color='inherit' />
+                ) : (
+                  <i className='tabler-refresh' />
+                )
+              }
+              sx={{ whiteSpace: 'nowrap' }}
+            >
+              {isFetching ? 'Actualizando...' : 'Actualizar'}
+            </Button>
           </div>
 
           <Box
