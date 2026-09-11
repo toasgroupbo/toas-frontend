@@ -72,7 +72,7 @@ const TicketsTable = ({ initialTravelId, showCancelButton = false }: TicketsTabl
   const { actingAsCompany, user } = useAuth()
   const companyId = actingAsCompany?.id ?? user?.company?.id ?? user?.companyId
 
-  const { data: apiResponse, isLoading, error } = useTicketsByTravelAndCompany(selectedTravelId)
+  const { data: apiResponse, isLoading, error, refetch } = useTicketsByTravelAndCompany(selectedTravelId)
 
   const handlePrintTicket = async (ticketId: number) => {
     setIsPrinting(true)
@@ -517,6 +517,7 @@ const TicketsTable = ({ initialTravelId, showCancelButton = false }: TicketsTabl
         onClose={() => {
           setOpenDetailDialog(false)
           setSelectedTicket(null)
+          refetch()
         }}
         ticket={selectedTicket}
         isCashierMode={false}

@@ -37,9 +37,11 @@ const TicketDetailDialog = ({ open, onClose, ticket: initialTicket, isCashierMod
 
   const ticketResponse = isCashierMode ? cashierQuery.data : adminQuery.data
   const isLoading = isCashierMode ? cashierQuery.isLoading : adminQuery.isLoading
+  const isFetching = isCashierMode ? cashierQuery.isFetching : adminQuery.isFetching
 
   // Usar los datos del API si están disponibles, sino usar los datos iniciales
-  const ticket = ticketResponse?.ticket || initialTicket
+  // Mientras está cargando datos frescos, no usamos initialTicket para evitar mostrar datos desactualizados
+  const ticket = isFetching ? null : (ticketResponse?.ticket || initialTicket)
 
   if (!ticket) return null
 
@@ -96,7 +98,7 @@ const TicketDetailDialog = ({ open, onClose, ticket: initialTicket, isCashierMod
         </Box>
       </DialogTitle>
       <DialogContent dividers>
-        {isLoading ? (
+        {isLoading || isFetching ? (
           <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: 300 }}>
             <CircularProgress />
           </Box>

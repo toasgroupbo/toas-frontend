@@ -138,7 +138,9 @@ export const useTicketByIdForCashier = (id: number | undefined) => {
   return useQuery<TicketDetailResponse>({
     queryKey: ['ticket-cashier', id],
     queryFn: () => fetchTicketByIdForCashier(id!),
-    enabled: !!id
+    enabled: !!id,
+    staleTime: 0,
+    refetchOnMount: 'always'
   })
 }
 
@@ -150,7 +152,9 @@ export const useTicketByIdForAdmin = (id: number | undefined) => {
   return useQuery<TicketDetailResponse>({
     queryKey: ['ticket-admin', id, companyId],
     queryFn: () => fetchTicketByIdForAdmin(id!, companyId as number | string | undefined),
-    enabled: !!id
+    enabled: !!id,
+    staleTime: 0,
+    refetchOnMount: 'always'
   })
 }
 

@@ -70,7 +70,7 @@ const TicketsTable = ({ initialTravelId }: TicketsTableProps) => {
   const [openSummaryModal, setOpenSummaryModal] = useState(false)
 
   const { data: travels, isLoading: travelsLoading } = useCashierTravels()
-  const { data: ticketsResponse, isLoading, error } = useTicketsByTravel(selectedTravelId)
+  const { data: ticketsResponse, isLoading, error, refetch } = useTicketsByTravel(selectedTravelId)
 
   const tickets = useMemo(() => ticketsResponse?.tickets || [], [ticketsResponse])
   const cashiers = useMemo(() => ticketsResponse?.cashiers || [], [ticketsResponse])
@@ -642,6 +642,7 @@ const TicketsTable = ({ initialTravelId }: TicketsTableProps) => {
         onClose={() => {
           setOpenDetailDialog(false)
           setSelectedTicket(null)
+          refetch()
         }}
         ticket={selectedTicket}
       />
@@ -651,6 +652,7 @@ const TicketsTable = ({ initialTravelId }: TicketsTableProps) => {
         onClose={() => {
           setOpenCancelDialog(false)
           setTicketToCancel(null)
+          refetch()
         }}
         ticket={ticketToCancel}
         onConfirmCancel={handleCancelTicket}
