@@ -30,19 +30,14 @@ import { Pagination } from '@mui/material'
 
 import CustomTextField from '@core/components/mui/TextField'
 import tableStyles from '@core/styles/table.module.css'
-import { useTicketsByTravel, useCancelTicket, type TicketDetailResponse } from '@/hooks/useTickets'
+import { useTicketsByTravel, useCancelTicket } from '@/hooks/useTickets'
 import { useCashierTravels } from '@/hooks/useCashierTravels'
 import type { Ticket } from '@/types/api/tickets'
-import { api } from '@/libs/axios'
 import TicketDetailDialog from './components/TicketDetailDialog'
 import CancelTicketDialog from './components/CancelTicketDialog'
 import TicketsSummaryModal from './components/TicketsSummaryModal'
 import { getStatusColor, getStatusLabel } from './utils/ticketStatus'
 import { formatDate, formatTime } from '../sale/utils/dateFormatters'
-import { printTicketReceipt } from './utils/printReceipt'
-import { printTicketThermal } from '@/utils/thermal/printTicketThermal'
-import { useThermalPrinter } from '@/hooks/useThermalPrinter'
-import { useSnackbar } from '@/contexts/SnackbarContext'
 
 type TicketWithActionsType = Ticket & {
   actions?: string
@@ -81,18 +76,6 @@ const TicketsTable = ({ initialTravelId }: TicketsTableProps) => {
   const cashiers = useMemo(() => ticketsResponse?.cashiers || [], [ticketsResponse])
   const totals = useMemo(() => ticketsResponse?.totals || { totalCash: '0.00', totalQr: '0.00' }, [ticketsResponse])
   const cancelTicketMutation = useCancelTicket()
-
-  // Thermal printer
-  const {
-    isSupported: isThermalSupported,
-    isPrinting: isThermalPrinting,
-    print: thermalPrint,
-    error: thermalError
-  } = useThermalPrinter()
-
-  const { showSuccess, showError } = useSnackbar()
-  const [thermalPrintingTicketId, setThermalPrintingTicketId] = useState<number | null>(null)
-  const [printingTicketId, setPrintingTicketId] = useState<number | null>(null)
 
   // Get travel info from first ticket
   const selectedTravelInfo = useMemo(() => {
@@ -145,43 +128,6 @@ const TicketsTable = ({ initialTravelId }: TicketsTableProps) => {
   const handleViewTicket = (ticket: Ticket) => {
     setSelectedTicket(ticket)
     setOpenDetailDialog(true)
-  }
-
-  const handlePrintTicket = async (ticket: Ticket) => {
-    setPrintingTicketId(ticket.id)
-
-    try {
-      const response = await api.get<TicketDetailResponse>(`/api/tickets/ticket/${ticket.id}`)
-
-      printTicketReceipt(response.data.ticket)
-    } catch (error) {
-      showError('Error al obtener datos del ticket')
-      console.error('Error fetching ticket for print:', error)
-    } finally {
-      setPrintingTicketId(null)
-    }
-  }
-
-  const handleThermalPrintTicket = async (ticket: Ticket) => {
-    setThermalPrintingTicketId(ticket.id)
-
-    try {
-      const response = await api.get<TicketDetailResponse>(`/api/tickets/ticket/${ticket.id}`)
-      const fullTicket = response.data.ticket
-
-      const success = await thermalPrint(() => printTicketThermal(fullTicket))
-
-      if (success) {
-        showSuccess('Ticket impreso correctamente')
-      } else if (thermalError) {
-        showError(thermalError)
-      }
-    } catch (error) {
-      showError('Error al obtener datos del ticket')
-      console.error('Error fetching ticket for thermal print:', error)
-    } finally {
-      setThermalPrintingTicketId(null)
-    }
   }
 
   const isTicketCancellable = (ticket: Ticket) => {
@@ -243,48 +189,6 @@ const TicketsTable = ({ initialTravelId }: TicketsTableProps) => {
                 </IconButton>
               </span>
             </Tooltip>
-            <Tooltip title='Imprimir'>
-              <IconButton
-                size='small'
-                onClick={e => {
-                  e.stopPropagation()
-                  handlePrintTicket(row.original)
-                }}
-                disabled={printingTicketId === row.original.id}
-                sx={{
-                  color: 'primary.main',
-                  '&:hover': { backgroundColor: 'primary.light', color: 'white' }
-                }}
-              >
-                {printingTicketId === row.original.id ? (
-                  <CircularProgress size={18} />
-                ) : (
-                  <i className='tabler-printer' style={{ fontSize: '18px' }} />
-                )}
-              </IconButton>
-            </Tooltip>
-            {isThermalSupported && (
-              <Tooltip title='Impr. Tablet'>
-                <IconButton
-                  size='small'
-                  onClick={e => {
-                    e.stopPropagation()
-                    handleThermalPrintTicket(row.original)
-                  }}
-                  disabled={thermalPrintingTicketId === row.original.id}
-                  sx={{
-                    color: 'secondary.main',
-                    '&:hover': { backgroundColor: 'secondary.light', color: 'white' }
-                  }}
-                >
-                  {thermalPrintingTicketId === row.original.id ? (
-                    <CircularProgress size={18} />
-                  ) : (
-                    <i className='tabler-device-tablet' style={{ fontSize: '18px' }} />
-                  )}
-                </IconButton>
-              </Tooltip>
-            )}
           </div>
         ),
         enableSorting: false
@@ -397,7 +301,7 @@ const TicketsTable = ({ initialTravelId }: TicketsTableProps) => {
         )
       })
     ],
-    [isThermalSupported, thermalPrintingTicketId]
+    []
   )
 
   const table = useReactTable({
