@@ -164,17 +164,17 @@ export class ESCPOSBuilder {
     return this.line(' '.repeat(padding) + content)
   }
 
-  // Box drawing
+  // Box drawing (ASCII compatible)
   boxTop(): this {
-    return this.line('┌' + '─'.repeat(this.lineWidth - 2) + '┐')
+    return this.line('+' + '-'.repeat(this.lineWidth - 2) + '+')
   }
 
   boxBottom(): this {
-    return this.line('└' + '─'.repeat(this.lineWidth - 2) + '┘')
+    return this.line('+' + '-'.repeat(this.lineWidth - 2) + '+')
   }
 
   boxMiddle(): this {
-    return this.line('├' + '─'.repeat(this.lineWidth - 2) + '┤')
+    return this.line('+' + '-'.repeat(this.lineWidth - 2) + '+')
   }
 
   boxLine(content: string): this {
@@ -182,7 +182,7 @@ export class ESCPOSBuilder {
     const trimmed = content.substring(0, innerWidth)
     const padding = innerWidth - trimmed.length
 
-    return this.line('│ ' + trimmed + ' '.repeat(padding) + ' │')
+    return this.line('| ' + trimmed + ' '.repeat(padding) + ' |')
   }
 
   // Table row
