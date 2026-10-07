@@ -94,51 +94,65 @@ export const buildTravelReportThermalData = ({
   const isClosed = travel.travel_status === 'closed'
   const isCancelled = travel.travel_status === 'cancelled'
 
-  // Header
+  // Header - Company name large and bold
   builder
     .alignCenter()
-    .doubleSeparator()
     .bold()
     .doubleSize()
     .line(companyName)
     .normalSize()
-    .doubleSeparator()
-    .bold()
-    .line(`REPORTE VIAJE #${travel.id}`)
+    .emptyLine()
+    .line(`REPORTE DE VIAJE #${travel.id}`)
     .bold(false)
 
   // Status
   if (isClosed) {
-    builder.line('[CERRADO]')
+    builder.bold().line('[CERRADO]').bold(false)
   } else if (isCancelled) {
-    builder.line('[CANCELADO]')
+    builder.bold().line('[CANCELADO]').bold(false)
   } else {
-    builder.line('[ACTIVO]')
+    builder.bold().line('[ACTIVO]').bold(false)
   }
 
   builder.emptyLine()
 
-  // Route box
-  builder.boxTop().alignCenter().bold().boxLine(`${origin} --> ${destination}`).bold(false)
+  // Route section
+  builder
+    .separator('-')
+    .alignLeft()
+    .bold()
+    .text('ORIGEN: ')
+    .bold(false)
+    .text(`${origin} ->`)
+    .newLine()
+    .bold()
+    .text('DESTINO: ')
+    .bold(false)
+    .line(destination)
 
   if (originOffice || destinationOffice) {
-    builder.boxLine(`${originOffice} --> ${destinationOffice}`)
+    builder.line(`${originOffice} -> ${destinationOffice}`)
   }
 
-  builder.boxMiddle()
-  builder.boxLine(`FECHA: ${departureDate}`)
-  builder.boxLine(`SALIDA: ${departureTime}  LLEGADA: ${arrivalTime}`)
-  builder.boxLine(`CARRIL: ${lane}`)
-  builder.boxBottom()
+  builder.separator('-')
+
+  // Date, Time, Lane in columns
+  builder
+    .bold()
+    .tableRow(['FECHA', 'SALIDA', 'LLEGADA'], [16, 16, 16])
+    .bold(false)
+    .tableRow([departureDate, departureTime, arrivalTime], [16, 16, 16])
+    .twoColumns('CARRIL:', String(lane))
+    .separator('-')
 
   builder.emptyLine()
 
   // Bus info
   builder
     .bold()
-    .line('--- INFORMACION DEL BUS ---')
+    .line('INFORMACION DEL BUS')
     .bold(false)
-    .alignLeft()
+    .separator('-')
     .twoColumns('Nombre:', busName)
     .twoColumns('Placa:', busPlaque)
     .twoColumns('Total Asientos:', String(totalSeats))
@@ -148,11 +162,12 @@ export const buildTravelReportThermalData = ({
   builder.emptyLine()
 
   // Drivers
-  builder.bold().line(`--- CONDUCTORES (${drivers.length}) ---`).bold(false)
+  builder.bold().line(`CONDUCTORES (${drivers.length})`).bold(false).separator('-')
 
   if (drivers.length > 0) {
     drivers.forEach((d, i) => {
-      builder.line(`${i + 1}. ${d.name} - CI: ${d.ci}`)
+      builder.line(`${i + 1}. ${d.name}`)
+      builder.twoColumns('   CI:', d.ci)
     })
   } else {
     builder.line('Sin conductores asignados')
@@ -161,11 +176,12 @@ export const buildTravelReportThermalData = ({
   builder.emptyLine()
 
   // Assistants
-  builder.bold().line(`--- AYUDANTES (${assistants.length}) ---`).bold(false)
+  builder.bold().line(`AYUDANTES (${assistants.length})`).bold(false).separator('-')
 
   if (assistants.length > 0) {
     assistants.forEach((a, i) => {
-      builder.line(`${i + 1}. ${a.name} - CI: ${a.ci}`)
+      builder.line(`${i + 1}. ${a.name}`)
+      builder.twoColumns('   CI:', a.ci)
     })
   } else {
     builder.line('Sin ayudantes asignados')
@@ -202,14 +218,17 @@ export const buildTravelReportThermalData = ({
 
   builder
     .bold()
-    .line(`--- PASAJEROS (${allPassengers.length}) ---`)
+    .line(`PASAJEROS (${allPassengers.length})`)
     .bold(false)
-    .tableRow(['As', 'Pi', 'Nombre', 'CI'], [4, 4, 24, 14])
-    .separator()
+    .separator('-')
+    .bold()
+    .tableRow(['N', 'Piso', 'Nombre', 'CI'], [4, 6, 24, 12])
+    .bold(false)
+    .emptyLine()
 
   if (allPassengers.length > 0) {
     allPassengers.forEach(p => {
-      builder.tableRow([p.seatNumber, String(p.deck), p.name.substring(0, 22), p.ci.substring(0, 12)], [4, 4, 24, 14])
+      builder.tableRow([p.seatNumber, String(p.deck), p.name.substring(0, 22), p.ci.substring(0, 10)], [4, 6, 24, 12])
     })
   } else {
     builder.alignCenter().line('Sin pasajeros').alignLeft()
@@ -218,7 +237,14 @@ export const buildTravelReportThermalData = ({
   builder.emptyLine()
 
   // Sales summary
-  builder.doubleSeparator().bold().alignCenter().line('RESUMEN DE VENTAS').bold(false).alignLeft().separator()
+  builder
+    .separator('=')
+    .bold()
+    .alignCenter()
+    .line('RESUMEN DE VENTAS')
+    .bold(false)
+    .alignLeft()
+    .separator('-')
 
   // App sales
   builder.bold().line('App').bold(false)
@@ -226,12 +252,13 @@ export const buildTravelReportThermalData = ({
 
   // Cashier sales
   cashiers.forEach(cashier => {
+    builder.emptyLine()
     builder.bold().line(cashier.fullName.substring(0, 46)).bold(false)
     builder.twoColumns('  Efectivo:', `Bs. ${parseFloat(cashier.cashTotal).toFixed(2)}`)
     builder.twoColumns('  QR:', `Bs. ${parseFloat(cashier.qrTotal).toFixed(2)}`)
   })
 
-  builder.separator()
+  builder.separator('-')
 
   // Totals
   builder
@@ -239,14 +266,16 @@ export const buildTravelReportThermalData = ({
     .twoColumns('TOTAL EFECTIVO:', `Bs. ${totalCash.toFixed(2)}`)
     .twoColumns('TOTAL QR:', `Bs. ${totalQr.toFixed(2)}`)
     .bold(false)
-    .doubleSeparator()
+    .emptyLine()
     .alignCenter()
+    .line('TOTAL GENERAL')
+    .emptyLine()
     .bold()
     .doubleSize()
-    .line(`TOTAL: Bs. ${totalGeneral.toFixed(2)}`)
+    .line(`Bs. ${totalGeneral.toFixed(2)}`)
     .normalSize()
     .bold(false)
-    .doubleSeparator()
+    .separator('=')
 
   // Closed info
   if (isClosed && travel.closedAt) {

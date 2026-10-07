@@ -55,43 +55,54 @@ export const buildTicketThermalData = (ticket: Ticket): Uint8Array => {
   const seats = ticket.travelSeats?.length > 0 ? ticket.travelSeats : ticket.seats
   const totalPrice = parseFloat(ticket.total_price).toFixed(2)
 
-  // Header
+  // Header - Company name large and bold
   builder
     .alignCenter()
-    .doubleSeparator()
     .bold()
     .doubleSize()
     .line(companyName)
     .normalSize()
-    .doubleSeparator()
-    .bold()
+    .emptyLine()
     .line(`TICKET #${ticket.id}`)
     .bold(false)
 
   if (isCancelled) {
-    builder.bold().line('*** CANCELADO ***').bold(false)
+    builder.emptyLine().bold().line('*** CANCELADO ***').bold(false)
   }
 
   builder.emptyLine()
 
-  // Route box
-  builder.boxTop().alignCenter().bold().boxLine(`${origin} --> ${destination}`).bold(false).boxMiddle().alignLeft()
+  // Route section with box
+  builder
+    .separator('-')
+    .alignLeft()
+    .bold()
+    .text('ORIGEN: ')
+    .bold(false)
+    .text(`${origin} ->`)
+    .newLine()
+    .bold()
+    .text('DESTINO: ')
+    .bold(false)
+    .line(destination)
+    .separator('-')
 
-  // Departure info inside box
-  const depInfo = `FECHA: ${departureDate}  HORA: ${departureTime}`
+  // Date, Time, Lane in columns
+  builder
+    .bold()
+    .tableRow(['FECHA', 'HORA', 'CARRIL'], [18, 18, 12])
+    .bold(false)
+    .tableRow([departureDate, departureTime, String(lane)], [18, 18, 12])
 
-  builder.boxLine(depInfo)
-  builder.boxLine(`CARRIL: ${lane}`)
-  builder.boxBottom()
-
-  builder.emptyLine()
+  builder.separator('-')
 
   // Buyer section
   builder
-    .alignLeft()
+    .emptyLine()
     .bold()
-    .line('--- COMPRADOR ---')
+    .line('COMPRADOR')
     .bold(false)
+    .separator('-')
     .twoColumns('Nombre:', buyerName)
     .twoColumns('CI/NIT:', buyerCi)
 
@@ -100,10 +111,13 @@ export const buildTicketThermalData = (ticket: Ticket): Uint8Array => {
   // Seats section
   builder
     .bold()
-    .line('--- ASIENTOS ---')
+    .line('ASIENTOS')
     .bold(false)
-    .tableRow(['N', 'Piso', 'Pasajero', 'Precio'], [4, 6, 22, 14])
-    .separator()
+    .separator('-')
+    .bold()
+    .tableRow(['N', 'Piso', 'Pasajero', 'Precio'], [4, 6, 24, 12])
+    .bold(false)
+    .emptyLine()
 
   seats?.forEach(seat => {
     const seatAny = seat as any
@@ -111,30 +125,31 @@ export const buildTicketThermalData = (ticket: Ticket): Uint8Array => {
     const deck = seatAny.deck || '-'
     const price = `Bs.${parseFloat(seat.price).toFixed(2)}`
 
-    builder.tableRow([seat.seatNumber, String(deck), passengerName.substring(0, 20), price], [4, 6, 22, 14])
+    builder.tableRow([seat.seatNumber, String(deck), passengerName.substring(0, 22), price], [4, 6, 24, 12])
   })
 
   builder.emptyLine()
 
-  // Total
+  // Total section - large and prominent
   builder
-    .doubleSeparator()
     .alignCenter()
+    .line('TOTAL A PAGAR')
+    .emptyLine()
     .bold()
     .doubleSize()
-    .line(`TOTAL: Bs. ${totalPrice}`)
+    .line(`Bs. ${totalPrice}`)
     .normalSize()
     .bold(false)
-    .doubleSeparator()
 
   builder.emptyLine()
+  builder.separator('-')
 
-  // Additional info
+  // Additional info - right aligned values
   builder
     .alignLeft()
-    .twoColumns('Tipo:', getSaleTypeLabel(ticket.type))
-    .twoColumns('Pago:', getPaymentLabel(ticket.payment_type))
-    .twoColumns('Emision:', `${formatDate(ticket.createdAt)} ${formatTime(ticket.createdAt)}`)
+    .twoColumns('Tipo de Venta:', getSaleTypeLabel(ticket.type))
+    .twoColumns('Metodo de Pago:', getPaymentLabel(ticket.payment_type))
+    .twoColumns('Fecha Emision:', `${formatDate(ticket.createdAt)} ${formatTime(ticket.createdAt)}`)
 
   if (ticket.type === 'IN_OFFICE' && ticket.soldBy) {
     builder.twoColumns('Cajero:', ticket.soldBy.fullName || ticket.soldBy.email || 'N/A')
@@ -150,9 +165,15 @@ export const buildTicketThermalData = (ticket: Ticket): Uint8Array => {
   }
 
   builder.emptyLine()
+  builder.separator('-')
 
   // Footer
-  builder.separator('-').alignCenter().bold().line('Gracias por su preferencia!').line('Buen Viaje').bold(false)
+  builder
+    .alignCenter()
+    .bold()
+    .line('!Gracias por su preferencia!')
+    .line('Buen Viaje')
+    .bold(false)
 
   // Cut paper
   builder.cut()
