@@ -32,14 +32,10 @@ import { Pagination } from '@mui/material'
 import CustomTextField from '@core/components/mui/TextField'
 import tableStyles from '@core/styles/table.module.css'
 import { useTravelsForAdmin, type TravelFilters } from '@/hooks/useTravels'
-import { useTicketsByTravelAndCompany } from '@/hooks/useTickets'
 import { useRoutes } from '@/hooks/useRoutes'
 import type { Travel } from '@/types/api/travels'
 import AdminTicketsTable from '../components/AdminTicketsTable'
 import TravelDetailDialog from '../components/TravelDetailDialog'
-import { printTravelReportThermal } from '@/utils/thermal/printReportThermal'
-import { useThermalPrinter } from '@/hooks/useThermalPrinter'
-import { useSnackbar } from '@/contexts/SnackbarContext'
 
 const getTodayDate = () => new Date().toISOString().split('T')[0]
 
@@ -103,17 +99,6 @@ const ViajesListTable = () => {
   // Refs to track if this is the initial mount (to avoid resetting page on first render)
   const isInitialStartDate = useRef(true)
   const isInitialEndDate = useRef(true)
-
-  // Thermal printer
-  const {
-    isSupported: isThermalSupported,
-    isPrinting: isThermalPrinting,
-    print: thermalPrint,
-    error: thermalError
-  } = useThermalPrinter()
-
-  const { showSuccess, showError } = useSnackbar()
-  const [thermalPrintingTravelId, setThermalPrintingTravelId] = useState<number | null>(null)
 
   // Debounce effect for start date
   useEffect(() => {
@@ -291,28 +276,6 @@ const ViajesListTable = () => {
     refetch()
   }
 
-  const handleThermalPrintReport = async (travel: Travel) => {
-    setThermalPrintingTravelId(travel.id)
-
-    try {
-      const success = await thermalPrint(() =>
-        printTravelReportThermal({
-          travel,
-          tickets: [],
-          companyName: (travel as any).company?.name
-        })
-      )
-
-      if (success) {
-        showSuccess('Reporte impreso correctamente')
-      } else if (thermalError) {
-        showError(thermalError)
-      }
-    } finally {
-      setThermalPrintingTravelId(null)
-    }
-  }
-
   const columns = useMemo<ColumnDef<Travel, any>[]>(
     () => [
       {
@@ -344,25 +307,6 @@ const ViajesListTable = () => {
                 <i className='tabler-printer' style={{ fontSize: '18px' }} />
               </IconButton>
             </Tooltip>
-            {isThermalSupported && (
-              <Tooltip title='Impr. Tablet'>
-                <IconButton
-                  size='small'
-                  onClick={e => {
-                    e.stopPropagation()
-                    handleThermalPrintReport(row.original)
-                  }}
-                  color='secondary'
-                  disabled={thermalPrintingTravelId === row.original.id}
-                >
-                  {thermalPrintingTravelId === row.original.id ? (
-                    <CircularProgress size={18} />
-                  ) : (
-                    <i className='tabler-device-tablet' style={{ fontSize: '18px' }} />
-                  )}
-                </IconButton>
-              </Tooltip>
-            )}
           </div>
         ),
         enableSorting: false
