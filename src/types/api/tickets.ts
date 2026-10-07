@@ -51,9 +51,10 @@ export interface User {
 
 export interface TicketSeat {
   deck: any
-  id: number
+  id?: number
   seatNumber: string
   price: string
+  passenger?: Passenger | null
 }
 
 export interface Billing {
@@ -61,6 +62,23 @@ export interface Billing {
   nombre: string
   ci: string
   createdAt: string
+}
+
+export interface BillingSnapshot {
+  nombre: string
+  ci: string
+}
+
+export interface TravelSnapshotOffice {
+  officeName: string | null
+  address: string | null
+  placeName: string | null
+}
+
+export interface TravelSnapshot {
+  companyName: string | null
+  origin: TravelSnapshotOffice
+  destination: TravelSnapshotOffice
 }
 
 export interface Place {
@@ -156,6 +174,8 @@ export interface Ticket {
   qr_amount?: string
   past?: boolean
   billing?: Billing
+  billingSnapshot?: BillingSnapshot | null
+  travelSnapshot?: TravelSnapshot | null
 }
 
 export interface BillingInfo {

@@ -35,10 +35,12 @@ import { Pagination } from '@mui/material'
 import CustomTextField from '@core/components/mui/TextField'
 import tableStyles from '@core/styles/table.module.css'
 import { useOwners, useCreateOwner, useUpdateOwner, useDeleteOwner } from '@/hooks/useOwners'
+import { useReset2FA } from '@/hooks/useTwoFactor'
 import type { Owner, CreateOwnerDto } from '@/types/api/owners'
 import { BANCOS_OPTIONS } from '@/types/api/company'
 import OwnerDialog from '@/views/Dashboard/Duenos/components/OwnerDialog'
 import DeleteOwnerDialog from '@/views/Dashboard/Duenos/components/DeleteOwnerDialog'
+import Reset2FADialog from '@/components/dialogs/Reset2FADialog'
 import { useSnackbar } from '@/contexts/SnackbarContext'
 import { usePermissions } from '@/hooks/usePermissions'
 
@@ -92,6 +94,7 @@ const OwnersTable = () => {
   const [createDialogOpen, setCreateDialogOpen] = useState(false)
   const [updateDialogOpen, setUpdateDialogOpen] = useState(false)
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
+  const [reset2FADialogOpen, setReset2FADialogOpen] = useState(false)
   const [selectedOwner, setSelectedOwner] = useState<Owner | null>(null)
 
   const enabledParam: boolean | 'all' = enabledFilter === 'all' ? 'all' : enabledFilter === 'true'
@@ -102,6 +105,7 @@ const OwnersTable = () => {
   const createMutation = useCreateOwner()
   const updateMutation = useUpdateOwner()
   const deleteMutation = useDeleteOwner()
+  const reset2FAMutation = useReset2FA()
   const { showSuccess, showError } = useSnackbar()
   const { canCreate, canUpdate, canDelete } = usePermissions().getCRUDPermissions('OWNER')
 
@@ -196,6 +200,37 @@ const OwnersTable = () => {
     }
   }
 
+  const handleReset2FA = (owner: Owner) => {
+    const user = owner.users?.[0]
+
+    if (!user) {
+      showError('Este dueño no tiene usuario asociado')
+
+      return
+    }
+
+    setSelectedOwner(owner)
+    setReset2FADialogOpen(true)
+  }
+
+  const handleReset2FAConfirm = async () => {
+    if (!selectedOwner) return
+
+    const user = selectedOwner.users?.[0]
+
+    if (!user) return
+
+    try {
+      await reset2FAMutation.mutateAsync(String(user.id))
+      setReset2FADialogOpen(false)
+      setSelectedOwner(null)
+      showSuccess(`Verificación en dos pasos restablecida para ${selectedOwner.name}`)
+    } catch (error: any) {
+      console.error('Error al restablecer 2FA:', error)
+      showError(error?.response?.data?.message || 'Error al restablecer verificación en dos pasos')
+    }
+  }
+
   const columns = useMemo<ColumnDef<OwnerWithActionsType, any>[]>(
     () => [
       columnHelper.accessor('actions', {
@@ -224,6 +259,21 @@ const OwnersTable = () => {
                     }}
                   >
                     <i className='tabler-edit' style={{ fontSize: '18px' }} />
+                  </IconButton>
+                </Tooltip>
+              )}
+              {canUpdate && row.original.users?.[0]?.isTwoFactorEnabled && (
+                <Tooltip title='Restablecer 2FA'>
+                  <IconButton
+                    size='small'
+                    onClick={() => handleReset2FA(row.original)}
+                    disabled={reset2FAMutation.isPending}
+                    sx={{
+                      color: 'secondary.main',
+                      '&:hover': { backgroundColor: 'secondary.light', color: 'white' }
+                    }}
+                  >
+                    <i className='tabler-shield-off' style={{ fontSize: '18px' }} />
                   </IconButton>
                 </Tooltip>
               )}
@@ -525,6 +575,18 @@ const OwnersTable = () => {
         onConfirm={handleConfirmDelete}
         owner={selectedOwner}
         isLoading={deleteMutation.isPending}
+      />
+
+      <Reset2FADialog
+        open={reset2FADialogOpen}
+        onClose={() => {
+          setReset2FADialogOpen(false)
+          setSelectedOwner(null)
+        }}
+        onConfirm={handleReset2FAConfirm}
+        isLoading={reset2FAMutation.isPending}
+        userName={selectedOwner?.name || null}
+        userEmail={selectedOwner?.users?.[0]?.email}
       />
     </Box>
   )

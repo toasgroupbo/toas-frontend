@@ -41,10 +41,12 @@ import {
   useDeleteCashier,
   useChangePasswordCashier
 } from '@/hooks/useCashiers'
+import { useReset2FA } from '@/hooks/useTwoFactor'
 import type { Cashier, CreateCashierDto, UpdateCashierDto } from '@/types/api/cashiers'
 import CreateCashierDialog from '@/views/Dashboard/Cajeros/components/CreateCashierDialog'
 import ChangePasswordDialog from '@/views/Dashboard/Cajeros/components/ChangePasswordDialog'
 import DeleteCashierDialog from '@/views/Dashboard/Cajeros/components/DeleteCashierDialog'
+import Reset2FADialog from '@/components/dialogs/Reset2FADialog'
 import { useSnackbar } from '@/contexts/SnackbarContext'
 import { usePermissions } from '@/hooks/usePermissions'
 
@@ -108,6 +110,7 @@ const CashiersTable = () => {
   const [editDialogOpen, setEditDialogOpen] = useState(false)
   const [passwordDialogOpen, setPasswordDialogOpen] = useState(false)
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
+  const [reset2FADialogOpen, setReset2FADialogOpen] = useState(false)
   const [selectedCashier, setSelectedCashier] = useState<Cashier | null>(null)
 
   const enabledParam: boolean | 'all' = enabledFilter === 'all' ? 'all' : enabledFilter === 'true'
@@ -119,6 +122,7 @@ const CashiersTable = () => {
   const updateMutation = useUpdateCashier()
   const deleteMutation = useDeleteCashier()
   const changePasswordMutation = useChangePasswordCashier()
+  const reset2FAMutation = useReset2FA()
   const { showSuccess, showError } = useSnackbar()
   const { canCreate, canUpdate, canDelete } = usePermissions().getCRUDPermissions('CASHIER')
 
@@ -197,6 +201,25 @@ const CashiersTable = () => {
     }
   }
 
+  const handleReset2FA = (cashier: Cashier) => {
+    setSelectedCashier(cashier)
+    setReset2FADialogOpen(true)
+  }
+
+  const handleReset2FAConfirm = async () => {
+    if (!selectedCashier) return
+
+    try {
+      await reset2FAMutation.mutateAsync(String(selectedCashier.id))
+      setReset2FADialogOpen(false)
+      setSelectedCashier(null)
+      showSuccess(`Verificación en dos pasos restablecida para ${selectedCashier.fullName}`)
+    } catch (error: any) {
+      console.error('Error al restablecer 2FA:', error)
+      showError(error?.response?.data?.message || 'Error al restablecer verificación en dos pasos')
+    }
+  }
+
   const columns = useMemo<ColumnDef<CashierWithActionsType, any>[]>(
     () => [
       columnHelper.accessor('actions', {
@@ -225,6 +248,18 @@ const CashiersTable = () => {
                 <Tooltip title='Cambiar Contraseña'>
                   <IconButton size='small' onClick={() => handleChangePassword(row.original)} color='warning'>
                     <i className='tabler-key' />
+                  </IconButton>
+                </Tooltip>
+              )}
+              {canUpdate && row.original.isTwoFactorEnabled && (
+                <Tooltip title='Restablecer 2FA'>
+                  <IconButton
+                    size='small'
+                    onClick={() => handleReset2FA(row.original)}
+                    color='secondary'
+                    disabled={reset2FAMutation.isPending}
+                  >
+                    <i className='tabler-shield-off' />
                   </IconButton>
                 </Tooltip>
               )}
@@ -553,6 +588,18 @@ const CashiersTable = () => {
         onConfirm={handleDeleteConfirm}
         isLoading={deleteMutation.isPending}
         cashier={selectedCashier}
+      />
+
+      <Reset2FADialog
+        open={reset2FADialogOpen}
+        onClose={() => {
+          setReset2FADialogOpen(false)
+          setSelectedCashier(null)
+        }}
+        onConfirm={handleReset2FAConfirm}
+        isLoading={reset2FAMutation.isPending}
+        userName={selectedCashier?.fullName || null}
+        userEmail={selectedCashier?.email}
       />
     </Box>
   )

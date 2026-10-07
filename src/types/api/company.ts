@@ -114,6 +114,7 @@ export interface Company {
   enabled: boolean
   bankAccount: BankAccount
   users: CompanyAdmin[]
+  require_travel_approval?: boolean
 }
 
 export interface CreateCompanyDto {
@@ -146,6 +147,7 @@ export interface UpdateCompanyDto {
   commission_app?: number
   commission_company?: number
   hours_before_closing?: number
+  require_travel_approval?: boolean
   bankAccount?: {
     bankCode: string
     account: string

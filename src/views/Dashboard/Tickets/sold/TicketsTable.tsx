@@ -38,6 +38,9 @@ import CancelTicketDialog from './components/CancelTicketDialog'
 import TicketsSummaryModal from './components/TicketsSummaryModal'
 import { getStatusColor, getStatusLabel } from './utils/ticketStatus'
 import { formatDate, formatTime } from '../sale/utils/dateFormatters'
+import { printTicketThermal } from '@/utils/thermal/printTicketThermal'
+import { useThermalPrinter } from '@/hooks/useThermalPrinter'
+import { useSnackbar } from '@/contexts/SnackbarContext'
 
 type TicketWithActionsType = Ticket & {
   actions?: string
@@ -76,6 +79,17 @@ const TicketsTable = ({ initialTravelId }: TicketsTableProps) => {
   const cashiers = useMemo(() => ticketsResponse?.cashiers || [], [ticketsResponse])
   const totals = useMemo(() => ticketsResponse?.totals || { totalCash: '0.00', totalQr: '0.00' }, [ticketsResponse])
   const cancelTicketMutation = useCancelTicket()
+
+  // Thermal printer
+  const {
+    isSupported: isThermalSupported,
+    isPrinting: isThermalPrinting,
+    print: thermalPrint,
+    error: thermalError
+  } = useThermalPrinter()
+
+  const { showSuccess, showError } = useSnackbar()
+  const [thermalPrintingTicketId, setThermalPrintingTicketId] = useState<number | null>(null)
 
   // Get travel info from first ticket
   const selectedTravelInfo = useMemo(() => {
@@ -128,6 +142,22 @@ const TicketsTable = ({ initialTravelId }: TicketsTableProps) => {
   const handleViewTicket = (ticket: Ticket) => {
     setSelectedTicket(ticket)
     setOpenDetailDialog(true)
+  }
+
+  const handleThermalPrintTicket = async (ticket: Ticket) => {
+    setThermalPrintingTicketId(ticket.id)
+
+    try {
+      const success = await thermalPrint(() => printTicketThermal(ticket))
+
+      if (success) {
+        showSuccess('Ticket impreso correctamente')
+      } else if (thermalError) {
+        showError(thermalError)
+      }
+    } finally {
+      setThermalPrintingTicketId(null)
+    }
   }
 
   const isTicketCancellable = (ticket: Ticket) => {
@@ -189,6 +219,28 @@ const TicketsTable = ({ initialTravelId }: TicketsTableProps) => {
                 </IconButton>
               </span>
             </Tooltip>
+            {isThermalSupported && (
+              <Tooltip title='Impr. Tablet'>
+                <IconButton
+                  size='small'
+                  onClick={e => {
+                    e.stopPropagation()
+                    handleThermalPrintTicket(row.original)
+                  }}
+                  disabled={thermalPrintingTicketId === row.original.id}
+                  sx={{
+                    color: 'secondary.main',
+                    '&:hover': { backgroundColor: 'secondary.light', color: 'white' }
+                  }}
+                >
+                  {thermalPrintingTicketId === row.original.id ? (
+                    <CircularProgress size={18} />
+                  ) : (
+                    <i className='tabler-device-tablet' style={{ fontSize: '18px' }} />
+                  )}
+                </IconButton>
+              </Tooltip>
+            )}
           </div>
         ),
         enableSorting: false
@@ -198,10 +250,13 @@ const TicketsTable = ({ initialTravelId }: TicketsTableProps) => {
         cell: ({ row }) => (
           <Box>
             <Typography variant='body2' fontWeight={600}>
-              {row.original.billing?.nombre || row.original.buyer?.name || 'N/A'}
+              {row.original.billingSnapshot?.nombre ||
+                row.original.billing?.nombre ||
+                row.original.buyer?.name ||
+                'N/A'}
             </Typography>
             <Typography variant='caption' color='text.secondary'>
-              CI: {row.original.billing?.ci || row.original.buyer?.ci || 'N/A'}
+              CI: {row.original.billingSnapshot?.ci || row.original.billing?.ci || row.original.buyer?.ci || 'N/A'}
             </Typography>
           </Box>
         )
@@ -298,7 +353,7 @@ const TicketsTable = ({ initialTravelId }: TicketsTableProps) => {
         )
       })
     ],
-    []
+    [isThermalSupported, thermalPrintingTicketId]
   )
 
   const table = useReactTable({

@@ -35,11 +35,13 @@ import { Pagination } from '@mui/material'
 import CustomTextField from '@core/components/mui/TextField'
 import tableStyles from '@core/styles/table.module.css'
 import { useUsers, useCreateUser, useUpdateUser, useDeleteUser, useChangePassword } from '@/hooks/useUsers'
+import { useReset2FA } from '@/hooks/useTwoFactor'
 import type { User, CreateUserDto, UpdateUserDto } from '@/types/api/users'
 import CreateUserDialog from '@/views/Dashboard/usuarios/components/CreateUserDialog'
 import EditCompanyAdminDialog from '@/views/Dashboard/usuarios/components/EditCompanyAdminDialog'
 import ChangePasswordDialog from '@/views/Dashboard/usuarios/components/ChangePasswordDialog'
 import DeleteUserDialog from '@/views/Dashboard/usuarios/components/DeleteUserDialog'
+import Reset2FADialog from '@/components/dialogs/Reset2FADialog'
 import { useSnackbar } from '@/contexts/SnackbarContext'
 import { usePermissions } from '@/hooks/usePermissions'
 
@@ -106,6 +108,7 @@ const UsersTable = () => {
   const [editCompanyAdminDialogOpen, setEditCompanyAdminDialogOpen] = useState(false)
   const [passwordDialogOpen, setPasswordDialogOpen] = useState(false)
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
+  const [reset2FADialogOpen, setReset2FADialogOpen] = useState(false)
   const [selectedUser, setSelectedUser] = useState<User | null>(null)
 
   const { data: users, isLoading, error } = useUsers()
@@ -113,6 +116,7 @@ const UsersTable = () => {
   const updateMutation = useUpdateUser()
   const deleteMutation = useDeleteUser()
   const changePasswordMutation = useChangePassword()
+  const reset2FAMutation = useReset2FA()
   const { showSuccess, showError } = useSnackbar()
   const { canCreate, canUpdate, canDelete } = usePermissions().getCRUDPermissions('USER')
 
@@ -212,6 +216,25 @@ const UsersTable = () => {
     }
   }
 
+  const handleReset2FA = (user: User) => {
+    setSelectedUser(user)
+    setReset2FADialogOpen(true)
+  }
+
+  const handleReset2FAConfirm = async () => {
+    if (!selectedUser) return
+
+    try {
+      await reset2FAMutation.mutateAsync(selectedUser.id)
+      setReset2FADialogOpen(false)
+      setSelectedUser(null)
+      showSuccess(`Verificación en dos pasos restablecida para ${selectedUser.fullName}`)
+    } catch (error: any) {
+      console.error('Error al restablecer 2FA:', error)
+      showError(error?.response?.data?.message || 'Error al restablecer verificación en dos pasos')
+    }
+  }
+
   const columns = useMemo<ColumnDef<UserWithActionsType, any>[]>(
     () => [
       columnHelper.accessor('actions', {
@@ -235,6 +258,18 @@ const UsersTable = () => {
                 <Tooltip title='Cambiar Contraseña'>
                   <IconButton size='small' onClick={() => handleChangePassword(row.original)} color='warning'>
                     <i className='tabler-key' />
+                  </IconButton>
+                </Tooltip>
+              )}
+              {!noActions && canUpdate && row.original.isTwoFactorEnabled && (
+                <Tooltip title='Restablecer 2FA'>
+                  <IconButton
+                    size='small'
+                    onClick={() => handleReset2FA(row.original)}
+                    color='secondary'
+                    disabled={reset2FAMutation.isPending}
+                  >
+                    <i className='tabler-shield-off' />
                   </IconButton>
                 </Tooltip>
               )}
@@ -539,6 +574,18 @@ const UsersTable = () => {
         onConfirm={handleDeleteConfirm}
         isLoading={deleteMutation.isPending}
         user={selectedUser}
+      />
+
+      <Reset2FADialog
+        open={reset2FADialogOpen}
+        onClose={() => {
+          setReset2FADialogOpen(false)
+          setSelectedUser(null)
+        }}
+        onConfirm={handleReset2FAConfirm}
+        isLoading={reset2FAMutation.isPending}
+        userName={selectedUser?.fullName || null}
+        userEmail={selectedUser?.email}
       />
     </Box>
   )

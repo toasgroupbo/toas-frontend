@@ -20,6 +20,7 @@ import Typography from '@mui/material/Typography'
 import Divider from '@mui/material/Divider'
 import MenuItem from '@mui/material/MenuItem'
 import Button from '@mui/material/Button'
+import Box from '@mui/material/Box'
 
 // Hook Imports
 import { useSettings } from '@core/hooks/useSettings'
@@ -28,6 +29,7 @@ import { useLogout } from '@/hooks/useLogout'
 import { useUpdateUser, useChangePassword } from '@/hooks/useUsers'
 import { useSnackbar } from '@/contexts/SnackbarContext'
 import SuperAdminProfileDialog from '@/views/Dashboard/usuarios/components/SuperAdminProfileDialog'
+import TwoFactorDialog from '@/components/dialogs/TwoFactorDialog'
 import type { UpdateUserDto } from '@/types/api/users'
 
 // Styled component for badge content
@@ -44,6 +46,7 @@ const UserDropdown = () => {
   // States
   const [open, setOpen] = useState(false)
   const [profileDialogOpen, setProfileDialogOpen] = useState(false)
+  const [twoFactorDialogOpen, setTwoFactorDialogOpen] = useState(false)
 
   // Refs
   const anchorRef = useRef<HTMLDivElement>(null)
@@ -81,6 +84,16 @@ const UserDropdown = () => {
   const handleOpenProfileDialog = () => {
     setOpen(false)
     setProfileDialogOpen(true)
+  }
+
+  const handleOpenTwoFactorDialog = () => {
+    setOpen(false)
+    setTwoFactorDialogOpen(true)
+  }
+
+  const handleTwoFactorSuccess = (enabled: boolean) => {
+    updateUser({ isTwoFactorEnabled: enabled })
+    showSuccess(enabled ? 'Verificación en dos pasos activada' : 'Verificación en dos pasos desactivada')
   }
 
   const handleUpdateProfile = async (data: UpdateUserDto) => {
@@ -217,6 +230,16 @@ const UserDropdown = () => {
                     </MenuItem>
                   )}
 
+                  <MenuItem className='mli-2 gap-3' onClick={handleOpenTwoFactorDialog}>
+                    <i className='tabler-shield-lock' />
+                    <Box display='flex' alignItems='center' gap={1}>
+                      <Typography color='text.primary'>Seguridad</Typography>
+                      {user?.isTwoFactorEnabled && (
+                        <i className='tabler-circle-check' style={{ fontSize: 16, color: '#4caf50' }} />
+                      )}
+                    </Box>
+                  </MenuItem>
+
                   <div className='flex items-center plb-2 pli-3'>
                     <Button
                       fullWidth
@@ -248,6 +271,14 @@ const UserDropdown = () => {
           isLoading={updateMutation.isPending || changePasswordMutation.isPending}
         />
       )}
+
+      {/* Modal de verificación en dos pasos */}
+      <TwoFactorDialog
+        open={twoFactorDialogOpen}
+        onClose={() => setTwoFactorDialogOpen(false)}
+        isTwoFactorEnabled={user?.isTwoFactorEnabled || false}
+        onSuccess={handleTwoFactorSuccess}
+      />
     </>
   )
 }

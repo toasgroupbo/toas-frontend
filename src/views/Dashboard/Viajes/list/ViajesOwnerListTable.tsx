@@ -371,7 +371,9 @@ const ViajesOwnerListTable = () => {
           const statusMap: Record<string, { label: string; color: 'success' | 'default' | 'error' | 'warning' }> = {
             active: { label: 'Activo', color: 'success' },
             closed: { label: 'Cerrado', color: 'default' },
-            cancelled: { label: 'Cancelado', color: 'error' }
+            cancelled: { label: 'Cancelado', color: 'error' },
+            pending_approval: { label: 'Pendiente', color: 'warning' },
+            rejected: { label: 'Rechazado', color: 'error' }
           }
 
           const status = statusMap[row.original.travel_status] || {

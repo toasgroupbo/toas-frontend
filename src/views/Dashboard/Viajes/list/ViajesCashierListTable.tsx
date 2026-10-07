@@ -237,8 +237,14 @@ const ViajesCashierListTable = () => {
 
   const handleSubmitCreate = async (data: any) => {
     try {
-      await createMutation.mutateAsync(data)
-      showSuccess('Viaje creado correctamente')
+      const createdTravel = await createMutation.mutateAsync(data)
+
+      if (createdTravel?.travel_status === 'pending_approval') {
+        showSuccess('Viaje creado. Queda pendiente de aprobación del administrador.')
+      } else {
+        showSuccess('Viaje creado correctamente')
+      }
+
       handleCloseCreateDialog()
     } catch (error: any) {
       console.error('Error al crear viaje:', error)
@@ -525,7 +531,9 @@ const ViajesCashierListTable = () => {
           const statusMap: Record<string, { label: string; color: 'success' | 'default' | 'error' | 'warning' }> = {
             active: { label: 'Activo', color: 'success' },
             closed: { label: 'Cerrado', color: 'default' },
-            cancelled: { label: 'Cancelado', color: 'error' }
+            cancelled: { label: 'Cancelado', color: 'error' },
+            pending_approval: { label: 'Pendiente', color: 'warning' },
+            rejected: { label: 'Rechazado', color: 'error' }
           }
 
           const status = statusMap[row.original.travel_status] || {
@@ -533,7 +541,10 @@ const ViajesCashierListTable = () => {
             color: 'default'
           }
 
-          return (
+          const isRejected = row.original.travel_status === 'rejected'
+          const rejectionReason = row.original.rejection_reason
+
+          const chip = (
             <Chip
               label={status.label}
               color={status.color}
@@ -547,6 +558,16 @@ const ViajesCashierListTable = () => {
               }
             />
           )
+
+          if (isRejected && rejectionReason) {
+            return (
+              <Tooltip title={`Motivo: ${rejectionReason}`}>
+                {chip}
+              </Tooltip>
+            )
+          }
+
+          return chip
         }
       }),
       columnHelper.accessor('closedAt', {

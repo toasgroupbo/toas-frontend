@@ -42,6 +42,7 @@ export interface Cashier {
   rol: CashierRole | null
   company: Company | null
   office: CashierOffice | null
+  isTwoFactorEnabled?: boolean
 }
 
 export interface CreateCashierDto {

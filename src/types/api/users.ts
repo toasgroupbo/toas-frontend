@@ -23,6 +23,7 @@ export interface User {
   rol: UserRole | null
   company: Company | null
   office: any | null
+  isTwoFactorEnabled?: boolean
 }
 
 export interface CreateUserDto {

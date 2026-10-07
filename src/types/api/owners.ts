@@ -18,6 +18,7 @@ export interface OwnerUser {
   ci: string
   phone: string
   createdAt: string
+  isTwoFactorEnabled?: boolean
 }
 
 export interface OwnerCompany {

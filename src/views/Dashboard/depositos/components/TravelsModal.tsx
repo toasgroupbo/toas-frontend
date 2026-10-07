@@ -273,20 +273,20 @@ const TravelsModal = ({ open, onClose, company }: TravelsModalProps) => {
         )
       },
       {
-        accessorKey: 'bus.owner.name',
+        accessorKey: 'owner.name',
         header: 'Titular',
         cell: ({ row }: any) => {
-          const owner = row.original.bus.owner
-          const bankAccount = owner.bankAccount
+          const owner = row.original.owner || row.original.bus.owner
+          const bankAccount = owner?.bankAccount
 
-          return <Typography variant='body2'>{bankAccount?.titularName || owner.name || 'N/A'}</Typography>
+          return <Typography variant='body2'>{bankAccount?.titularName || owner?.name || 'N/A'}</Typography>
         }
       },
       {
-        accessorKey: 'bus.owner.bankAccount',
+        accessorKey: 'owner.bankAccount',
         header: 'Banco/Nro Cuenta',
         cell: ({ row }: any) => {
-          const bankAccount = row.original.bus.owner?.bankAccount
+          const bankAccount = row.original.owner?.bankAccount || row.original.bus.owner?.bankAccount
 
           if (!bankAccount) {
             return (

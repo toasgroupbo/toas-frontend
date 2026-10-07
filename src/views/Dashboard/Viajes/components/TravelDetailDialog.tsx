@@ -1,5 +1,7 @@
 'use client'
 
+import { useState } from 'react'
+
 import Dialog from '@mui/material/Dialog'
 import DialogTitle from '@mui/material/DialogTitle'
 import DialogContent from '@mui/material/DialogContent'
@@ -19,11 +21,20 @@ import TableHead from '@mui/material/TableHead'
 import TableRow from '@mui/material/TableRow'
 import Card from '@mui/material/Card'
 import CardContent from '@mui/material/CardContent'
+import TextField from '@mui/material/TextField'
+import Alert from '@mui/material/Alert'
+
+import Tooltip from '@mui/material/Tooltip'
 
 import type { Travel } from '@/types/api/travels'
 import { useTicketsByTravelAndCompany, useTicketsByTravel, type CashierSummary } from '@/hooks/useTickets'
 import { printTravelReport } from '../utils/printTravelReport'
+import { printTravelReportThermal } from '@/utils/thermal/printReportThermal'
+import { useThermalPrinter } from '@/hooks/useThermalPrinter'
 import { useAuth } from '@/contexts/AuthContext'
+import { useApproveTravel, useRejectTravel } from '@/hooks/useTravelApproval'
+import { usePermissions } from '@/hooks/usePermissions'
+import { useSnackbar } from '@/contexts/SnackbarContext'
 
 interface TravelDetailDialogProps {
   open: boolean
@@ -64,6 +75,53 @@ const formatCurrency = (amount: number | string) => {
 const TravelDetailDialog = ({ open, onClose, travel, companyName, isCashier = false }: TravelDetailDialogProps) => {
   const { userRole } = useAuth()
   const isCashierSeller = userRole === 'CASHIER_SELLER'
+  const { hasPermission } = usePermissions()
+  const { showSuccess, showError } = useSnackbar()
+  const { isSupported: isThermalSupported, isPrinting, print: thermalPrint, error: thermalError } = useThermalPrinter()
+
+  const [rejectDialogOpen, setRejectDialogOpen] = useState(false)
+  const [rejectionReason, setRejectionReason] = useState('')
+
+  const approveMutation = useApproveTravel()
+  const rejectMutation = useRejectTravel()
+
+  const canApprove = hasPermission('TRAVEL', 'APPROVE')
+  const isPendingApproval = travel?.travel_status === 'pending_approval'
+  const isRejected = travel?.travel_status === 'rejected'
+  const departureTimePassed = travel ? new Date(travel.departure_time) < new Date() : false
+
+  const handleApprove = async () => {
+    if (!travel) return
+
+    try {
+      await approveMutation.mutateAsync(travel.id)
+      showSuccess('Viaje aprobado correctamente')
+      onClose()
+    } catch (error: any) {
+      const message = error?.response?.data?.message || 'Error al aprobar el viaje'
+
+      showError(message)
+    }
+  }
+
+  const handleReject = async () => {
+    if (!travel) return
+
+    try {
+      await rejectMutation.mutateAsync({
+        travelId: travel.id,
+        rejection_reason: rejectionReason || undefined
+      })
+      showSuccess('Viaje rechazado')
+      setRejectDialogOpen(false)
+      setRejectionReason('')
+      onClose()
+    } catch (error: any) {
+      const message = error?.response?.data?.message || 'Error al rechazar el viaje'
+
+      showError(message)
+    }
+  }
 
   const cashierTicketsQuery = useTicketsByTravel(isCashier ? travel?.id || null : null)
   const companyTicketsQuery = useTicketsByTravelAndCompany(!isCashier ? travel?.id || null : null)
@@ -78,18 +136,21 @@ const TravelDetailDialog = ({ open, onClose, travel, companyName, isCashier = fa
   const currentCashier = ticketsData?.currentCashier
 
   // For CASHIER_SELLER, only show their own sales using currentCashier from API
-  const cashiers: CashierSummary[] = isCashierSeller && currentCashier
-    ? [{
-        id: currentCashier.cashier.id,
-        email: currentCashier.cashier.email,
-        fullName: currentCashier.cashier.fullName,
-        ci: currentCashier.cashier.ci,
-        phone: currentCashier.cashier.phone,
-        createdAt: currentCashier.cashier.createdAt,
-        cashTotal: currentCashier.cashTotal,
-        qrTotal: currentCashier.qrTotal
-      }]
-    : allCashiers
+  const cashiers: CashierSummary[] =
+    isCashierSeller && currentCashier
+      ? [
+          {
+            id: currentCashier.cashier.id,
+            email: currentCashier.cashier.email,
+            fullName: currentCashier.cashier.fullName,
+            ci: currentCashier.cashier.ci,
+            phone: currentCashier.cashier.phone,
+            createdAt: currentCashier.cashier.createdAt,
+            cashTotal: currentCashier.cashTotal,
+            qrTotal: currentCashier.qrTotal
+          }
+        ]
+      : allCashiers
 
   const totals = ticketsData?.totals || null
 
@@ -130,20 +191,27 @@ const TravelDetailDialog = ({ open, onClose, travel, companyName, isCashier = fa
 
   const allPassengers: { seatNumber: string; deck: number; name: string; ci: string }[] = []
 
-  tickets?.filter(ticket => ticket.status !== 'cancelled').forEach(ticket => {
-    const seats = ticket.travelSeats?.length > 0 ? ticket.travelSeats : ticket.seats
+  tickets
+    ?.filter(ticket => ticket.status !== 'cancelled')
+    .forEach(ticket => {
+      const seats = ticket.travelSeats?.length > 0 ? ticket.travelSeats : ticket.seats
 
-    seats?.forEach(seat => {
-      const seatAny = seat as any
+      seats?.forEach(seat => {
+        const seatAny = seat as any
 
-      allPassengers.push({
-        seatNumber: seat.seatNumber,
-        deck: seatAny.deck || 1,
-        name: seatAny.passenger?.name || ticket.billing?.nombre || ticket.buyer?.name || 'N/A',
-        ci: seatAny.passenger?.ci || ticket.billing?.ci || ticket.buyer?.ci || 'N/A'
+        allPassengers.push({
+          seatNumber: seat.seatNumber,
+          deck: seatAny.deck || 1,
+          name:
+            seatAny.passenger?.name ||
+            ticket.billingSnapshot?.nombre ||
+            ticket.billing?.nombre ||
+            ticket.buyer?.name ||
+            'N/A',
+          ci: seatAny.passenger?.ci || ticket.billingSnapshot?.ci || ticket.billing?.ci || ticket.buyer?.ci || 'N/A'
+        })
       })
     })
-  })
 
   allPassengers.sort((a, b) => parseInt(a.seatNumber) - parseInt(b.seatNumber))
 
@@ -157,6 +225,24 @@ const TravelDetailDialog = ({ open, onClose, travel, companyName, isCashier = fa
     })
   }
 
+  const handleThermalPrint = async () => {
+    const success = await thermalPrint(() =>
+      printTravelReportThermal({
+        travel,
+        tickets: tickets || [],
+        companyName,
+        cashiers,
+        totals: totals || undefined
+      })
+    )
+
+    if (success) {
+      showSuccess('Reporte impreso correctamente')
+    } else if (thermalError) {
+      showError(thermalError)
+    }
+  }
+
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'active':
@@ -164,6 +250,10 @@ const TravelDetailDialog = ({ open, onClose, travel, companyName, isCashier = fa
       case 'closed':
         return 'default'
       case 'cancelled':
+        return 'error'
+      case 'pending_approval':
+        return 'warning'
+      case 'rejected':
         return 'error'
       default:
         return 'default'
@@ -178,6 +268,10 @@ const TravelDetailDialog = ({ open, onClose, travel, companyName, isCashier = fa
         return 'Cerrado'
       case 'cancelled':
         return 'Cancelado'
+      case 'pending_approval':
+        return 'Pendiente de aprobación'
+      case 'rejected':
+        return 'Rechazado'
       default:
         return status
     }
@@ -563,24 +657,139 @@ const TravelDetailDialog = ({ open, onClose, travel, companyName, isCashier = fa
             </Typography>
           </Box>
         )}
+
+        {/* Travel approval info */}
+        {(travel.createdBy || travel.reviewedBy || isRejected) && (
+          <Box sx={{ mt: 2, p: 2, bgcolor: isRejected ? 'error.lighter' : 'action.hover', borderRadius: 1 }}>
+            {travel.createdBy && (
+              <Typography variant='body2' color='text.secondary'>
+                <strong>Creado por:</strong> {travel.createdBy.fullName} ({travel.createdBy.email})
+              </Typography>
+            )}
+            {travel.reviewedBy && travel.reviewedAt && (
+              <Typography variant='body2' color='text.secondary' sx={{ mt: 0.5 }}>
+                <strong>{isRejected ? 'Rechazado por:' : 'Aprobado por:'}</strong> {travel.reviewedBy.fullName} el{' '}
+                {formatDate(travel.reviewedAt)}
+              </Typography>
+            )}
+            {isRejected && travel.rejection_reason && (
+              <Typography variant='body2' color='error.main' sx={{ mt: 1 }}>
+                <strong>Motivo:</strong> {travel.rejection_reason}
+              </Typography>
+            )}
+            {isPendingApproval && departureTimePassed && (
+              <Alert severity='warning' sx={{ mt: 1 }}>
+                La hora de salida ya pasó. Este viaje solo puede ser rechazado.
+              </Alert>
+            )}
+          </Box>
+        )}
       </DialogContent>
 
       <DialogActions sx={{ px: 3, py: 2 }}>
         <Button onClick={onClose} variant='outlined' color='inherit'>
           Cerrar
         </Button>
-        {!isCashierSeller && (
-          <Button
-            onClick={handlePrint}
-            variant='contained'
-            color='primary'
-            startIcon={<i className='tabler-printer' />}
-            disabled={ticketsLoading}
-          >
-            Imprimir Reporte
-          </Button>
+
+        {canApprove && isPendingApproval && (
+          <>
+            <Button
+              onClick={() => setRejectDialogOpen(true)}
+              variant='outlined'
+              color='error'
+              startIcon={<i className='tabler-x' />}
+              disabled={rejectMutation.isPending}
+            >
+              Rechazar
+            </Button>
+            <Button
+              onClick={handleApprove}
+              variant='contained'
+              color='success'
+              startIcon={approveMutation.isPending ? <CircularProgress size={20} /> : <i className='tabler-check' />}
+              disabled={approveMutation.isPending || departureTimePassed}
+            >
+              {departureTimePassed ? 'Hora pasada' : 'Aprobar'}
+            </Button>
+          </>
+        )}
+
+        {!isCashierSeller && !isPendingApproval && (
+          <>
+            <Button
+              onClick={handlePrint}
+              variant='contained'
+              color='primary'
+              startIcon={<i className='tabler-printer' />}
+              disabled={ticketsLoading}
+            >
+              Imprimir Reporte
+            </Button>
+            <Tooltip
+              title={isThermalSupported ? 'Imprimir en impresora térmica USB' : 'WebUSB no disponible - requiere HTTPS'}
+            >
+              <span>
+                <Button
+                  onClick={handleThermalPrint}
+                  variant='outlined'
+                  color='secondary'
+                  disabled={!isThermalSupported || isPrinting || ticketsLoading}
+                  startIcon={isPrinting ? <CircularProgress size={18} /> : <i className='tabler-device-tablet' />}
+                >
+                  {isPrinting ? 'Imprimiendo...' : 'Impr. Tablet'}
+                </Button>
+              </span>
+            </Tooltip>
+          </>
         )}
       </DialogActions>
+
+      {/* Rejection Dialog */}
+      <Dialog open={rejectDialogOpen} onClose={() => setRejectDialogOpen(false)} maxWidth='sm' fullWidth>
+        <DialogTitle>
+          <Box display='flex' alignItems='center' gap={2}>
+            <i className='tabler-alert-triangle' style={{ fontSize: 24, color: '#f44336' }} />
+            <Typography variant='h6'>Rechazar Viaje</Typography>
+          </Box>
+        </DialogTitle>
+        <DialogContent>
+          <Alert severity='warning' sx={{ mb: 3 }}>
+            Esta acción no se puede deshacer. El viaje quedará rechazado permanentemente.
+          </Alert>
+          <TextField
+            fullWidth
+            multiline
+            rows={3}
+            label='Motivo del rechazo (opcional)'
+            placeholder='Ej: El bus está en mantenimiento ese día'
+            value={rejectionReason}
+            onChange={e => setRejectionReason(e.target.value)}
+            inputProps={{ maxLength: 500 }}
+            helperText={`${rejectionReason.length}/500 caracteres`}
+          />
+        </DialogContent>
+        <DialogActions sx={{ px: 3, pb: 3 }}>
+          <Button
+            onClick={() => {
+              setRejectDialogOpen(false)
+              setRejectionReason('')
+            }}
+            color='inherit'
+            disabled={rejectMutation.isPending}
+          >
+            Cancelar
+          </Button>
+          <Button
+            onClick={handleReject}
+            variant='contained'
+            color='error'
+            startIcon={rejectMutation.isPending ? <CircularProgress size={20} /> : <i className='tabler-x' />}
+            disabled={rejectMutation.isPending}
+          >
+            {rejectMutation.isPending ? 'Rechazando...' : 'Rechazar Viaje'}
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Dialog>
   )
 }

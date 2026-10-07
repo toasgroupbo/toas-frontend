@@ -41,11 +41,24 @@ export interface UserResponse {
   company: CompanyResponse | null
   companyId?: string | null
   office?: UserOfficeResponse | null
+  isTwoFactorEnabled?: boolean
 }
 
-export interface LoginResponse {
+export interface LoginSuccessResponse {
   user: UserResponse
   token: string
+}
+
+export interface TwoFactorRequiredResponse {
+  twoFactorRequired: true
+  tempToken: string
+}
+
+export type LoginResponse = LoginSuccessResponse | TwoFactorRequiredResponse
+
+export interface TwoFactorLoginRequest {
+  tempToken: string
+  code: string
 }
 
 export interface UserOffice {
@@ -71,4 +84,5 @@ export interface User {
   company: CompanyResponse | null
   companyId?: string | null
   office?: UserOffice | null
+  isTwoFactorEnabled?: boolean
 }

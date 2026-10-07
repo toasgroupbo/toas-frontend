@@ -156,7 +156,7 @@ const hasPermissionForRoute = (
   return false
 }
 
-const ProtectedRoute = ({ children, publicRoutes = ['/login', '/'] }: ProtectedRouteProps) => {
+const ProtectedRoute = ({ children, publicRoutes = ['/login', '/', '/forgot-password', '/reset-password'] }: ProtectedRouteProps) => {
   const {
     isAuthenticated,
     isLoading,

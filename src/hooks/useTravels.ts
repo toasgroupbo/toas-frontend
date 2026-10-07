@@ -5,7 +5,7 @@ import type { Travel, CreateTravelDto } from '@/types/api/travels'
 import { useAuth } from '@/contexts/AuthContext'
 
 export interface TravelFilters {
-  status?: 'active' | 'closed' | 'cancelled'
+  status?: 'active' | 'closed' | 'cancelled' | 'pending_approval' | 'rejected'
   startDate?: string
   endDate?: string
   origin_placeId?: number

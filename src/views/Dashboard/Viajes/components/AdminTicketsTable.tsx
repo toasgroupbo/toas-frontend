@@ -39,6 +39,9 @@ import TicketDetailDialog from '@/views/Dashboard/Tickets/sold/components/Ticket
 import { getStatusColor, getStatusLabel } from '@/views/Dashboard/Tickets/sold/utils/ticketStatus'
 import { formatDate, formatTime } from '@/views/Dashboard/Tickets/sale/utils/dateFormatters'
 import { printTicketReceipt } from '@/views/Dashboard/Tickets/sold/utils/printReceipt'
+import { printTicketThermal } from '@/utils/thermal/printTicketThermal'
+import { useThermalPrinter } from '@/hooks/useThermalPrinter'
+import { useSnackbar } from '@/contexts/SnackbarContext'
 
 type TicketWithActionsType = Ticket & {
   actions?: string
@@ -72,6 +75,15 @@ const TicketsTable = ({ initialTravelId, showCancelButton = false }: TicketsTabl
   const { actingAsCompany, user } = useAuth()
   const companyId = actingAsCompany?.id ?? user?.company?.id ?? user?.companyId
 
+  const {
+    isSupported: isThermalSupported,
+    isPrinting: isThermalPrinting,
+    print: thermalPrint,
+    error: thermalError
+  } = useThermalPrinter()
+
+  const { showSuccess, showError } = useSnackbar()
+
   const { data: apiResponse, isLoading, error, refetch } = useTicketsByTravelAndCompany(selectedTravelId)
 
   const handlePrintTicket = async (ticketId: number) => {
@@ -86,6 +98,24 @@ const TicketsTable = ({ initialTravelId, showCancelButton = false }: TicketsTabl
       console.error('Error fetching ticket for print:', error)
     } finally {
       setIsPrinting(false)
+    }
+  }
+
+  const handleThermalPrintTicket = async (ticketId: number) => {
+    try {
+      const params = companyId ? { companyId } : {}
+      const response = await api.get<TicketDetailResponse>(`/api/tickets/ticket/${ticketId}`, { params })
+
+      const success = await thermalPrint(() => printTicketThermal(response.data.ticket))
+
+      if (success) {
+        showSuccess('Ticket impreso correctamente')
+      } else if (thermalError) {
+        showError(thermalError)
+      }
+    } catch (error) {
+      console.error('Error fetching ticket for thermal print:', error)
+      showError('Error al obtener datos del ticket')
     }
   }
 
@@ -162,6 +192,21 @@ const TicketsTable = ({ initialTravelId, showCancelButton = false }: TicketsTabl
                 <i className='tabler-printer' style={{ fontSize: '18px' }} />
               </IconButton>
             </Tooltip>
+            {isThermalSupported && (
+              <Tooltip title='Impr. Tablet'>
+                <IconButton
+                  size='small'
+                  onClick={e => {
+                    e.stopPropagation()
+                    handleThermalPrintTicket(row.original.id)
+                  }}
+                  color='secondary'
+                  disabled={isThermalPrinting}
+                >
+                  <i className='tabler-device-tablet' style={{ fontSize: '18px' }} />
+                </IconButton>
+              </Tooltip>
+            )}
           </div>
         ),
         enableSorting: false
@@ -171,10 +216,13 @@ const TicketsTable = ({ initialTravelId, showCancelButton = false }: TicketsTabl
         cell: ({ row }) => (
           <Box>
             <Typography variant='body2' fontWeight={600}>
-              {row.original.billing?.nombre || row.original.buyer?.name || 'N/A'}
+              {row.original.billingSnapshot?.nombre ||
+                row.original.billing?.nombre ||
+                row.original.buyer?.name ||
+                'N/A'}
             </Typography>
             <Typography variant='caption' color='text.secondary'>
-              CI: {row.original.billing?.ci || row.original.buyer?.ci || 'N/A'}
+              CI: {row.original.billingSnapshot?.ci || row.original.billing?.ci || row.original.buyer?.ci || 'N/A'}
             </Typography>
           </Box>
         )

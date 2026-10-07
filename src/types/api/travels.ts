@@ -44,6 +44,37 @@ export interface Assistant {
 
 export type TravelType = 'normal' | 'habilitada'
 
+export interface BeneficiarySnapshot {
+  ownerId: number | null
+  ownerName: string | null
+  bankCode: string | null
+  account: string
+  titularName: string | null
+  documentType: string
+  documentNumber: string
+  documentExtension: string
+  branchOfficeId: number | null
+}
+
+export interface TravelOwnerBankAccount {
+  id: number
+  bankCode: string
+  account: string
+  titularName: string
+  documentType: string
+  documentNumber: string
+  documentExtension: string
+  branchOfficeId: number
+}
+
+export interface TravelOwner {
+  id: number
+  name: string
+  ci?: string
+  phone?: string
+  bankAccount?: TravelOwnerBankAccount | null
+}
+
 export interface TravelTransaction {
   id: number
   transactionId: string
@@ -73,6 +104,15 @@ export interface TravelTransaction {
   processedAt: string | null
   authorizedAt: string | null
   completedAt: string | null
+  beneficiarySnapshot?: BeneficiarySnapshot | null
+}
+
+export interface TravelUser {
+  id: number
+  fullName: string
+  email: string
+  ci?: string
+  phone?: string
 }
 
 export interface Travel {
@@ -111,6 +151,12 @@ export interface Travel {
   drivers?: Driver[] | null
   assistants?: Assistant[] | null
   transaction?: TravelTransaction | null
+  owner?: TravelOwner | null
+
+  createdBy?: TravelUser | null
+  reviewedBy?: TravelUser | null
+  reviewedAt?: string | null
+  rejection_reason?: string | null
 }
 
 export interface CreateTravelDto {
@@ -153,7 +199,7 @@ export interface TravelsResponse {
 }
 
 export interface TravelFilters {
-  status?: 'active' | 'closed'
+  status?: 'active' | 'closed' | 'cancelled' | 'pending_approval' | 'rejected'
   startDate?: string
   endDate?: string
   origin_placeId?: number

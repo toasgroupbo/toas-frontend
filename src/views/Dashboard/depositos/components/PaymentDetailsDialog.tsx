@@ -164,7 +164,7 @@ const PaymentDetailsDialog = ({ open, onClose, travel }: PaymentDetailsDialogPro
                 Titular
               </Typography>
               <Typography variant='body2' fontWeight={500}>
-                {paymentDetails?.TitularName || travel.bus.owner?.bankAccount?.titularName || travel.bus.owner?.name}
+                {paymentDetails?.TitularName || travel.transaction?.beneficiarySnapshot?.titularName || travel.owner?.bankAccount?.titularName || travel.bus.owner?.bankAccount?.titularName || travel.bus.owner?.name}
               </Typography>
             </Grid>
             <Grid item xs={6}>
@@ -181,7 +181,7 @@ const PaymentDetailsDialog = ({ open, onClose, travel }: PaymentDetailsDialogPro
                 Nro. Cuenta
               </Typography>
               <Typography variant='body2' fontWeight={500} fontFamily='monospace'>
-                {paymentDetails?.AccountNumber || travel.bus.owner?.bankAccount?.account}
+                {paymentDetails?.AccountNumber || travel.transaction?.beneficiarySnapshot?.account || travel.owner?.bankAccount?.account || travel.bus.owner?.bankAccount?.account}
               </Typography>
             </Grid>
             {batchDetail?.SourceAccount && (

@@ -197,7 +197,7 @@ const TransactionDialog = ({ open, onClose, travel }: TransactionDialogProps) =>
               Bus: {travel.bus.plaque} - {travel.bus.name}
             </Typography>
             <Typography variant='caption' color='text.secondary'>
-              Propietario: {travel.bus.owner.name}
+              Propietario: {travel.owner?.name || travel.bus.owner.name}
             </Typography>
           </Box>
         </Box>
@@ -232,7 +232,7 @@ const TransactionDialog = ({ open, onClose, travel }: TransactionDialogProps) =>
                       Propietario
                     </Typography>
                     <Typography variant='body2' fontWeight={600}>
-                      {travel.bus.owner.name}
+                      {travel.owner?.name || travel.bus.owner.name}
                     </Typography>
                   </Box>
 
@@ -241,7 +241,7 @@ const TransactionDialog = ({ open, onClose, travel }: TransactionDialogProps) =>
                       Banco
                     </Typography>
                     <Typography variant='body2' fontWeight={600}>
-                      {getBankName(travel.bus.owner.bankAccount.bankCode)}
+                      {getBankName(travel.owner?.bankAccount?.bankCode || travel.bus.owner.bankAccount.bankCode)}
                     </Typography>
                   </Box>
                   <Box>
@@ -249,14 +249,14 @@ const TransactionDialog = ({ open, onClose, travel }: TransactionDialogProps) =>
                       Nro. Cuenta
                     </Typography>
                     <Typography variant='body2' fontFamily='monospace'>
-                      {travel.bus.owner.bankAccount.account}
+                      {travel.owner?.bankAccount?.account || travel.bus.owner.bankAccount.account}
                     </Typography>
                   </Box>
                   <Box>
                     <Typography variant='caption' color='text.secondary'>
                       Titular
                     </Typography>
-                    <Typography variant='body2'>{travel.bus.owner.bankAccount.titularName}</Typography>
+                    <Typography variant='body2'>{travel.owner?.bankAccount?.titularName || travel.bus.owner.bankAccount.titularName}</Typography>
                   </Box>
                 </Box>
               </CardContent>
@@ -307,10 +307,10 @@ const TransactionDialog = ({ open, onClose, travel }: TransactionDialogProps) =>
                   </Box>
                   <Box>
                     <Typography variant='caption' color='text.secondary'>
-                      Propietario
+                      Beneficiario
                     </Typography>
                     <Typography variant='body2' fontWeight={600}>
-                      {travel.bus.owner.name}
+                      {travel.transaction?.beneficiarySnapshot?.ownerName || travel.owner?.name || travel.bus.owner.name}
                     </Typography>
                   </Box>
                   <Box>
@@ -318,7 +318,7 @@ const TransactionDialog = ({ open, onClose, travel }: TransactionDialogProps) =>
                       Banco
                     </Typography>
                     <Typography variant='body2' fontWeight={600}>
-                      {getBankName(travel.bus.owner.bankAccount.bankCode)}
+                      {getBankName(travel.transaction?.beneficiarySnapshot?.bankCode || travel.owner?.bankAccount?.bankCode || travel.bus.owner.bankAccount.bankCode)}
                     </Typography>
                   </Box>
                   <Box>
@@ -326,7 +326,7 @@ const TransactionDialog = ({ open, onClose, travel }: TransactionDialogProps) =>
                       Nro. Cuenta
                     </Typography>
                     <Typography variant='body2' fontFamily='monospace'>
-                      {travel.bus.owner.bankAccount.account}
+                      {travel.transaction?.beneficiarySnapshot?.account || travel.owner?.bankAccount?.account || travel.bus.owner.bankAccount.account}
                     </Typography>
                   </Box>
                   <Box gridColumn='1 / -1'>
@@ -334,7 +334,7 @@ const TransactionDialog = ({ open, onClose, travel }: TransactionDialogProps) =>
                       Titular
                     </Typography>
                     <Typography variant='body2' fontWeight={600}>
-                      {travel.bus.owner.bankAccount.titularName}
+                      {travel.transaction?.beneficiarySnapshot?.titularName || travel.owner?.bankAccount?.titularName || travel.bus.owner.bankAccount.titularName}
                     </Typography>
                   </Box>
                 </Box>

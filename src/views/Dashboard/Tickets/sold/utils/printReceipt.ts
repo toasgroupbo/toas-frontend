@@ -45,8 +45,8 @@ export const generateReceiptHTML = (ticket: Ticket): string => {
   const departureTime = ticket.travel?.departure_time ? formatTime(ticket.travel.departure_time) : 'N/A'
   const lane = ticket.travel?.lane || '-'
 
-  const buyerName = ticket.billing?.nombre || ticket.buyer?.name || 'N/A'
-  const buyerCi = ticket.billing?.ci || ticket.buyer?.ci || 'N/A'
+  const buyerName = ticket.billingSnapshot?.nombre || ticket.billing?.nombre || ticket.buyer?.name || 'N/A'
+  const buyerCi = ticket.billingSnapshot?.ci || ticket.billing?.ci || ticket.buyer?.ci || 'N/A'
 
   const seats = ticket.travelSeats?.length > 0 ? ticket.travelSeats : ticket.seats
   const totalPrice = parseFloat(ticket.total_price).toFixed(2)

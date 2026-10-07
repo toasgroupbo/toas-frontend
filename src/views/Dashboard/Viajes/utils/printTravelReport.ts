@@ -126,8 +126,8 @@ export const generateTravelReportHTML = ({ travel, tickets = [], companyName, ca
       allPassengers.push({
         seatNumber: seat.seatNumber,
         deck: seatAny.deck || 1,
-        name: seatAny.passenger?.name || ticket.billing?.nombre || ticket.buyer?.name || 'N/A',
-        ci: seatAny.passenger?.ci || ticket.billing?.ci || ticket.buyer?.ci || 'N/A'
+        name: seatAny.passenger?.name || ticket.billingSnapshot?.nombre || ticket.billing?.nombre || ticket.buyer?.name || 'N/A',
+        ci: seatAny.passenger?.ci || ticket.billingSnapshot?.ci || ticket.billing?.ci || ticket.buyer?.ci || 'N/A'
       })
     })
   })

@@ -92,6 +92,18 @@ export interface TransactionBatchDetailResponse {
   OperationNumberDebitHost: string
 }
 
+export interface BeneficiarySnapshot {
+  ownerId: number | null
+  ownerName: string | null
+  bankCode: string | null
+  account: string
+  titularName: string | null
+  documentType: string
+  documentNumber: string
+  documentExtension: string
+  branchOfficeId: number | null
+}
+
 export interface TravelTransaction {
   id: number
   transactionId: string
@@ -123,6 +135,7 @@ export interface TravelTransaction {
   processedAt?: string
   authorizedAt?: string
   completedAt?: string
+  beneficiarySnapshot?: BeneficiarySnapshot | null
 }
 
 export interface Travel {
@@ -151,6 +164,7 @@ export interface Travel {
   assistants: any[] | null
   bus: TravelBus
   transaction: TravelTransaction | null
+  owner?: TravelOwner | null
 }
 
 export interface TravelsFilters {
