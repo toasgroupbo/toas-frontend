@@ -1,6 +1,4 @@
 // Next Imports
-import { Suspense } from 'react'
-
 import type { Metadata } from 'next'
 
 // Component Imports
@@ -17,11 +15,7 @@ export const metadata: Metadata = {
 const ResetPasswordPage = async () => {
   const mode = await getServerMode()
 
-  return (
-    <Suspense>
-      <ResetPassword mode={mode} />
-    </Suspense>
-  )
+  return <ResetPassword mode={mode} />
 }
 
 export default ResetPasswordPage

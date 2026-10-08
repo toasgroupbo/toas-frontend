@@ -4,7 +4,6 @@ import { useState, useEffect } from 'react'
 
 import Link from 'next/link'
 import Image from 'next/image'
-import { useRouter, useSearchParams } from 'next/navigation'
 
 import Card from '@mui/material/Card'
 import CardContent from '@mui/material/CardContent'
@@ -23,34 +22,34 @@ import AuthIllustrationWrapper from './AuthIllustrationWrapper'
 import { useResetPassword } from '@/hooks/usePasswordRecovery'
 
 const ResetPassword = ({ mode }: { mode: SystemMode }) => {
-  const router = useRouter()
-  const searchParams = useSearchParams()
+  // Leer token y email UNA SOLA VEZ en el primer render
+  const [tokenData] = useState<{ token: string; email: string } | null>(() => {
+    if (typeof window === 'undefined') return null
+    const params = new URLSearchParams(window.location.search)
+    const token = params.get('token')
+    const email = params.get('email')
 
-  const [tokenData, setTokenData] = useState<{ token: string; email: string } | null>(null)
-  const [isInvalidLink, setIsInvalidLink] = useState(false)
+    return token && email ? { token, email } : null
+  })
+
   const [newPassword, setNewPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
   const [errors, setErrors] = useState<{ newPassword?: string; confirmPassword?: string }>({})
   const [success, setSuccess] = useState(false)
+  const [isInvalidFromServer, setIsInvalidFromServer] = useState(false)
 
   const resetPasswordMutation = useResetPassword()
 
+  // Limpiar token de la URL después del primer render
   useEffect(() => {
-    const token = searchParams.get('token')
-    const email = searchParams.get('email')
-
-    if (!token || !email) {
-      setIsInvalidLink(true)
-
-      return
+    if (tokenData) {
+      window.history.replaceState(null, '', '/reset-password')
     }
+  }, [])
 
-    setTokenData({ token, email })
-
-    window.history.replaceState(null, '', '/reset-password')
-  }, [searchParams])
+  const isInvalidLink = !tokenData || isInvalidFromServer
 
   const validateForm = (): boolean => {
     const newErrors: { newPassword?: string; confirmPassword?: string } = {}
@@ -108,8 +107,7 @@ const ResetPassword = ({ mode }: { mode: SystemMode }) => {
       console.error('Error:', error)
 
       if (error?.response?.data?.message?.toLowerCase().includes('invalid or expired')) {
-        setTokenData(null)
-        setIsInvalidLink(true)
+        setIsInvalidFromServer(true)
       }
     }
   }
