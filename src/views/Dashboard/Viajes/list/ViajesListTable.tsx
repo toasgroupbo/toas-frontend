@@ -36,6 +36,8 @@ import { useRoutes } from '@/hooks/useRoutes'
 import type { Travel } from '@/types/api/travels'
 import AdminTicketsTable from '../components/AdminTicketsTable'
 import TravelDetailDialog from '../components/TravelDetailDialog'
+import TravelApprovalSettings from '../components/TravelApprovalSettings'
+import { useAuth } from '@/contexts/AuthContext'
 
 const getTodayDate = () => new Date().toISOString().split('T')[0]
 
@@ -80,6 +82,9 @@ const DebouncedInput = ({
 const columnHelper = createColumnHelper<Travel>()
 
 const ViajesListTable = () => {
+  const { isCompanyAdmin, isImpersonating } = useAuth()
+  const canConfigureApproval = isCompanyAdmin || isImpersonating
+
   const [rowSelection, setRowSelection] = useState({})
   const [searchQuery, setSearchQuery] = useState('')
   const [statusFilter, setStatusFilter] = useState<string>('active')
@@ -95,6 +100,7 @@ const ViajesListTable = () => {
   const [reportTravel, setReportTravel] = useState<Travel | null>(null)
   const [currentPage, setCurrentPage] = useState(1)
   const [pageSize, setPageSize] = useState(10)
+  const [settingsDialogOpen, setSettingsDialogOpen] = useState(false)
 
   // Refs to track if this is the initial mount (to avoid resetting page on first render)
   const isInitialStartDate = useRef(true)
@@ -575,6 +581,19 @@ const ViajesListTable = () => {
           <div className='flex flex-col gap-2'>
             <Typography variant='h4'>Lista de Viajes</Typography>
           </div>
+          {canConfigureApproval && (
+            <Tooltip title='Configuración de aprobación de viajes'>
+              <IconButton
+                onClick={() => setSettingsDialogOpen(true)}
+                sx={{
+                  bgcolor: 'action.hover',
+                  '&:hover': { bgcolor: 'action.selected' }
+                }}
+              >
+                <i className='tabler-settings' style={{ fontSize: '24px' }} />
+              </IconButton>
+            </Tooltip>
+          )}
         </div>
 
         <div className='flex flex-wrap justify-between gap-4 px-6 pb-4 items-center'>
@@ -868,6 +887,26 @@ const ViajesListTable = () => {
       </Dialog>
 
       <TravelDetailDialog open={reportDialogOpen} onClose={handleCloseReportDialog} travel={reportTravel} />
+
+      {/* Settings Dialog */}
+      <Dialog open={settingsDialogOpen} onClose={() => setSettingsDialogOpen(false)} maxWidth='sm' fullWidth>
+        <DialogTitle>
+          <Box display='flex' alignItems='center' justifyContent='space-between'>
+            <Box display='flex' alignItems='center' gap={2}>
+              <i className='tabler-settings' style={{ fontSize: '24px', color: 'var(--mui-palette-primary-main)' }} />
+              <Typography variant='h6'>Configuración de Viajes</Typography>
+            </Box>
+            <IconButton onClick={() => setSettingsDialogOpen(false)} size='small'>
+              <i className='tabler-x' style={{ fontSize: '20px' }} />
+            </IconButton>
+          </Box>
+        </DialogTitle>
+        <DialogContent>
+          <Box sx={{ pt: 2 }}>
+            <TravelApprovalSettings />
+          </Box>
+        </DialogContent>
+      </Dialog>
     </Box>
   )
 }
