@@ -82,8 +82,8 @@ const DebouncedInput = ({
 const columnHelper = createColumnHelper<Travel>()
 
 const ViajesListTable = () => {
-  const { isCompanyAdmin, isImpersonating } = useAuth()
-  const canConfigureApproval = isCompanyAdmin || isImpersonating
+  const { isCompanyAdmin, isImpersonating, hasCompany } = useAuth()
+  const canConfigureApproval = (isCompanyAdmin || isImpersonating) && hasCompany
 
   const [rowSelection, setRowSelection] = useState({})
   const [searchQuery, setSearchQuery] = useState('')
