@@ -237,6 +237,15 @@ const TicketDetailDialog = ({
                     </Box>
                   ) : hasBuyerInfo ? (
                     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+                      {ticket.buyer?.accountDeletedAt && (
+                        <Chip
+                          label='Cuenta eliminada'
+                          color='error'
+                          size='small'
+                          variant='outlined'
+                          icon={<i className='tabler-user-off' style={{ fontSize: '14px' }} />}
+                        />
+                      )}
                       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                         <i
                           className='tabler-user-circle'

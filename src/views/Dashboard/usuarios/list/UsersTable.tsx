@@ -44,6 +44,7 @@ import DeleteUserDialog from '@/views/Dashboard/usuarios/components/DeleteUserDi
 import Reset2FADialog from '@/components/dialogs/Reset2FADialog'
 import { useSnackbar } from '@/contexts/SnackbarContext'
 import { usePermissions } from '@/hooks/usePermissions'
+import { useAuth } from '@/contexts/AuthContext'
 
 const getRoleDisplayName = (roleName: string): string => {
   const roleNames: Record<string, string> = {
@@ -160,6 +161,13 @@ const UsersTable = () => {
       showSuccess('Usuario actualizado correctamente')
     } catch (error: any) {
       console.error('Error al actualizar usuario:', error)
+
+      if (error?.response?.status === 403 && error?.response?.data?.error === 'TWO_FACTOR_REQUIRED') {
+        showError('Para editar usuarios, primero activa la verificación en dos pasos desde tu perfil')
+
+        return
+      }
+
       showError(error?.response?.data?.message || 'Error al actualizar usuario')
     }
   }
@@ -193,6 +201,13 @@ const UsersTable = () => {
       showSuccess('Contraseña cambiada correctamente')
     } catch (error: any) {
       console.error('Error al cambiar contraseña:', error)
+
+      if (error?.response?.status === 403 && error?.response?.data?.error === 'TWO_FACTOR_REQUIRED') {
+        showError('Para cambiar contraseñas, primero activa la verificación en dos pasos desde tu perfil')
+
+        return
+      }
+
       showError(error?.response?.data?.message || 'Error al cambiar contraseña')
     }
   }

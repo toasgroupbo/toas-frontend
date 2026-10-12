@@ -9,6 +9,8 @@ Cambios de la API que el front tiene que implementar o tener en cuenta.
 | Comprobantes de pago con los datos del beneficiario al momento del pago (fix) | ✅ Listo | [comprobantes-pago.md](comprobantes-pago.md) |
 | Datos históricos de tickets y viajes: dueño, facturación, pasajeros, oficinas (fix) | ✅ Listo | [historicos-tickets-viajes.md](historicos-tickets-viajes.md) |
 | Aprobación de viajes creados por cajeros (opcional por empresa, panel admin) | ✅ Listo | [aprobacion-viajes.md](aprobacion-viajes.md) |
+| Clientes eliminados: `buyer` ya no llega `null`; los clientes pueden eliminar su cuenta desde la app | ✅ Listo | [clientes-eliminados.md](clientes-eliminados.md) |
+| 2FA obligatorio para editar usuarios y cambiar contraseñas (panel web) | ✅ Listo | [2fa-obligatorio-editar-usuarios.md](2fa-obligatorio-editar-usuarios.md) |
 
 ## ⚠️ Cambios en endpoints que ya existían
 
@@ -50,7 +52,11 @@ Todas las respuestas que devuelven tickets agregan `billingSnapshot`, `travelSna
 
 - **La respuesta cambió:** antes devolvía el cliente completo en `deleted`; ahora devuelve solo `{ "message": "Customer deleted successfully", "deleted": { "id": 12 } }`.
 - Al borrar, se eliminan los datos personales del cliente (email, teléfono, CI, nombre → "Cliente eliminado"). Si esa persona vuelve a entrar con Google o Apple, se le crea una **cuenta nueva**, sin su historial ni su saldo anterior. Antes, ese segundo ingreso fallaba con un error 500.
-- Sus tickets siguen existiendo, pero ya no tienen comprador asociado (`buyer: null`). Para mostrar a quién pertenecían, usar `billingSnapshot` y `seats[].passenger`.
+- Sus tickets siguen existiendo y `buyer` **sigue viniendo** (ya no es `null`), con `name: "Cliente eliminado"` y `email`, `ci` y `phone` en `null`. **Revisar los usos de `buyer.email`.**
+- Los clientes eliminados **no aparecen** en el listado de clientes y su detalle responde `404`.
+- El cliente también puede eliminar su propia cuenta desde la app, con el mismo resultado.
+
+Detalle, ejemplos y checklist en [clientes-eliminados.md](clientes-eliminados.md).
 
 ### 6. `POST /api/mails`: eliminado
 
@@ -64,6 +70,10 @@ Era un endpoint de prueba, público, que mandaba un correo con datos fijos. Si a
 - `POST /api/travels/for-cashier`: el viaje creado puede volver con `travel_status: "pending_approval"`.
 
 Revisar los mapas de etiquetas y colores de estado. Ver [aprobacion-viajes.md](aprobacion-viajes.md).
+
+### 8. Editar usuarios y cambiar contraseñas: requieren 2FA activo
+
+`PATCH /api/users/:id`, `PATCH /api/users/cashiers/:id` y `PUT /api/users/:id` responden `403` con `error: "TWO_FACTOR_REQUIRED"` si el usuario logueado **no** tiene la verificación en dos pasos activada. También aplica cuando el super-admin edita su propio perfil o cambia su propia contraseña. El body y la respuesta exitosa no cambian. Ese `403` **no** debe cerrar la sesión: hay que llevar al usuario a activar el 2FA. Ver [2fa-obligatorio-editar-usuarios.md](2fa-obligatorio-editar-usuarios.md).
 
 ## Convenciones generales de la API
 

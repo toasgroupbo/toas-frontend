@@ -159,6 +159,13 @@ const CashiersTable = () => {
       showSuccess('Cajero actualizado correctamente')
     } catch (error: any) {
       console.error('Error al actualizar cajero:', error)
+
+      if (error?.response?.status === 403 && error?.response?.data?.error === 'TWO_FACTOR_REQUIRED') {
+        showError('Para editar cajeros, primero activa la verificación en dos pasos desde tu perfil')
+
+        return
+      }
+
       showError(error?.response?.data?.message || 'Error al actualizar cajero')
     }
   }
@@ -178,6 +185,13 @@ const CashiersTable = () => {
       showSuccess('Contraseña cambiada correctamente')
     } catch (error: any) {
       console.error('Error al cambiar contraseña:', error)
+
+      if (error?.response?.status === 403 && error?.response?.data?.error === 'TWO_FACTOR_REQUIRED') {
+        showError('Para cambiar contraseñas, primero activa la verificación en dos pasos desde tu perfil')
+
+        return
+      }
+
       showError(error?.response?.data?.message || 'Error al cambiar contraseña')
     }
   }

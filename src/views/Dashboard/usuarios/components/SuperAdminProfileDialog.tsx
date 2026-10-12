@@ -14,6 +14,7 @@ import Grid from '@mui/material/Grid2'
 import InputAdornment from '@mui/material/InputAdornment'
 import Tabs from '@mui/material/Tabs'
 import Tab from '@mui/material/Tab'
+import Alert from '@mui/material/Alert'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
@@ -50,6 +51,8 @@ interface SuperAdminProfileDialogProps {
   onUpdateProfile: (data: UpdateUserDto) => void | Promise<void>
   onChangePassword: (password: string) => void | Promise<void>
   isLoading?: boolean
+  isTwoFactorEnabled?: boolean
+  onEnableTwoFactor?: () => void
 }
 
 const SuperAdminProfileDialog = ({
@@ -58,7 +61,9 @@ const SuperAdminProfileDialog = ({
   user,
   onUpdateProfile,
   onChangePassword,
-  isLoading
+  isLoading,
+  isTwoFactorEnabled = false,
+  onEnableTwoFactor
 }: SuperAdminProfileDialogProps) => {
   const [activeTab, setActiveTab] = useState(0)
   const [showPassword, setShowPassword] = useState(false)
@@ -166,6 +171,23 @@ const SuperAdminProfileDialog = ({
         />
       </Tabs>
 
+      {/* Warning si no tiene 2FA */}
+      {!isTwoFactorEnabled && (
+        <Alert
+          severity='warning'
+          sx={{ mx: 3, mt: 2 }}
+          action={
+            onEnableTwoFactor && (
+              <Button color='warning' size='small' onClick={onEnableTwoFactor}>
+                Activar ahora
+              </Button>
+            )
+          }
+        >
+          Para editar tu perfil o cambiar contraseña, primero activa la verificación en dos pasos.
+        </Alert>
+      )}
+
       {/* Tab 1: Editar Perfil */}
       {activeTab === 0 && (
         <form onSubmit={handleSubmitProfile(handleProfileSubmit)}>
@@ -179,7 +201,7 @@ const SuperAdminProfileDialog = ({
                   {...registerProfile('fullName')}
                   error={!!errorsProfile.fullName}
                   helperText={errorsProfile.fullName?.message}
-                  disabled={isLoading}
+                  disabled={isLoading || !isTwoFactorEnabled}
                   InputProps={{
                     startAdornment: (
                       <InputAdornment position='start'>
@@ -199,7 +221,7 @@ const SuperAdminProfileDialog = ({
                   {...registerProfile('email')}
                   error={!!errorsProfile.email}
                   helperText={errorsProfile.email?.message}
-                  disabled={isLoading}
+                  disabled={isLoading || !isTwoFactorEnabled}
                   InputProps={{
                     startAdornment: (
                       <InputAdornment position='start'>
@@ -218,7 +240,7 @@ const SuperAdminProfileDialog = ({
                   {...registerProfile('ci')}
                   error={!!errorsProfile.ci}
                   helperText={errorsProfile.ci?.message}
-                  disabled={isLoading}
+                  disabled={isLoading || !isTwoFactorEnabled}
                   InputProps={{
                     startAdornment: (
                       <InputAdornment position='start'>
@@ -237,7 +259,7 @@ const SuperAdminProfileDialog = ({
                   {...registerProfile('phone')}
                   error={!!errorsProfile.phone}
                   helperText={errorsProfile.phone?.message}
-                  disabled={isLoading}
+                  disabled={isLoading || !isTwoFactorEnabled}
                   InputProps={{
                     startAdornment: (
                       <InputAdornment position='start'>
@@ -257,7 +279,7 @@ const SuperAdminProfileDialog = ({
             <Button
               type='submit'
               variant='contained'
-              disabled={isLoading}
+              disabled={isLoading || !isTwoFactorEnabled}
               startIcon={isLoading ? <i className='tabler-loader' /> : <i className='tabler-check' />}
             >
               {isLoading ? 'Guardando...' : 'Guardar Cambios'}
@@ -280,7 +302,7 @@ const SuperAdminProfileDialog = ({
                   {...registerPassword('password')}
                   error={!!errorsPassword.password}
                   helperText={errorsPassword.password?.message}
-                  disabled={isLoading}
+                  disabled={isLoading || !isTwoFactorEnabled}
                   InputProps={{
                     startAdornment: (
                       <InputAdornment position='start'>
@@ -307,7 +329,7 @@ const SuperAdminProfileDialog = ({
                   {...registerPassword('confirmPassword')}
                   error={!!errorsPassword.confirmPassword}
                   helperText={errorsPassword.confirmPassword?.message}
-                  disabled={isLoading}
+                  disabled={isLoading || !isTwoFactorEnabled}
                   InputProps={{
                     startAdornment: (
                       <InputAdornment position='start'>
@@ -334,7 +356,7 @@ const SuperAdminProfileDialog = ({
             <Button
               type='submit'
               variant='contained'
-              disabled={isLoading}
+              disabled={isLoading || !isTwoFactorEnabled}
               startIcon={isLoading ? <i className='tabler-loader' /> : <i className='tabler-key' />}
             >
               {isLoading ? 'Cambiando...' : 'Cambiar Contraseña'}

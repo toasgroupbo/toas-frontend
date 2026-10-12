@@ -29,7 +29,7 @@ export interface Buyer {
   id: number
   email: string | null
   name: string
-  ci: string
+  ci: string | null
   phone: string | null
   is_verified: boolean
   provider: string | null
@@ -37,6 +37,7 @@ export interface Buyer {
   birthDate: string | null
   photo: string | null
   createdAt: string
+  accountDeletedAt: string | null
 }
 
 export interface User {

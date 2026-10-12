@@ -96,6 +96,12 @@ const UserDropdown = () => {
     showSuccess(enabled ? 'Verificación en dos pasos activada' : 'Verificación en dos pasos desactivada')
   }
 
+  const handleTwoFactorRequired = () => {
+    setProfileDialogOpen(false)
+    showError('Para editar tu perfil o cambiar contraseña, primero activa la verificación en dos pasos')
+    setTwoFactorDialogOpen(true)
+  }
+
   const handleUpdateProfile = async (data: UpdateUserDto) => {
     if (!user) return
 
@@ -114,6 +120,13 @@ const UserDropdown = () => {
       showSuccess('Perfil actualizado correctamente')
     } catch (error: any) {
       console.error('Error al actualizar perfil:', error)
+
+      if (error?.response?.status === 403 && error?.response?.data?.error === 'TWO_FACTOR_REQUIRED') {
+        handleTwoFactorRequired()
+
+        return
+      }
+
       showError(error?.response?.data?.message || 'Error al actualizar perfil')
     }
   }
@@ -127,6 +140,13 @@ const UserDropdown = () => {
       showSuccess('Contraseña cambiada correctamente')
     } catch (error: any) {
       console.error('Error al cambiar contraseña:', error)
+
+      if (error?.response?.status === 403 && error?.response?.data?.error === 'TWO_FACTOR_REQUIRED') {
+        handleTwoFactorRequired()
+
+        return
+      }
+
       showError(error?.response?.data?.message || 'Error al cambiar contraseña')
     }
   }
@@ -269,6 +289,11 @@ const UserDropdown = () => {
           onUpdateProfile={handleUpdateProfile}
           onChangePassword={handleChangePassword}
           isLoading={updateMutation.isPending || changePasswordMutation.isPending}
+          isTwoFactorEnabled={user?.isTwoFactorEnabled || false}
+          onEnableTwoFactor={() => {
+            setProfileDialogOpen(false)
+            setTwoFactorDialogOpen(true)
+          }}
         />
       )}
 

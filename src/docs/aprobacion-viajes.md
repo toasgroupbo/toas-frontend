@@ -47,9 +47,9 @@ Los de antes (`active`, `closed`, `cancelled`) no cambian. Revisar los `switch` 
 
 ### Permiso nuevo
 
-El rol **COMPANY_ADMIN** recibe el permiso `APPROVE` sobre el recurso `TRAVEL`. Si el front arma menús o botones a partir de los permisos del usuario, usar `TRAVEL` + `APPROVE` para mostrar la configuración y los botones de aprobar y rechazar.
+Los roles **COMPANY_ADMIN** y **SUPER_ADMIN** reciben el permiso `APPROVE` sobre el recurso `TRAVEL`. Si el front arma menús o botones a partir de los permisos del usuario, usar `TRAVEL` + `APPROVE` para mostrar la configuración y los botones de aprobar y rechazar.
 
-El super-admin **no** tiene ese permiso, así que no puede aprobar ni rechazar viajes. Sí puede activar la opción desde la edición de la empresa (sección 6).
+**Super-admin:** como no pertenece a ninguna empresa, tiene que mandar **`?companyId=X`** en todos los endpoints de esta funcionalidad (configuración, aprobar y rechazar), igual que ya lo hace en el listado de viajes de una empresa. Por ejemplo, `PATCH /api/travels/210/approve?companyId=3`. Si no lo manda, recibe `403 "The company could not be determined."`. El admin de empresa no necesita mandarlo, porque se toma de su usuario.
 
 ---
 

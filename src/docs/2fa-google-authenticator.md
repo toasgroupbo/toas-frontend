@@ -5,6 +5,8 @@ Los usuarios del panel web (admin, owner, cajero) pueden activar un segundo paso
 > **Alcance:** solo usuarios del panel web (`POST /api/auth/login`). **No** aplica a clientes de la app (`/api/auth/login/customer`).
 >
 > **Es opcional:** cada usuario decide si lo activa desde su perfil. Si no lo activa, su login funciona exactamente igual que hoy.
+>
+> **Excepción:** para editar usuarios o cambiar contraseñas sí es obligatorio. Ver [2fa-obligatorio-editar-usuarios.md](2fa-obligatorio-editar-usuarios.md).
 
 ---
 
