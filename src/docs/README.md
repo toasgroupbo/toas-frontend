@@ -11,6 +11,7 @@ Cambios de la API que el front tiene que implementar o tener en cuenta.
 | Aprobación de viajes creados por cajeros (opcional por empresa, panel admin) | ✅ Listo | [aprobacion-viajes.md](aprobacion-viajes.md) |
 | Clientes eliminados: `buyer` ya no llega `null`; los clientes pueden eliminar su cuenta desde la app | ✅ Listo | [clientes-eliminados.md](clientes-eliminados.md) |
 | 2FA obligatorio para editar usuarios y cambiar contraseñas (panel web) | ✅ Listo | [2fa-obligatorio-editar-usuarios.md](2fa-obligatorio-editar-usuarios.md) |
+| "Mi perfil" (`/users/me`) y confirmación con contraseña al editar perfiles y contraseñas (panel web) | ✅ Listo | [editar-perfil-y-contrasena.md](editar-perfil-y-contrasena.md) |
 
 ## ⚠️ Cambios en endpoints que ya existían
 
@@ -73,7 +74,13 @@ Revisar los mapas de etiquetas y colores de estado. Ver [aprobacion-viajes.md](a
 
 ### 8. Editar usuarios y cambiar contraseñas: requieren 2FA activo
 
-`PATCH /api/users/:id`, `PATCH /api/users/cashiers/:id` y `PUT /api/users/:id` responden `403` con `error: "TWO_FACTOR_REQUIRED"` si el usuario logueado **no** tiene la verificación en dos pasos activada. También aplica cuando el super-admin edita su propio perfil o cambia su propia contraseña. El body y la respuesta exitosa no cambian. Ese `403` **no** debe cerrar la sesión: hay que llevar al usuario a activar el 2FA. Ver [2fa-obligatorio-editar-usuarios.md](2fa-obligatorio-editar-usuarios.md).
+`PATCH /api/users/:id`, `PATCH /api/users/cashiers/:id` y `PUT /api/users/:id` responden `403` con `error: "TWO_FACTOR_REQUIRED"` si el usuario logueado **no** tiene la verificación en dos pasos activada. También aplica cuando el super-admin edita su propio perfil o cambia su propia contraseña. Ese `403` **no** debe cerrar la sesión: hay que llevar al usuario a activar el 2FA. Ver [2fa-obligatorio-editar-usuarios.md](2fa-obligatorio-editar-usuarios.md). El body cambió después: ver el punto 9.
+
+### 9. Editar usuarios y cambiar contraseñas: piden la contraseña de quien edita (`currentPassword`)
+
+`PATCH /api/users/:id`, `PUT /api/users/:id` y `PATCH /api/users/cashiers/:id` ahora exigen en el body el campo `currentPassword`, con la contraseña **del usuario logueado** (el admin), no la del editado. **Sin ese campo responden `400`**, así que los formularios actuales dejan de funcionar hasta que lo agreguen. Si la contraseña es incorrecta: `400` con `error: "INVALID_PASSWORD"`, que **no** debe cerrar la sesión. La respuesta exitosa no cambia.
+
+Además hay endpoints nuevos para que cualquier usuario del panel edite lo suyo: `PATCH /api/users/me` (nombre, CI, teléfono) y `PATCH /api/users/me/password`. El super-admin debería usarlos para su propio perfil. Ver [editar-perfil-y-contrasena.md](editar-perfil-y-contrasena.md).
 
 ## Convenciones generales de la API
 

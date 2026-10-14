@@ -36,9 +36,24 @@ export interface CreateUserDto {
 }
 
 export interface UpdateUserDto {
-  email: string
-  fullName: string
-  ci: string
-  phone: string
+  email?: string
+  fullName?: string
+  ci?: string
+  phone?: string
   rol?: number
+  currentPassword?: string
+}
+
+// Para editar el perfil propio con /users/me
+export interface UpdateMyProfileDto {
+  fullName?: string
+  ci?: string
+  phone?: string
+  currentPassword: string
+}
+
+// Para cambiar la contraseña propia con /users/me/password
+export interface ChangeMyPasswordDto {
+  currentPassword: string
+  newPassword: string
 }

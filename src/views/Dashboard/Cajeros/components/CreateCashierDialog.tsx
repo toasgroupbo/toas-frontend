@@ -22,7 +22,7 @@ import { useCashierRoles } from '@/hooks/useCashiers'
 interface CreateCashierDialogProps {
   open: boolean
   onClose: () => void
-  onSubmit: (data: CreateCashierDto | UpdateCashierDto, officeId: number) => Promise<void>
+  onSubmit: (data: CreateCashierDto | UpdateCashierDto, officeId: number) => void | Promise<void>
   cashier?: Cashier | null
   mode: 'create' | 'edit'
   isLoading?: boolean

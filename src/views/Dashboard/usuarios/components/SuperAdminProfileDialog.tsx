@@ -20,23 +20,24 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 
 import CustomTextField from '@core/components/mui/TextField'
-import type { UpdateUserDto } from '@/types/api/users'
+import type { UpdateMyProfileDto, ChangeMyPasswordDto } from '@/types/api/users'
 import type { User } from '@/types/api/auth'
 
 // Schemas
 const updateProfileSchema = z.object({
-  email: z.string().email('Email inválido').min(1, 'Email es requerido'),
   fullName: z.string().min(1, 'Nombre completo es requerido'),
   ci: z.string().min(1, 'CI es requerido'),
-  phone: z.string().min(1, 'Teléfono es requerido')
+  phone: z.string().min(1, 'Teléfono es requerido'),
+  currentPassword: z.string().min(1, 'Ingresa tu contraseña para confirmar')
 })
 
 const changePasswordSchema = z
   .object({
-    password: z.string().min(6, 'La contraseña debe tener al menos 6 caracteres'),
+    currentPassword: z.string().min(1, 'Ingresa tu contraseña actual'),
+    newPassword: z.string().min(6, 'La contraseña debe tener al menos 6 caracteres'),
     confirmPassword: z.string().min(6, 'La contraseña debe tener al menos 6 caracteres')
   })
-  .refine(data => data.password === data.confirmPassword, {
+  .refine(data => data.newPassword === data.confirmPassword, {
     message: 'Las contraseñas no coinciden',
     path: ['confirmPassword']
   })
@@ -48,11 +49,11 @@ interface SuperAdminProfileDialogProps {
   open: boolean
   onClose: () => void
   user: User | null
-  onUpdateProfile: (data: UpdateUserDto) => void | Promise<void>
-  onChangePassword: (password: string) => void | Promise<void>
+  onUpdateProfile: (data: UpdateMyProfileDto) => void | Promise<void>
+  onChangePassword: (data: ChangeMyPasswordDto) => void | Promise<void>
   isLoading?: boolean
-  isTwoFactorEnabled?: boolean
-  onEnableTwoFactor?: () => void
+  passwordError?: string | null
+  onClearPasswordError?: () => void
 }
 
 const SuperAdminProfileDialog = ({
@@ -62,11 +63,12 @@ const SuperAdminProfileDialog = ({
   onUpdateProfile,
   onChangePassword,
   isLoading,
-  isTwoFactorEnabled = false,
-  onEnableTwoFactor
+  passwordError,
+  onClearPasswordError
 }: SuperAdminProfileDialogProps) => {
   const [activeTab, setActiveTab] = useState(0)
-  const [showPassword, setShowPassword] = useState(false)
+  const [showCurrentPassword, setShowCurrentPassword] = useState(false)
+  const [showNewPassword, setShowNewPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
 
   // Form para perfil
@@ -74,14 +76,15 @@ const SuperAdminProfileDialog = ({
     register: registerProfile,
     handleSubmit: handleSubmitProfile,
     reset: resetProfile,
-    formState: { errors: errorsProfile }
+    formState: { errors: errorsProfile },
+    setValue: setProfileValue
   } = useForm<UpdateProfileFormData>({
     resolver: zodResolver(updateProfileSchema),
     defaultValues: {
-      email: '',
       fullName: '',
       ci: '',
-      phone: ''
+      phone: '',
+      currentPassword: ''
     }
   })
 
@@ -94,7 +97,8 @@ const SuperAdminProfileDialog = ({
   } = useForm<ChangePasswordFormData>({
     resolver: zodResolver(changePasswordSchema),
     defaultValues: {
-      password: '',
+      currentPassword: '',
+      newPassword: '',
       confirmPassword: ''
     }
   })
@@ -102,31 +106,37 @@ const SuperAdminProfileDialog = ({
   useEffect(() => {
     if (open && user) {
       resetProfile({
-        email: user.email,
         fullName: user.fullName,
         ci: user.ci,
-        phone: user.phone || ''
+        phone: user.phone || '',
+        currentPassword: ''
       })
       resetPassword()
       setActiveTab(0)
     }
   }, [open, user, resetProfile, resetPassword])
 
-  const handleProfileSubmit = (data: UpdateProfileFormData) => {
-    const userRole = user?.rol?.name
-
-    const shouldExcludeRole = userRole === 'SUPER_ADMIN' || userRole === 'COMPANY_ADMIN'
-
-    const updateData: UpdateUserDto = {
-      ...data,
-      ...(shouldExcludeRole ? {} : { rol: user?.rol?.id })
+  // Limpiar campo de contraseña cuando hay error
+  useEffect(() => {
+    if (passwordError) {
+      setProfileValue('currentPassword', '')
     }
+  }, [passwordError, setProfileValue])
 
-    onUpdateProfile(updateData)
+  const handleProfileSubmit = (data: UpdateProfileFormData) => {
+    onUpdateProfile({
+      fullName: data.fullName,
+      ci: data.ci,
+      phone: data.phone,
+      currentPassword: data.currentPassword
+    })
   }
 
   const handlePasswordSubmit = (data: ChangePasswordFormData) => {
-    onChangePassword(data.password)
+    onChangePassword({
+      currentPassword: data.currentPassword,
+      newPassword: data.newPassword
+    })
   }
 
   const handleClose = () => {
@@ -171,41 +181,24 @@ const SuperAdminProfileDialog = ({
         />
       </Tabs>
 
-      {/* Warning si no tiene 2FA */}
-      {!isTwoFactorEnabled && (
-        <Alert
-          severity='warning'
-          sx={{ mx: 3, mt: 2 }}
-          action={
-            onEnableTwoFactor && (
-              <Button color='warning' size='small' onClick={onEnableTwoFactor}>
-                Activar ahora
-              </Button>
-            )
-          }
-        >
-          Para editar tu perfil o cambiar contraseña, primero activa la verificación en dos pasos.
-        </Alert>
-      )}
-
       {/* Tab 1: Editar Perfil */}
       {activeTab === 0 && (
         <form onSubmit={handleSubmitProfile(handleProfileSubmit)}>
           <DialogContent dividers>
             <Grid container spacing={3}>
+              {/* Email solo lectura */}
               <Grid size={12}>
                 <CustomTextField
                   fullWidth
-                  label='Nombre Completo *'
-                  placeholder='Juan Pérez'
-                  {...registerProfile('fullName')}
-                  error={!!errorsProfile.fullName}
-                  helperText={errorsProfile.fullName?.message}
-                  disabled={isLoading || !isTwoFactorEnabled}
+                  label='Email'
+                  type='email'
+                  value={user?.email || ''}
+                  disabled
+                  helperText='Para cambiar el email, contacta a un administrador'
                   InputProps={{
                     startAdornment: (
                       <InputAdornment position='start'>
-                        <i className='tabler-user' />
+                        <i className='tabler-mail' />
                       </InputAdornment>
                     )
                   }}
@@ -215,17 +208,16 @@ const SuperAdminProfileDialog = ({
               <Grid size={12}>
                 <CustomTextField
                   fullWidth
-                  label='Email *'
-                  type='email'
-                  placeholder='usuario@gmail.com'
-                  {...registerProfile('email')}
-                  error={!!errorsProfile.email}
-                  helperText={errorsProfile.email?.message}
-                  disabled={isLoading || !isTwoFactorEnabled}
+                  label='Nombre Completo *'
+                  placeholder='Juan Pérez'
+                  {...registerProfile('fullName')}
+                  error={!!errorsProfile.fullName}
+                  helperText={errorsProfile.fullName?.message}
+                  disabled={isLoading}
                   InputProps={{
                     startAdornment: (
                       <InputAdornment position='start'>
-                        <i className='tabler-mail' />
+                        <i className='tabler-user' />
                       </InputAdornment>
                     )
                   }}
@@ -240,7 +232,7 @@ const SuperAdminProfileDialog = ({
                   {...registerProfile('ci')}
                   error={!!errorsProfile.ci}
                   helperText={errorsProfile.ci?.message}
-                  disabled={isLoading || !isTwoFactorEnabled}
+                  disabled={isLoading}
                   InputProps={{
                     startAdornment: (
                       <InputAdornment position='start'>
@@ -259,11 +251,40 @@ const SuperAdminProfileDialog = ({
                   {...registerProfile('phone')}
                   error={!!errorsProfile.phone}
                   helperText={errorsProfile.phone?.message}
-                  disabled={isLoading || !isTwoFactorEnabled}
+                  disabled={isLoading}
                   InputProps={{
                     startAdornment: (
                       <InputAdornment position='start'>
                         <i className='tabler-phone' />
+                      </InputAdornment>
+                    )
+                  }}
+                />
+              </Grid>
+
+              {/* Campo para confirmar con contraseña */}
+              <Grid size={12}>
+                <CustomTextField
+                  fullWidth
+                  type={showCurrentPassword ? 'text' : 'password'}
+                  label='Tu contraseña *'
+                  placeholder='Ingresa tu contraseña para confirmar'
+                  {...registerProfile('currentPassword')}
+                  error={!!errorsProfile.currentPassword || !!passwordError}
+                  helperText={errorsProfile.currentPassword?.message || passwordError}
+                  disabled={isLoading}
+                  onFocus={onClearPasswordError}
+                  InputProps={{
+                    startAdornment: (
+                      <InputAdornment position='start'>
+                        <i className='tabler-lock' />
+                      </InputAdornment>
+                    ),
+                    endAdornment: (
+                      <InputAdornment position='end'>
+                        <IconButton onClick={() => setShowCurrentPassword(!showCurrentPassword)} edge='end'>
+                          <i className={showCurrentPassword ? 'tabler-eye-off' : 'tabler-eye'} />
+                        </IconButton>
                       </InputAdornment>
                     )
                   }}
@@ -279,7 +300,7 @@ const SuperAdminProfileDialog = ({
             <Button
               type='submit'
               variant='contained'
-              disabled={isLoading || !isTwoFactorEnabled}
+              disabled={isLoading}
               startIcon={isLoading ? <i className='tabler-loader' /> : <i className='tabler-check' />}
             >
               {isLoading ? 'Guardando...' : 'Guardar Cambios'}
@@ -293,16 +314,18 @@ const SuperAdminProfileDialog = ({
         <form onSubmit={handleSubmitPassword(handlePasswordSubmit)}>
           <DialogContent dividers>
             <Grid container spacing={3}>
+              {/* Contraseña actual */}
               <Grid size={12}>
                 <CustomTextField
                   fullWidth
-                  type={showPassword ? 'text' : 'password'}
-                  label='Nueva Contraseña *'
+                  type={showCurrentPassword ? 'text' : 'password'}
+                  label='Contraseña Actual *'
                   placeholder='••••••••'
-                  {...registerPassword('password')}
-                  error={!!errorsPassword.password}
-                  helperText={errorsPassword.password?.message}
-                  disabled={isLoading || !isTwoFactorEnabled}
+                  {...registerPassword('currentPassword')}
+                  error={!!errorsPassword.currentPassword || !!passwordError}
+                  helperText={errorsPassword.currentPassword?.message || passwordError}
+                  disabled={isLoading}
+                  onFocus={onClearPasswordError}
                   InputProps={{
                     startAdornment: (
                       <InputAdornment position='start'>
@@ -311,8 +334,8 @@ const SuperAdminProfileDialog = ({
                     ),
                     endAdornment: (
                       <InputAdornment position='end'>
-                        <IconButton onClick={() => setShowPassword(!showPassword)} edge='end'>
-                          <i className={showPassword ? 'tabler-eye-off' : 'tabler-eye'} />
+                        <IconButton onClick={() => setShowCurrentPassword(!showCurrentPassword)} edge='end'>
+                          <i className={showCurrentPassword ? 'tabler-eye-off' : 'tabler-eye'} />
                         </IconButton>
                       </InputAdornment>
                     )
@@ -320,16 +343,45 @@ const SuperAdminProfileDialog = ({
                 />
               </Grid>
 
+              {/* Nueva contraseña */}
+              <Grid size={12}>
+                <CustomTextField
+                  fullWidth
+                  type={showNewPassword ? 'text' : 'password'}
+                  label='Nueva Contraseña *'
+                  placeholder='••••••••'
+                  {...registerPassword('newPassword')}
+                  error={!!errorsPassword.newPassword}
+                  helperText={errorsPassword.newPassword?.message}
+                  disabled={isLoading}
+                  InputProps={{
+                    startAdornment: (
+                      <InputAdornment position='start'>
+                        <i className='tabler-lock-plus' />
+                      </InputAdornment>
+                    ),
+                    endAdornment: (
+                      <InputAdornment position='end'>
+                        <IconButton onClick={() => setShowNewPassword(!showNewPassword)} edge='end'>
+                          <i className={showNewPassword ? 'tabler-eye-off' : 'tabler-eye'} />
+                        </IconButton>
+                      </InputAdornment>
+                    )
+                  }}
+                />
+              </Grid>
+
+              {/* Confirmar nueva contraseña */}
               <Grid size={12}>
                 <CustomTextField
                   fullWidth
                   type={showConfirmPassword ? 'text' : 'password'}
-                  label='Confirmar Contraseña *'
+                  label='Confirmar Nueva Contraseña *'
                   placeholder='••••••••'
                   {...registerPassword('confirmPassword')}
                   error={!!errorsPassword.confirmPassword}
                   helperText={errorsPassword.confirmPassword?.message}
-                  disabled={isLoading || !isTwoFactorEnabled}
+                  disabled={isLoading}
                   InputProps={{
                     startAdornment: (
                       <InputAdornment position='start'>
@@ -356,7 +408,7 @@ const SuperAdminProfileDialog = ({
             <Button
               type='submit'
               variant='contained'
-              disabled={isLoading || !isTwoFactorEnabled}
+              disabled={isLoading}
               startIcon={isLoading ? <i className='tabler-loader' /> : <i className='tabler-key' />}
             >
               {isLoading ? 'Cambiando...' : 'Cambiar Contraseña'}

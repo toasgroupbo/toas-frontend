@@ -130,7 +130,15 @@ const deleteCashier = async (id: number): Promise<void> => {
   await api.delete(url)
 }
 
-const changePassword = async ({ id, password }: { id: number; password: string }): Promise<void> => {
+const changePassword = async ({
+  id,
+  password,
+  currentPassword
+}: {
+  id: number
+  password: string
+  currentPassword: string
+}): Promise<void> => {
   const actingAsCompany = localStorage.getItem('acting_as_company')
   let url = `/api/users/${id}`
 
@@ -144,7 +152,7 @@ const changePassword = async ({ id, password }: { id: number; password: string }
     }
   }
 
-  await api.put(url, { password })
+  await api.put(url, { password, currentPassword })
 }
 
 // Hooks

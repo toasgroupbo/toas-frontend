@@ -6,6 +6,8 @@ Para **editar el perfil de un usuario** o **cambiarle la contraseña**, el usuar
 >
 > El login, la activación del 2FA y "Olvidé mi contraseña" **no cambian**. Ver [2fa-google-authenticator.md](2fa-google-authenticator.md).
 
+> ⚠️ **Actualización:** estos endpoints ahora también piden `currentPassword` (la contraseña de quien edita) y hay endpoints nuevos `/users/me` con la misma regla del 2FA. Donde este documento dice que el body no cambia, ya no es así. Ver [editar-perfil-y-contrasena.md](editar-perfil-y-contrasena.md).
+
 ---
 
 ## Resumen de lo que tiene que hacer el front

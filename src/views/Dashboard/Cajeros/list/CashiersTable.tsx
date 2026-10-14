@@ -47,6 +47,7 @@ import CreateCashierDialog from '@/views/Dashboard/Cajeros/components/CreateCash
 import ChangePasswordDialog from '@/views/Dashboard/Cajeros/components/ChangePasswordDialog'
 import DeleteCashierDialog from '@/views/Dashboard/Cajeros/components/DeleteCashierDialog'
 import Reset2FADialog from '@/components/dialogs/Reset2FADialog'
+import PasswordConfirmDialog from '@/components/dialogs/PasswordConfirmDialog'
 import { useSnackbar } from '@/contexts/SnackbarContext'
 import { usePermissions } from '@/hooks/usePermissions'
 
@@ -100,6 +101,11 @@ const roleLabels: Record<string, string> = {
   SUPER_ADMIN: 'Super Administrador'
 }
 
+// Tipo para acción pendiente que requiere confirmación de contraseña
+type PendingAction =
+  | { type: 'updateCashier'; data: UpdateCashierDto; officeId: number }
+  | { type: 'changePassword'; newPassword: string }
+
 const CashiersTable = () => {
   const [rowSelection, setRowSelection] = useState({})
   const [currentPage, setCurrentPage] = useState(1)
@@ -112,6 +118,10 @@ const CashiersTable = () => {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
   const [reset2FADialogOpen, setReset2FADialogOpen] = useState(false)
   const [selectedCashier, setSelectedCashier] = useState<Cashier | null>(null)
+  const [passwordConfirmDialogOpen, setPasswordConfirmDialogOpen] = useState(false)
+  const [pendingAction, setPendingAction] = useState<PendingAction | null>(null)
+  const [passwordError, setPasswordError] = useState<string | null>(null)
+  const [isConfirming, setIsConfirming] = useState(false)
 
   const enabledParam: boolean | 'all' = enabledFilter === 'all' ? 'all' : enabledFilter === 'true'
 
@@ -144,30 +154,11 @@ const CashiersTable = () => {
     setEditDialogOpen(true)
   }
 
-  const handleUpdateCashier = async (data: CreateCashierDto | UpdateCashierDto, officeId: number) => {
-    if (!selectedCashier) return
-
-    try {
-      await updateMutation.mutateAsync({
-        cashierId: selectedCashier.id,
-        cashierData: data as UpdateCashierDto,
-        officeData: officeId,
-        originalOffice: selectedCashier.office?.id
-      })
-      setEditDialogOpen(false)
-      setSelectedCashier(null)
-      showSuccess('Cajero actualizado correctamente')
-    } catch (error: any) {
-      console.error('Error al actualizar cajero:', error)
-
-      if (error?.response?.status === 403 && error?.response?.data?.error === 'TWO_FACTOR_REQUIRED') {
-        showError('Para editar cajeros, primero activa la verificación en dos pasos desde tu perfil')
-
-        return
-      }
-
-      showError(error?.response?.data?.message || 'Error al actualizar cajero')
-    }
+  const handleUpdateCashier = (data: CreateCashierDto | UpdateCashierDto, officeId: number) => {
+    // Guardar la acción pendiente y pedir contraseña
+    setPendingAction({ type: 'updateCashier', data: data as UpdateCashierDto, officeId })
+    setEditDialogOpen(false)
+    setPasswordConfirmDialogOpen(true)
   }
 
   const handleChangePassword = (cashier: Cashier) => {
@@ -175,25 +166,68 @@ const CashiersTable = () => {
     setPasswordDialogOpen(true)
   }
 
-  const handlePasswordSubmit = async (password: string) => {
-    if (!selectedCashier) return
+  const handlePasswordSubmit = (password: string) => {
+    // Guardar la acción pendiente y pedir contraseña del admin
+    setPendingAction({ type: 'changePassword', newPassword: password })
+    setPasswordDialogOpen(false)
+    setPasswordConfirmDialogOpen(true)
+  }
+
+  const handlePasswordConfirm = async (currentPassword: string) => {
+    if (!selectedCashier || !pendingAction) return
+
+    setIsConfirming(true)
+    setPasswordError(null)
 
     try {
-      await changePasswordMutation.mutateAsync({ id: selectedCashier.id, password })
-      setPasswordDialogOpen(false)
+      if (pendingAction.type === 'updateCashier') {
+        await updateMutation.mutateAsync({
+          cashierId: selectedCashier.id,
+          cashierData: { ...pendingAction.data, currentPassword },
+          officeData: pendingAction.officeId,
+          originalOffice: selectedCashier.office?.id
+        })
+        showSuccess('Cajero actualizado correctamente')
+      } else if (pendingAction.type === 'changePassword') {
+        await changePasswordMutation.mutateAsync({
+          id: selectedCashier.id,
+          password: pendingAction.newPassword,
+          currentPassword
+        })
+        showSuccess('Contraseña cambiada correctamente')
+      }
+
+      setPasswordConfirmDialogOpen(false)
+      setPendingAction(null)
       setSelectedCashier(null)
-      showSuccess('Contraseña cambiada correctamente')
     } catch (error: any) {
-      console.error('Error al cambiar contraseña:', error)
+      console.error('Error en acción:', error)
 
       if (error?.response?.status === 403 && error?.response?.data?.error === 'TWO_FACTOR_REQUIRED') {
-        showError('Para cambiar contraseñas, primero activa la verificación en dos pasos desde tu perfil')
+        setPasswordConfirmDialogOpen(false)
+        setPendingAction(null)
+        showError('Para esta acción, primero activa la verificación en dos pasos desde tu perfil')
 
         return
       }
 
-      showError(error?.response?.data?.message || 'Error al cambiar contraseña')
+      if (error?.response?.status === 400 && error?.response?.data?.error === 'INVALID_PASSWORD') {
+        setPasswordError('La contraseña no es correcta')
+
+        return
+      }
+
+      showError(error?.response?.data?.message || 'Error al ejecutar la acción')
+    } finally {
+      setIsConfirming(false)
     }
+  }
+
+  const handlePasswordConfirmClose = () => {
+    setPasswordConfirmDialogOpen(false)
+    setPendingAction(null)
+    setPasswordError(null)
+    setSelectedCashier(null)
   }
 
   const handleDeleteCashier = (cashier: Cashier) => {
@@ -614,6 +648,16 @@ const CashiersTable = () => {
         isLoading={reset2FAMutation.isPending}
         userName={selectedCashier?.fullName || null}
         userEmail={selectedCashier?.email}
+      />
+
+      <PasswordConfirmDialog
+        open={passwordConfirmDialogOpen}
+        onClose={handlePasswordConfirmClose}
+        onConfirm={handlePasswordConfirm}
+        title='Confirmar cambios'
+        description='Ingresa tu contraseña para confirmar los cambios.'
+        isLoading={isConfirming}
+        error={passwordError}
       />
     </Box>
   )

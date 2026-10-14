@@ -20,7 +20,7 @@ import CustomTextField from '@core/components/mui/TextField'
 interface ChangePasswordDialogProps {
   open: boolean
   onClose: () => void
-  onSubmit: (password: string) => Promise<void>
+  onSubmit: (password: string) => void | Promise<void>
   userName?: string
   isLoading?: boolean
 }

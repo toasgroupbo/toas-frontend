@@ -26,11 +26,11 @@ import Box from '@mui/material/Box'
 import { useSettings } from '@core/hooks/useSettings'
 import { useAuth } from '@/contexts/AuthContext'
 import { useLogout } from '@/hooks/useLogout'
-import { useUpdateUser, useChangePassword } from '@/hooks/useUsers'
+import { useUpdateMyProfile, useChangeMyPassword } from '@/hooks/useUsers'
 import { useSnackbar } from '@/contexts/SnackbarContext'
 import SuperAdminProfileDialog from '@/views/Dashboard/usuarios/components/SuperAdminProfileDialog'
 import TwoFactorDialog from '@/components/dialogs/TwoFactorDialog'
-import type { UpdateUserDto } from '@/types/api/users'
+import type { UpdateMyProfileDto, ChangeMyPasswordDto } from '@/types/api/users'
 
 // Styled component for badge content
 const BadgeContentSpan = styled('span')({
@@ -47,6 +47,7 @@ const UserDropdown = () => {
   const [open, setOpen] = useState(false)
   const [profileDialogOpen, setProfileDialogOpen] = useState(false)
   const [twoFactorDialogOpen, setTwoFactorDialogOpen] = useState(false)
+  const [passwordError, setPasswordError] = useState<string | null>(null)
 
   // Refs
   const anchorRef = useRef<HTMLDivElement>(null)
@@ -56,8 +57,8 @@ const UserDropdown = () => {
   const { settings } = useSettings()
   const { user, isSuperAdmin, updateUser } = useAuth()
   const { logout } = useLogout()
-  const updateMutation = useUpdateUser()
-  const changePasswordMutation = useChangePassword()
+  const updateMyProfileMutation = useUpdateMyProfile()
+  const changeMyPasswordMutation = useChangeMyPassword()
   const { showSuccess, showError } = useSnackbar()
 
   const handleDropdownOpen = () => {
@@ -83,6 +84,15 @@ const UserDropdown = () => {
 
   const handleOpenProfileDialog = () => {
     setOpen(false)
+
+    // Verificar 2FA antes de abrir el diálogo de perfil
+    if (!user?.isTwoFactorEnabled) {
+      showError('Para editar tu perfil, primero activa la verificación en dos pasos')
+      setTwoFactorDialogOpen(true)
+
+      return
+    }
+
     setProfileDialogOpen(true)
   }
 
@@ -102,21 +112,21 @@ const UserDropdown = () => {
     setTwoFactorDialogOpen(true)
   }
 
-  const handleUpdateProfile = async (data: UpdateUserDto) => {
+  const handleUpdateProfile = async (data: UpdateMyProfileDto) => {
     if (!user) return
 
     try {
-      await updateMutation.mutateAsync({ id: user.id, data })
+      const updatedUser = await updateMyProfileMutation.mutateAsync(data)
 
       // Actualizar el usuario en el contexto de autenticación
       updateUser({
-        email: data.email,
-        fullName: data.fullName,
-        ci: data.ci,
-        phone: data.phone
+        fullName: updatedUser.fullName,
+        ci: updatedUser.ci,
+        phone: updatedUser.phone
       })
 
       setProfileDialogOpen(false)
+      setPasswordError(null)
       showSuccess('Perfil actualizado correctamente')
     } catch (error: any) {
       console.error('Error al actualizar perfil:', error)
@@ -127,22 +137,38 @@ const UserDropdown = () => {
         return
       }
 
+      if (error?.response?.status === 400 && error?.response?.data?.error === 'INVALID_PASSWORD') {
+        setPasswordError('La contraseña no es correcta')
+
+        return
+      }
+
       showError(error?.response?.data?.message || 'Error al actualizar perfil')
     }
   }
 
-  const handleChangePassword = async (password: string) => {
+  const handleChangePassword = async (data: ChangeMyPasswordDto) => {
     if (!user) return
 
     try {
-      await changePasswordMutation.mutateAsync({ id: user.id, password })
+      await changeMyPasswordMutation.mutateAsync(data)
       setProfileDialogOpen(false)
-      showSuccess('Contraseña cambiada correctamente')
+      setPasswordError(null)
+      showSuccess('Contraseña actualizada. Vuelve a iniciar sesión.')
+
+      // El backend cierra todas las sesiones, redirigir al login
+      logout()
     } catch (error: any) {
       console.error('Error al cambiar contraseña:', error)
 
       if (error?.response?.status === 403 && error?.response?.data?.error === 'TWO_FACTOR_REQUIRED') {
         handleTwoFactorRequired()
+
+        return
+      }
+
+      if (error?.response?.status === 400 && error?.response?.data?.error === 'INVALID_PASSWORD') {
+        setPasswordError('La contraseña no es correcta')
 
         return
       }
@@ -284,16 +310,16 @@ const UserDropdown = () => {
       {isSuperAdmin && (
         <SuperAdminProfileDialog
           open={profileDialogOpen}
-          onClose={() => setProfileDialogOpen(false)}
+          onClose={() => {
+            setProfileDialogOpen(false)
+            setPasswordError(null)
+          }}
           user={user}
           onUpdateProfile={handleUpdateProfile}
           onChangePassword={handleChangePassword}
-          isLoading={updateMutation.isPending || changePasswordMutation.isPending}
-          isTwoFactorEnabled={user?.isTwoFactorEnabled || false}
-          onEnableTwoFactor={() => {
-            setProfileDialogOpen(false)
-            setTwoFactorDialogOpen(true)
-          }}
+          isLoading={updateMyProfileMutation.isPending || changeMyPasswordMutation.isPending}
+          passwordError={passwordError}
+          onClearPasswordError={() => setPasswordError(null)}
         />
       )}
 

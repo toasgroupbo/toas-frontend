@@ -3,7 +3,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 
 import { api } from '@/libs/axios'
-import type { User, CreateUserDto, UpdateUserDto } from '@/types/api/users'
+import type { User, CreateUserDto, UpdateUserDto, UpdateMyProfileDto, ChangeMyPasswordDto } from '@/types/api/users'
 
 const fetchUsers = async (): Promise<User[]> => {
   const response = await api.get<User[]>('/api/users')
@@ -27,8 +27,27 @@ const deleteUser = async (id: string): Promise<void> => {
   await api.delete(`/api/users/${id}`)
 }
 
-const changePassword = async ({ id, password }: { id: string; password: string }): Promise<void> => {
-  await api.put(`/api/users/${id}`, { password })
+const changePassword = async ({
+  id,
+  password,
+  currentPassword
+}: {
+  id: string
+  password: string
+  currentPassword: string
+}): Promise<void> => {
+  await api.put(`/api/users/${id}`, { password, currentPassword })
+}
+
+// Endpoints para /users/me (perfil propio)
+const updateMyProfile = async (data: UpdateMyProfileDto): Promise<User> => {
+  const response = await api.patch<User>('/api/users/me', data)
+
+  return response.data
+}
+
+const changeMyPassword = async (data: ChangeMyPasswordDto): Promise<void> => {
+  await api.patch('/api/users/me/password', data)
 }
 
 export const useUsers = () => {
@@ -79,5 +98,18 @@ export const useChangePassword = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['users'] })
     }
+  })
+}
+
+// Hooks para /users/me (perfil propio)
+export const useUpdateMyProfile = () => {
+  return useMutation({
+    mutationFn: updateMyProfile
+  })
+}
+
+export const useChangeMyPassword = () => {
+  return useMutation({
+    mutationFn: changeMyPassword
   })
 }

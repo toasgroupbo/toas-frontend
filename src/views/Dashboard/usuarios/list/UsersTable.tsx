@@ -42,6 +42,7 @@ import EditCompanyAdminDialog from '@/views/Dashboard/usuarios/components/EditCo
 import ChangePasswordDialog from '@/views/Dashboard/usuarios/components/ChangePasswordDialog'
 import DeleteUserDialog from '@/views/Dashboard/usuarios/components/DeleteUserDialog'
 import Reset2FADialog from '@/components/dialogs/Reset2FADialog'
+import PasswordConfirmDialog from '@/components/dialogs/PasswordConfirmDialog'
 import { useSnackbar } from '@/contexts/SnackbarContext'
 import { usePermissions } from '@/hooks/usePermissions'
 import { useAuth } from '@/contexts/AuthContext'
@@ -99,6 +100,12 @@ const DebouncedInput = ({
 
 const columnHelper = createColumnHelper<UserWithActionsType>()
 
+// Tipo para acción pendiente que requiere confirmación de contraseña
+type PendingAction =
+  | { type: 'updateUser'; data: UpdateUserDto }
+  | { type: 'updateCompanyAdmin'; data: UpdateUserDto }
+  | { type: 'changePassword'; newPassword: string }
+
 const UsersTable = () => {
   const [rowSelection, setRowSelection] = useState({})
   const [currentPage, setCurrentPage] = useState(1)
@@ -111,6 +118,10 @@ const UsersTable = () => {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
   const [reset2FADialogOpen, setReset2FADialogOpen] = useState(false)
   const [selectedUser, setSelectedUser] = useState<User | null>(null)
+  const [passwordConfirmDialogOpen, setPasswordConfirmDialogOpen] = useState(false)
+  const [pendingAction, setPendingAction] = useState<PendingAction | null>(null)
+  const [passwordError, setPasswordError] = useState<string | null>(null)
+  const [isConfirming, setIsConfirming] = useState(false)
 
   const { data: users, isLoading, error } = useUsers()
   const createMutation = useCreateUser()
@@ -151,39 +162,18 @@ const UsersTable = () => {
     }
   }
 
-  const handleUpdateUser = async (data: CreateUserDto | UpdateUserDto) => {
-    if (!selectedUser) return
-
-    try {
-      await updateMutation.mutateAsync({ id: selectedUser.id, data: data as UpdateUserDto })
-      setEditDialogOpen(false)
-      setSelectedUser(null)
-      showSuccess('Usuario actualizado correctamente')
-    } catch (error: any) {
-      console.error('Error al actualizar usuario:', error)
-
-      if (error?.response?.status === 403 && error?.response?.data?.error === 'TWO_FACTOR_REQUIRED') {
-        showError('Para editar usuarios, primero activa la verificación en dos pasos desde tu perfil')
-
-        return
-      }
-
-      showError(error?.response?.data?.message || 'Error al actualizar usuario')
-    }
+  const handleUpdateUser = (data: CreateUserDto | UpdateUserDto) => {
+    // Guardar la acción pendiente y pedir contraseña
+    setPendingAction({ type: 'updateUser', data: data as UpdateUserDto })
+    setEditDialogOpen(false)
+    setPasswordConfirmDialogOpen(true)
   }
 
-  const handleUpdateCompanyAdmin = async (data: UpdateUserDto) => {
-    if (!selectedUser) return
-
-    try {
-      await updateMutation.mutateAsync({ id: selectedUser.id, data })
-      setEditCompanyAdminDialogOpen(false)
-      setSelectedUser(null)
-      showSuccess('Admin de Empresa actualizado correctamente')
-    } catch (error: any) {
-      console.error('Error al actualizar admin de empresa:', error)
-      showError(error?.response?.data?.message || 'Error al actualizar admin de empresa')
-    }
+  const handleUpdateCompanyAdmin = (data: UpdateUserDto) => {
+    // Guardar la acción pendiente y pedir contraseña
+    setPendingAction({ type: 'updateCompanyAdmin', data })
+    setEditCompanyAdminDialogOpen(false)
+    setPasswordConfirmDialogOpen(true)
   }
 
   const handleChangePassword = (user: User) => {
@@ -191,25 +181,72 @@ const UsersTable = () => {
     setPasswordDialogOpen(true)
   }
 
-  const handlePasswordSubmit = async (password: string) => {
-    if (!selectedUser) return
+  const handlePasswordSubmit = (password: string) => {
+    // Guardar la acción pendiente y pedir contraseña del admin
+    setPendingAction({ type: 'changePassword', newPassword: password })
+    setPasswordDialogOpen(false)
+    setPasswordConfirmDialogOpen(true)
+  }
+
+  const handlePasswordConfirm = async (currentPassword: string) => {
+    if (!selectedUser || !pendingAction) return
+
+    setIsConfirming(true)
+    setPasswordError(null)
 
     try {
-      await changePasswordMutation.mutateAsync({ id: selectedUser.id, password })
-      setPasswordDialogOpen(false)
+      if (pendingAction.type === 'updateUser') {
+        await updateMutation.mutateAsync({
+          id: selectedUser.id,
+          data: { ...pendingAction.data, currentPassword }
+        })
+        showSuccess('Usuario actualizado correctamente')
+      } else if (pendingAction.type === 'updateCompanyAdmin') {
+        await updateMutation.mutateAsync({
+          id: selectedUser.id,
+          data: { ...pendingAction.data, currentPassword }
+        })
+        showSuccess('Admin de Empresa actualizado correctamente')
+      } else if (pendingAction.type === 'changePassword') {
+        await changePasswordMutation.mutateAsync({
+          id: selectedUser.id,
+          password: pendingAction.newPassword,
+          currentPassword
+        })
+        showSuccess('Contraseña cambiada correctamente')
+      }
+
+      setPasswordConfirmDialogOpen(false)
+      setPendingAction(null)
       setSelectedUser(null)
-      showSuccess('Contraseña cambiada correctamente')
     } catch (error: any) {
-      console.error('Error al cambiar contraseña:', error)
+      console.error('Error en acción:', error)
 
       if (error?.response?.status === 403 && error?.response?.data?.error === 'TWO_FACTOR_REQUIRED') {
-        showError('Para cambiar contraseñas, primero activa la verificación en dos pasos desde tu perfil')
+        setPasswordConfirmDialogOpen(false)
+        setPendingAction(null)
+        showError('Para esta acción, primero activa la verificación en dos pasos desde tu perfil')
 
         return
       }
 
-      showError(error?.response?.data?.message || 'Error al cambiar contraseña')
+      if (error?.response?.status === 400 && error?.response?.data?.error === 'INVALID_PASSWORD') {
+        setPasswordError('La contraseña no es correcta')
+
+        return
+      }
+
+      showError(error?.response?.data?.message || 'Error al ejecutar la acción')
+    } finally {
+      setIsConfirming(false)
     }
+  }
+
+  const handlePasswordConfirmClose = () => {
+    setPasswordConfirmDialogOpen(false)
+    setPendingAction(null)
+    setPasswordError(null)
+    setSelectedUser(null)
   }
 
   const handleDeleteUser = (user: User) => {
@@ -601,6 +638,16 @@ const UsersTable = () => {
         isLoading={reset2FAMutation.isPending}
         userName={selectedUser?.fullName || null}
         userEmail={selectedUser?.email}
+      />
+
+      <PasswordConfirmDialog
+        open={passwordConfirmDialogOpen}
+        onClose={handlePasswordConfirmClose}
+        onConfirm={handlePasswordConfirm}
+        title='Confirmar cambios'
+        description='Ingresa tu contraseña para confirmar los cambios.'
+        isLoading={isConfirming}
+        error={passwordError}
       />
     </Box>
   )

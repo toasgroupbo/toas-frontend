@@ -61,6 +61,7 @@ export interface UpdateCashierDto {
   ci?: string
   phone?: string
   rol?: number
+  currentPassword?: string
 }
 
 export interface UpdateCashierOfficeDto {
