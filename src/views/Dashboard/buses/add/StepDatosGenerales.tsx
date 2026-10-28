@@ -28,6 +28,7 @@ interface StepDatosGeneralesProps {
   setModel: (value: string) => void
   owner: string
   setOwner: (value: string) => void
+  isEditMode: boolean
   equipment: BusEquipment[]
   toggleEquipment: (item: BusEquipment) => void
   interiorImagePreview: string
@@ -60,6 +61,7 @@ const StepDatosGenerales = ({
   setModel,
   owner,
   setOwner,
+  isEditMode,
   equipment,
   toggleEquipment,
   interiorImagePreview,
@@ -165,7 +167,7 @@ const StepDatosGenerales = ({
               value={owner}
               onChange={e => setOwner(e.target.value)}
               required
-              disabled={ownersLoading}
+              disabled={ownersLoading || isEditMode}
               InputProps={{
                 startAdornment: (
                   <InputAdornment position='start'>

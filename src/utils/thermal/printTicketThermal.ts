@@ -133,7 +133,7 @@ export const buildTicketThermalData = (ticket: Ticket): Uint8Array => {
   // Total section - large and prominent
   builder
     .alignCenter()
-    .line('TOTAL A PAGAR')
+    .line('TOTAL:')
     .emptyLine()
     .bold()
     .doubleSize()
@@ -168,12 +168,7 @@ export const buildTicketThermalData = (ticket: Ticket): Uint8Array => {
   builder.separator('-')
 
   // Footer
-  builder
-    .alignCenter()
-    .bold()
-    .line('!Gracias por su preferencia!')
-    .line('Buen Viaje')
-    .bold(false)
+  builder.alignCenter().bold().line('!Gracias por su preferencia!').line('Buen Viaje').bold(false)
 
   // Cut paper
   builder.cut()

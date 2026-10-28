@@ -414,6 +414,7 @@ const AddBuses = () => {
           setModel={setModel}
           owner={owner}
           setOwner={setOwner}
+          isEditMode={isEditMode}
           equipment={equipment}
           toggleEquipment={toggleEquipment}
           interiorImagePreview={interiorImagePreview}

@@ -223,6 +223,8 @@ export const generateReceiptHTML = (ticket: Ticket): string => {
         }
 
         .total-label {
+         position: relative;
+          left: -50px;
           font-size: 12px;
           font-weight: bold;
           color: #000;
@@ -315,7 +317,7 @@ export const generateReceiptHTML = (ticket: Ticket): string => {
       </div>
 
       <div class="total-box">
-        <div class="total-label">TOTAL A PAGAR</div>
+        <div class="total-label">TOTAL:</div>
         <div class="total-amount">Bs. ${totalPrice}</div>
       </div>
 
