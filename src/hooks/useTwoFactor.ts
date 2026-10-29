@@ -82,6 +82,7 @@ export const useReset2FA = () => {
       queryClient.invalidateQueries({ queryKey: ['cashiers'] })
       queryClient.invalidateQueries({ queryKey: ['owners'] })
       queryClient.invalidateQueries({ queryKey: ['users'] })
+      queryClient.invalidateQueries({ queryKey: ['companies'] })
     },
     onError: (error: any) => {
       console.error('Error restableciendo 2FA:', error)

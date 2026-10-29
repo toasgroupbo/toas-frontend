@@ -21,8 +21,11 @@ import { useQueryClient } from '@tanstack/react-query'
 
 import CustomTextField from '@core/components/mui/TextField'
 import { useUploadImage } from '@/hooks/useUploadImage'
+import { useReset2FA } from '@/hooks/useTwoFactor'
 import { updateCompanySchema, type UpdateCompanyFormData } from '@/schemas/companySchemas'
 import { api } from '@/libs/axios'
+import { useSnackbar } from '@/contexts/SnackbarContext'
+import Reset2FADialog from '@/components/dialogs/Reset2FADialog'
 
 import {
   BANCOS_OPTIONS,
@@ -47,9 +50,13 @@ const UpdateCompanyDialog = ({ open, onClose, onSubmit, isLoading, company }: Up
   const [isUploading, setIsUploading] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
+  const [reset2FADialogOpen, setReset2FADialogOpen] = useState(false)
+  const [isAdminTwoFactorEnabled, setIsAdminTwoFactorEnabled] = useState(false)
 
   const queryClient = useQueryClient()
   const uploadImageMutation = useUploadImage()
+  const reset2FAMutation = useReset2FA()
+  const { showSuccess, showError } = useSnackbar()
 
   const {
     register,
@@ -88,6 +95,7 @@ const UpdateCompanyDialog = ({ open, onClose, onSubmit, isLoading, company }: Up
 
   useEffect(() => {
     if (open && company) {
+      setIsAdminTwoFactorEnabled(!!company.users[0]?.isTwoFactorEnabled)
       reset({
         name: company.name,
         logo: company.logo,
@@ -123,6 +131,25 @@ const UpdateCompanyDialog = ({ open, onClose, onSubmit, isLoading, company }: Up
       setUploadError('')
     }
   }, [open, company, reset])
+
+  const handleReset2FA = async () => {
+    const admin = company?.users[0]
+
+    if (!admin?.id) {
+      showError('No se encontró el administrador de esta empresa')
+
+      return
+    }
+
+    try {
+      await reset2FAMutation.mutateAsync(admin.id)
+      setIsAdminTwoFactorEnabled(false)
+      setReset2FADialogOpen(false)
+      showSuccess(`Verificación en dos pasos restablecida para ${admin.fullName}`)
+    } catch (error: any) {
+      showError(error?.response?.data?.message || 'Error al restablecer verificación en dos pasos')
+    }
+  }
 
   const handleLogoChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
@@ -675,9 +702,22 @@ const UpdateCompanyDialog = ({ open, onClose, onSubmit, isLoading, company }: Up
 
             {/* Datos del Administrador */}
             <Grid size={12}>
-              <Typography variant='h6' sx={{ mt: 2, mb: 1 }}>
-                Datos del Administrador
-              </Typography>
+              <Box display='flex' alignItems='center' gap={1} sx={{ mt: 2, mb: 1 }}>
+                <Typography variant='h6'>Datos del Administrador</Typography>
+                {isAdminTwoFactorEnabled && (
+                  <Button
+                    size='small'
+                    variant='outlined'
+                    color='warning'
+                    aria-label='Restablecer 2FA del administrador'
+                    startIcon={<i className='tabler-shield-off' />}
+                    onClick={() => setReset2FADialogOpen(true)}
+                    disabled={isProcessing || reset2FAMutation.isPending}
+                  >
+                    Restablecer 2FA
+                  </Button>
+                )}
+              </Box>
             </Grid>
 
             <Grid size={{ xs: 12, sm: 6 }}>
@@ -842,6 +882,14 @@ const UpdateCompanyDialog = ({ open, onClose, onSubmit, isLoading, company }: Up
           </Button>
         </DialogActions>
       </form>
+      <Reset2FADialog
+        open={reset2FADialogOpen}
+        onClose={() => setReset2FADialogOpen(false)}
+        onConfirm={handleReset2FA}
+        isLoading={reset2FAMutation.isPending}
+        userName={company?.users[0]?.fullName || null}
+        userEmail={company?.users[0]?.email}
+      />
     </Dialog>
   )
 }

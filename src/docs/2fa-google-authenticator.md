@@ -266,7 +266,7 @@ Si un usuario pierde el celular o borra la app, no puede generar códigos y no p
 | `403` | El admin no tiene permiso `UPDATE` sobre usuarios |
 | `404` | El usuario no existe |
 
-**Sugerencia de UI:** en la tabla o el detalle de usuarios, mostrar el botón solo si `isTwoFactorEnabled` es `true`, con una confirmación del tipo: "¿Desactivar la verificación en dos pasos de Juan Pérez? Podrá entrar solo con su contraseña hasta que la vuelva a activar".
+**UI del panel web:** en las tablas de cajeros, propietarios y usuarios, y en la edición de empresa para su administrador, mostrar la acción solo si `isTwoFactorEnabled` es `true`, con una confirmación del tipo: "¿Desactivar la verificación en dos pasos de Juan Pérez? Podrá entrar solo con su contraseña hasta que la vuelva a activar".
 
 ---
 

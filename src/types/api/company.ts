@@ -101,6 +101,7 @@ export interface CompanyAdmin {
   ci: string
   phone: string
   password?: string
+  isTwoFactorEnabled?: boolean
 }
 
 export interface Company {
